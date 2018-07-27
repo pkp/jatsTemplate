@@ -190,7 +190,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$galleys = $article->getGalleys();
 
 		// Give precedence to HTML galleys, as they're quickest to parse
-		usort($galleys, create_function('$a, $b', 'return $a->isHtmlGalley()?-1:1;'));
+		usort($galleys, create_function('$a, $b', 'return $a->getFileType() == \'text/html\'?-1:1;'));
 
 		// Provide the full-text.
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
