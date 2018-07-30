@@ -107,6 +107,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			($publisherInstitution != ''?"\t\t\t<publisher><publisher-name>" . htmlspecialchars($publisherInstitution) . "</publisher-name></publisher>\n":'') .
 			"\t\t</journal-meta>\n" .
 			"\t\t<article-meta>\n" .
+			"\t\t\t<article-id pub-id-type=\"other\">" . $article->getId() . "</article-id>\n" .
 			"\t\t\t<article-categories><subj-group subj-group-type=\"heading\"><subject>" . htmlspecialchars($section->getLocalizedTitle()) . "</subject></subj-group></article-categories>\n" .
 			"\t\t\t<title-group>\n" .
 			"\t\t\t\t<article-title>" . htmlspecialchars(strip_tags($article->getLocalizedTitle())) . "</article-title>\n";
