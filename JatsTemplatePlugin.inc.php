@@ -89,16 +89,16 @@ class JatsTemplatePlugin extends GenericPlugin {
 			"\txmlns:mml=\"http://www.w3.org/1998/Math/MathML\"\n" .
 			"\txmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" .
 			(($s = $section->getLocalizedIdentifyType())!=''?"\tarticle-type=\"" . htmlspecialchars($s) . "\"":'') .
-			"\txml:lang=\"" . strtoupper(substr($primaryLocale, 0, 2)) . "\">\n" .
+			"\txml:lang=\"" . substr($primaryLocale, 0, 2) . "\">\n" .
 			"\t<front>\n" .
 			"\t\t<journal-meta>\n" .
 			"\t\t\t<journal-id journal-id-type=\"other\">" . htmlspecialchars(($s = Config::getVar('oai', 'nlm_journal_id')!=''?$s:$journal->getPath())) . "</journal-id>\n" .
-			"\t\t\t<journal-title>" . htmlspecialchars($journal->getLocalizedName()) . "</journal-title>\n";
+			"\t\t\t<journal-title xml:lang=\"" . substr($primaryLocale, 0, 2) . "\">" . htmlspecialchars($journal->getName($primaryLocale)) . "</journal-title>\n";
 
 		// Include translated journal titles
 		foreach ($journal->getName(null) as $locale => $title) {
 			if ($locale == $primaryLocale) continue;
-			$response .= "\t\t\t<trans-title xml:lang=\"" . strtoupper(substr($locale, 0, 2)) . "\">" . htmlspecialchars($title) . "</trans-title>\n";
+			$response .= "\t\t\t<trans-title xml:lang=\"" . substr($locale, 0, 2) . "\">" . htmlspecialchars($title) . "</trans-title>\n";
 		}
 
 		$response .=
@@ -114,7 +114,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		// Include translated journal titles
 		foreach ($article->getTitle(null) as $locale => $title) {
 			if ($locale == $primaryLocale) continue;
-			$response .= "\t\t\t\t<trans-title xml:lang=\"" . strtoupper(substr($locale, 0, 2)) . "\">" . htmlspecialchars(strip_tags($title)) . "</trans-title>\n";
+			$response .= "\t\t\t\t<trans-title xml:lang=\"" . substr($locale, 0, 2) . "\">" . htmlspecialchars(strip_tags($title)) . "</trans-title>\n";
 		}
 
 		$response .=
@@ -174,7 +174,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			if (!empty($s)) $subjects[$locale] = $s;
 		}
 		if (!empty($subjects)) foreach ($subjects as $locale => $s) {
-			$response .= "\t\t\t<kwd-group xml:lang=\"" . strtoupper(substr($locale, 0, 2)) . "\">\n";
+			$response .= "\t\t\t<kwd-group xml:lang=\"" . substr($locale, 0, 2) . "\">\n";
 			foreach ($s as $subject) $response .= "\t\t\t\t<kwd>" . htmlspecialchars($subject) . "</kwd>\n";
 			$response .= "\t\t\t</kwd-group>\n";
 		}
