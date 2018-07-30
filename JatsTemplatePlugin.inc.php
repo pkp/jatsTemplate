@@ -74,6 +74,8 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$galleys =& $record->getData('galleys');
 		$articleId = $article->getId();
 
+		$request = Application::getRequest();
+
 		$abbreviation = $journal->getLocalizedSetting('abbreviation');
 		$printIssn = $journal->getSetting('printIssn');
 		$onlineIssn = $journal->getSetting('onlineIssn');
@@ -167,7 +169,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			(($s = Application::getCCLicenseBadge($article->getLicenseURL()))?"\t\t\t\t\t<license-p>" . strip_tags($s) . "</license-p>\n":'') .
 			"\t\t\t\t</license>\n" .
 			"\t\t\t</permissions>\n" .
-			"\t\t\t<self-uri xlink:href=\"" . htmlspecialchars(Request::url($journal->getPath(), 'article', 'view', $article->getBestArticleId())) . "\" />\n";
+			"\t\t\t<self-uri xlink:href=\"" . htmlspecialchars($request->url($journal->getPath(), 'article', 'view', $article->getBestArticleId())) . "\" />\n";
 
 		$subjects = array();
 		if (is_array($article->getSubject(null))) foreach ($article->getSubject(null) as $locale => $subject) {
