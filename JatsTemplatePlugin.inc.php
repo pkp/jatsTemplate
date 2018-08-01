@@ -86,22 +86,24 @@ class JatsTemplatePlugin extends GenericPlugin {
 		if (!$datePublished) $datePublished = $issue->getDatePublished();
 		if ($datePublished) $datePublished = strtotime($datePublished);
 
-		$response = "<article\n" .
-			"\txmlns:xlink=\"http://www.w3.org/1999/xlink\"\n" .
-			"\txmlns:mml=\"http://www.w3.org/1998/Math/MathML\"\n" .
-			"\txmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" .
-			(($s = $section->getLocalizedIdentifyType())!=''?"\tarticle-type=\"" . htmlspecialchars($s) . "\"":'') .
-			"\txml:lang=\"" . substr($primaryLocale, 0, 2) . "\">\n" .
-			"\t<front>\n" .
-			"\t\t<journal-meta>\n" .
-			"\t\t\t<journal-id journal-id-type=\"other\">" . htmlspecialchars(($s = Config::getVar('oai', 'nlm_journal_id')!=''?$s:$journal->getPath())) . "</journal-id>\n" .
-			"\t\t\t<journal-title xml:lang=\"" . substr($primaryLocale, 0, 2) . "\">" . htmlspecialchars($journal->getName($primaryLocale)) . "</journal-title>\n";
+		$response = "<article
+			xmlns:xlink=\"http://www.w3.org/1999/xlink\"
+			xmlns:mml=\"http://www.w3.org/1998/Math/MathML\"
+			xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
+			" . (($s = $section->getLocalizedIdentifyType())!=''?"\tarticle-type=\"" . htmlspecialchars($s) . "\"":'') . "
+			xml:lang=\"" . substr($primaryLocale, 0, 2) . "\">
+			<front>
+			<journal-meta>
+				<journal-id journal-id-type=\"publisher\">" . htmlspecialchars($journal->getPath()) . "</journal-id>
+				<journal-title-group>
+			<journal-title xml:lang=\"" . substr($primaryLocale, 0, 2) . "\">" . htmlspecialchars($journal->getName($primaryLocale)) . "</journal-title>";
 
 		// Include translated journal titles
 		foreach ($journal->getName(null) as $locale => $title) {
 			if ($locale == $primaryLocale) continue;
-			$response .= "\t\t\t<trans-title xml:lang=\"" . substr($locale, 0, 2) . "\">" . htmlspecialchars($title) . "</trans-title>\n";
+			$response .= "<trans-title-group xml:lang=\"" . substr($locale, 0, 2) . "\"><trans-title>" . htmlspecialchars($title) . "</trans-title></trans-title-group>\n";
 		}
+		$response .= '</journal-title-group>';
 
 		$response .=
 			(!empty($onlineIssn)?"\t\t\t<issn pub-type=\"epub\">" . htmlspecialchars($onlineIssn) . "</issn>":'') .
@@ -109,7 +111,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			($publisherInstitution != ''?"\t\t\t<publisher><publisher-name>" . htmlspecialchars($publisherInstitution) . "</publisher-name></publisher>\n":'') .
 			"\t\t</journal-meta>\n" .
 			"\t\t<article-meta>\n" .
-			"\t\t\t<article-id pub-id-type=\"other\">" . $article->getId() . "</article-id>\n" .
+			"\t\t\t<article-id pub-id-type=\"publisher-id\">" . $article->getId() . "</article-id>\n" .
 			"\t\t\t<article-categories><subj-group subj-group-type=\"heading\"><subject>" . htmlspecialchars($section->getLocalizedTitle()) . "</subject></subj-group></article-categories>\n" .
 			"\t\t\t<title-group>\n" .
 			"\t\t\t\t<article-title>" . htmlspecialchars(strip_tags($article->getLocalizedTitle())) . "</article-title>\n";
