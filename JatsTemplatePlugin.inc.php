@@ -207,12 +207,23 @@ class JatsTemplatePlugin extends GenericPlugin {
 					$parser->close();
 				}
 
-				if (in_array($submissionFile->getFileType(), array('text/html'))) $text = strip_tags($text);
+				if (in_array($submissionFile->getFileType(), array('text/html'))) {
+					static $purifier;
+					if (!$purifier) {
+						$config = HTMLPurifier_Config::createDefault();
+						$config->set('HTML.Allowed', 'p');
+						$config->set('Cache.SerializerPath', 'cache');
+						$purifier = new HTMLPurifier($config);
+					}
+					$text = $purifier->purify($text);
+				} else {
+					$text = '<p>' . htmlspecialchars($text) . '</p>';
+				}
 				if (!empty($text)) break 2;
 			}
 			// Use the first parseable galley.
 		}
-		if (!empty($text)) $response .= "\t<body><p>" . htmlspecialchars($text) . "</p></body>\n";
+		if (!empty($text)) $response .= "\t<body>$text</body>\n";
 
 		$response .= "</article>";
 		return $response;
