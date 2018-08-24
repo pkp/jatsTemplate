@@ -61,10 +61,6 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 	/**
 	 * @see OAIMetadataFormat#toXml
-	 * TODO:
-	 *  <copyright-holder>
-	 *  In Isabelle's mapping document:
-	 *   Article order in the issue's Table of Contents
 	 */
 	function toXml(&$record, $format = null) {
 		$article =& $record->getData('article');
