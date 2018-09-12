@@ -119,7 +119,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 		$response .=
 			"\t\t\t</title-group>\n" .
-			"\t\t\t<contrib-group>\n";
+			"\t\t\t<contrib-group content-type=\"author\">\n";
 
 		// Include authors
 		$affiliations = array();
@@ -131,7 +131,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 				$affiliations[$affiliationToken] = $affiliation;
 			}
 			$response .=
-				"\t\t\t\t<contrib " . ($author->getPrimaryContact()?'corresp="yes" ':'') . "contrib-type=\"author\">\n" .
+				"\t\t\t\t<contrib " . ($author->getPrimaryContact()?'corresp="yes" ':'') . ">\n" .
 				"\t\t\t\t\t<name name-style=\"western\">\n" .
 				"\t\t\t\t\t\t<surname>" . htmlspecialchars(method_exists($author, 'getLastName')?$author->getLastName():$author->getLocalizedFamilyName()) . "</surname>\n" .
 				"\t\t\t\t\t\t<given-names>" . htmlspecialchars(method_exists($author, 'getFirstName')?$author->getFirstName():$author->getLocalizedGivenName()) . (((method_exists($author, 'getMiddleName') && $s = $author->getMiddleName()) != '')?" $s":'') . "</given-names>\n" .
