@@ -122,20 +122,30 @@ class JatsTemplatePlugin extends GenericPlugin {
 			"\t\t\t<contrib-group>\n";
 
 		// Include authors
+		$affiliations = array();
 		foreach ($article->getAuthors() as $author) {
+			$affiliation = $author->getLocalizedAffiliation();
+			$affiliationToken = array_search($affiliation, $affiliations);
+			if ($affiliation && !$affiliationToken) {
+				$affiliationToken = 'aff-' . (count($affiliations)+1);
+				$affiliations[$affiliationToken] = $affiliation;
+			}
 			$response .=
 				"\t\t\t\t<contrib " . ($author->getPrimaryContact()?'corresp="yes" ':'') . "contrib-type=\"author\">\n" .
 				"\t\t\t\t\t<name name-style=\"western\">\n" .
 				"\t\t\t\t\t\t<surname>" . htmlspecialchars(method_exists($author, 'getLastName')?$author->getLastName():$author->getLocalizedFamilyName()) . "</surname>\n" .
 				"\t\t\t\t\t\t<given-names>" . htmlspecialchars(method_exists($author, 'getFirstName')?$author->getFirstName():$author->getLocalizedGivenName()) . (((method_exists($author, 'getMiddleName') && $s = $author->getMiddleName()) != '')?" $s":'') . "</given-names>\n" .
 				"\t\t\t\t\t</name>\n" .
-				(($s = $author->getLocalizedAffiliation()) != ''?"\t\t\t\t\t<aff>" . htmlspecialchars($s) . "</aff>\n":'') .
+				($affiliationToken?"\t\t\t\t\t<xref ref-type=\"aff\" rid=\"$affiliationToken\" />\n":'') .
 				"\t\t\t\t\t<email>" . htmlspecialchars($author->getEmail()) . "</email>\n" .
 				(($s = $author->getUrl()) != ''?"\t\t\t\t\t<uri>" . htmlspecialchars($s) . "</uri>\n":'') .
 				"\t\t\t\t</contrib>\n";
 		}
-
 		$response .= "\t\t\t</contrib-group>\n";
+		foreach ($affiliations as $affiliationToken => $affiliation) {
+			$response .= "\t\t\t<aff id=\"$affiliationToken\"><institution content-type=\"orgname\">" . htmlspecialchars($affiliation) . "</institution></aff>\n";
+		}
+
 		if ($datePublished) $response .=
 			"\t\t\t<pub-date pub-type=\"epub\">\n" .
 			"\t\t\t\t<day>" . strftime('%d', $datePublished) . "</day>\n" .
