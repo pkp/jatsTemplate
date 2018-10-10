@@ -109,12 +109,12 @@ class JatsTemplatePlugin extends GenericPlugin {
 			"\t\t\t<article-id pub-id-type=\"publisher-id\">" . $article->getId() . "</article-id>\n" .
 			"\t\t\t<article-categories><subj-group subj-group-type=\"heading\"><subject>" . htmlspecialchars($section->getLocalizedTitle()) . "</subject></subj-group></article-categories>\n" .
 			"\t\t\t<title-group>\n" .
-			"\t\t\t\t<article-title xml:lang=\"" . substr($locale, 0, 2) . "\">" . htmlspecialchars(strip_tags($article->getLocalizedTitle())) . "</article-title>\n";
+			"\t\t\t\t<article-title xml:lang=\"" . substr($article->getLocale(), 0, 2) . "\">" . htmlspecialchars(strip_tags($article->getLocalizedTitle())) . "</article-title>\n";
 
 		// Include translated journal titles
 		foreach ($article->getTitle(null) as $locale => $title) {
 			if ($locale == $article->getLocale()) continue;
-			$response .= "\t\t\t\t<trans-title xml:lang=\"" . substr($locale, 0, 2) . "\">" . htmlspecialchars(strip_tags($title)) . "</trans-title>\n";
+			$response .= "\t\t\t\t<trans-title-group xml:lang=\"" . substr($locale, 0, 2) . "\"><trans-title>" . htmlspecialchars(strip_tags($title)) . "</trans-title></trans-title-group>\n";
 		}
 
 		$response .=
