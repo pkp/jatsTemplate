@@ -89,7 +89,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			xml:lang=\"" . substr($article->getLocale(), 0, 2) . "\">
 			<front>
 			<journal-meta>
-				<journal-id journal-id-type=\"publisher\">" . htmlspecialchars($journal->getPath()) . "</journal-id>
+				<journal-id journal-id-type=\"ojs\">" . htmlspecialchars($journal->getPath()) . "</journal-id>
 				<journal-title-group>
 			<journal-title xml:lang=\"" . substr($article->getLocale(), 0, 2) . "\">" . htmlspecialchars($journal->getName($article->getLocale())) . "</journal-title>";
 
