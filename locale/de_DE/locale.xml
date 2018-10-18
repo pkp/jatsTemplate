@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE locale SYSTEM "../../../../../lib/pkp/dtd/locale.dtd">
+
+<!--
+  * @file locale/de_DE/locale.xml
+  *
+  * Copyright (c) 2003-2018 Simon Fraser University
+  * Copyright (c) 2003-2018 John Willinsky
+  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  *
+  * Localization strings.
+  -->
+
+<locale name="de_DE" full_name="Deutsch (Deutschland)">
+	<message key="plugins.generic.jatsTemplate.displayName">JATS-Template-Plugin</message>
+	<message key="plugins.generic.jatsTemplate.description">Erzeugen Sie automatisch ein minimales JATS-Document aus den Metadaten einer Einreichung, wenn ansonsten kein JATS-Dokument verfügbar ist.</message>
+</locale>
