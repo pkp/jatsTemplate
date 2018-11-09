@@ -91,11 +91,11 @@ class JatsTemplatePlugin extends GenericPlugin {
 			<journal-meta>
 				<journal-id journal-id-type=\"ojs\">" . htmlspecialchars($journal->getPath()) . "</journal-id>
 				<journal-title-group>
-			<journal-title xml:lang=\"" . substr($article->getLocale(), 0, 2) . "\">" . htmlspecialchars($journal->getName($article->getLocale())) . "</journal-title>";
+			<journal-title xml:lang=\"" . substr($journal->getPrimaryLocale(), 0, 2) . "\">" . htmlspecialchars($journal->getName($journal->getPrimaryLocale())) . "</journal-title>";
 
 		// Include translated journal titles
 		foreach ($journal->getName(null) as $locale => $title) {
-			if ($locale == $article->getLocale()) continue;
+			if ($locale == $journal->getPrimaryLocale()) continue;
 			$response .= "<trans-title-group xml:lang=\"" . substr($locale, 0, 2) . "\"><trans-title>" . htmlspecialchars($title) . "</trans-title></trans-title-group>\n";
 		}
 		$response .= '</journal-title-group>';
