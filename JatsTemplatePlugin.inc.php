@@ -155,13 +155,24 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 		// Include page info, if available and parseable.
 		$matches = null;
-		if (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)$/', $article->getPages(), $matches)) {
+		if (PKPString::regexp_match_get('/^(\d+)$/', $article->getPages(), $matches)) {
+			$matchedPage = htmlspecialchars($matches[1]);
+			$response .= "\t\t\t\t<fpage>$matchedPage</fpage><lpage>$matchedPage</lpage>\n";
+			$pageCount = 1;
+		} elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)$/', $article->getPages(), $matches)) {
 			$matchedPage = htmlspecialchars($matches[1]);
 			$response .= "\t\t\t\t<fpage>$matchedPage</fpage><lpage>$matchedPage</lpage>\n";
 			$pageCount = 1;
 		} elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/', $article->getPages(), $matches)) {
 			$matchedPageFrom = htmlspecialchars($matches[1]);
 			$matchedPageTo = htmlspecialchars($matches[3]);
+			$response .=
+				"\t\t\t\t<fpage>$matchedPageFrom</fpage>\n" .
+				"\t\t\t\t<lpage>$matchedPageTo</lpage>\n";
+			$pageCount = $matchedPageTo - $matchedPageFrom + 1;
+		} elseif (PKPString::regexp_match_get('/^(\d+)[ ]?-[ ]?(\d+)$/', $article->getPages(), $matches)) {
+			$matchedPageFrom = htmlspecialchars($matches[1]);
+			$matchedPageTo = htmlspecialchars($matches[2]);
 			$response .=
 				"\t\t\t\t<fpage>$matchedPageFrom</fpage>\n" .
 				"\t\t\t\t<lpage>$matchedPageTo</lpage>\n";
