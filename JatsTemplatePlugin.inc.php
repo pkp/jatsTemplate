@@ -222,12 +222,6 @@ class JatsTemplatePlugin extends GenericPlugin {
 		foreach ($galleys as $galley) {
 			$submissionFiles = $submissionFileDao->getLatestRevisionsByAssocId(ASSOC_TYPE_GALLEY, $galley->getId(), $article->getId(), SUBMISSION_FILE_PROOF);
 			foreach ($submissionFiles as $submissionFile) {
-				$parser =& SearchFileParser::fromFile($submissionFile);
-				if ($parser && $parser->open()) {
-					while(($s = $parser->read()) !== false) $text .= $s;
-					$parser->close();
-				}
-
 				if (in_array($submissionFile->getFileType(), array('text/html'))) {
 					static $purifier;
 					if (!$purifier) {
@@ -236,8 +230,17 @@ class JatsTemplatePlugin extends GenericPlugin {
 						$config->set('Cache.SerializerPath', 'cache');
 						$purifier = new HTMLPurifier($config);
 					}
-					$text = $purifier->purify($text);
+					// Remove non-paragraph content
+					$text = $purifier->purify(file_get_contents($submissionFile->getFilePath()));
+					// Remove empty paragraphs
+					$text = preg_replace('/<p>[\W]*<\/p>/', '', $text);
 				} else {
+					$parser =& SearchFileParser::fromFile($submissionFile);
+					if ($parser && $parser->open()) {
+						while(($s = $parser->read()) !== false) $text .= $s;
+						$parser->close();
+					}
+
 					$text = '<p>' . htmlspecialchars($text) . '</p>';
 				}
 				if (!empty($text)) break 2;
