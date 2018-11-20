@@ -118,7 +118,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			if ($locale == $articleLocale) continue;
 			$response .= "\t\t\t\t<trans-title-group xml:lang=\"" . substr($locale, 0, 2) . "\">\n";
 			$response .= "\t\t\t\t\t<trans-title>" . htmlspecialchars(strip_tags($title)) . "</trans-title>\n";
-			if (!empty($subtitle = $article->getSubtitle($locale))) $response .= "\t\t\t\t\t<subtitle>" . htmlspecialchars($subtitle) . "</subtitle>\n";
+			if (!empty($subtitle = $article->getSubtitle($locale))) $response .= "\t\t\t\t\t<trans-subtitle>" . htmlspecialchars($subtitle) . "</trans-subtitle>\n";
 			$response .= "\t\t\t\t\t</trans-title-group>\n";
 		}
 
@@ -159,7 +159,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			"\t\t\t</pub-date>\n";
 
 		// Include page info, if available and parseable.
-		$matches = null;
+		$matches = $pageCount = null;
 		if (PKPString::regexp_match_get('/^(\d+)$/', $article->getPages(), $matches)) {
 			$matchedPage = htmlspecialchars($matches[1]);
 			$response .= "\t\t\t\t<fpage>$matchedPage</fpage><lpage>$matchedPage</lpage>\n";
