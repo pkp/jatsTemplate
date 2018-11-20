@@ -75,6 +75,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$abbreviation = $journal->getLocalizedSetting('abbreviation');
 		$printIssn = $journal->getSetting('printIssn');
 		$onlineIssn = $journal->getSetting('onlineIssn');
+		$articleLocale = $article->getLocale();
 
 		$publisherInstitution = $journal->getSetting('publisherInstitution');
 		$datePublished = $article->getDatePublished();
@@ -86,7 +87,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			xmlns:mml=\"http://www.w3.org/1998/Math/MathML\"
 			xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
 			" . (($s = $section->getLocalizedIdentifyType())!=''?"\tarticle-type=\"" . htmlspecialchars($s) . "\"":'') . "
-			xml:lang=\"" . substr($article->getLocale(), 0, 2) . "\">
+			xml:lang=\"" . substr($articleLocale, 0, 2) . "\">
 			<front>
 			<journal-meta>
 				<journal-id journal-id-type=\"ojs\">" . htmlspecialchars($journal->getPath()) . "</journal-id>
@@ -109,12 +110,12 @@ class JatsTemplatePlugin extends GenericPlugin {
 			"\t\t\t<article-id pub-id-type=\"publisher-id\">" . $article->getId() . "</article-id>\n" .
 			"\t\t\t<article-categories><subj-group xml:lang=\"" . $journal->getPrimaryLocale() . "\" subj-group-type=\"heading\"><subject>" . htmlspecialchars($section->getLocalizedTitle()) . "</subject></subj-group></article-categories>\n" .
 			"\t\t\t<title-group>\n" .
-			"\t\t\t\t<article-title xml:lang=\"" . substr($article->getLocale(), 0, 2) . "\">" . htmlspecialchars(strip_tags($article->getLocalizedTitle())) . "</article-title>\n";
-		if (!empty($subtitle = $article->getSubtitle($article->getLocale()))) $response .= "\t\t\t\t<subtitle xml:lang=\"" . substr($article->getLocale(), 0, 2) . "\">" . htmlspecialchars($subtitle) . "</subtitle>\n";
+			"\t\t\t\t<article-title xml:lang=\"" . substr($articleLocale, 0, 2) . "\">" . htmlspecialchars(strip_tags($article->getTitle($articleLocale))) . "</article-title>\n";
+		if (!empty($subtitle = $article->getSubtitle($articleLocale))) $response .= "\t\t\t\t<subtitle xml:lang=\"" . substr($articleLocale, 0, 2) . "\">" . htmlspecialchars($subtitle) . "</subtitle>\n";
 
 		// Include translated journal titles
 		foreach ($article->getTitle(null) as $locale => $title) {
-			if ($locale == $article->getLocale()) continue;
+			if ($locale == $articleLocale) continue;
 			$response .= "\t\t\t\t<trans-title-group xml:lang=\"" . substr($locale, 0, 2) . "\">\n";
 			$response .= "\t\t\t\t\t<trans-title>" . htmlspecialchars(strip_tags($title)) . "</trans-title>\n";
 			if (!empty($subtitle = $article->getSubtitle($locale))) $response .= "\t\t\t\t\t<subtitle>" . htmlspecialchars($subtitle) . "</subtitle>\n";
