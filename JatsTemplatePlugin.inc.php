@@ -152,7 +152,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		}
 
 		if ($datePublished) $response .=
-			"\t\t\t<pub-date date-type=\"pub\" publication-format=\"epub\" iso-8601-date=\"" . strftime('%Y-%m-%d', $datePublished) . "\">\n" .
+			"\t\t\t<pub-date date-type=\"pub\" publication-format=\"epub\">\n" .
 			"\t\t\t\t<day>" . strftime('%d', $datePublished) . "</day>\n" .
 			"\t\t\t\t<month>" . strftime('%m', $datePublished) . "</month>\n" .
 			"\t\t\t\t<year>" . strftime('%Y', $datePublished) . "</year>\n" .
