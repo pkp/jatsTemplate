@@ -183,14 +183,19 @@ class JatsTemplatePlugin extends GenericPlugin {
 				"\t\t\t\t<lpage>$matchedPageTo</lpage>\n";
 			$pageCount = $matchedPageTo - $matchedPageFrom + 1;
 		}
+
 		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_SUBMISSION);
-		$response .=
+		$copyrightYear = $article->getCopyrightYear();
+		$copyrightHolder = $article->getLocalizedCopyrightHolder();
+		$licenseUrl = $article->getLicenseURL();
+		$ccBadge = Application::getCCLicenseBadge($licenseUrl);
+		if ($copyrightYear || $copyrightHolder || $licenseUrl || $ccBadge) $response .=
 			"\t\t\t<permissions>\n" .
-			"\t\t\t\t<copyright-statement>" . htmlspecialchars(__('submission.copyrightStatement', array('copyrightYear' => $article->getCopyrightYear(), 'copyrightHolder' => $article->getLocalizedCopyrightHolder()))) . "</copyright-statement>\n" .
-			($datePublished?"\t\t\t\t<copyright-year>" . $article->getCopyrightYear() . "</copyright-year>\n":'') .
-			"\t\t\t\t<license xlink:href=\"" . $article->getLicenseURL() . "\">\n" .
-			(($s = Application::getCCLicenseBadge($article->getLicenseURL()))?"\t\t\t\t\t<license-p>" . strip_tags($s) . "</license-p>\n":'') .
-			"\t\t\t\t</license>\n" .
+			(($copyrightYear||$copyrightHolder)?"\t\t\t\t<copyright-statement>" . htmlspecialchars(__('submission.copyrightStatement', array('copyrightYear' => $copyrightYear, 'copyrightHolder' => $copyrightHolder))) . "</copyright-statement>\n":'') .
+			($copyrightYear?"\t\t\t\t<copyright-year>" . htmlspecialchars($copyrightYear) . "</copyright-year>\n":'') .
+			($licenseUrl?"\t\t\t\t<license xlink:href=\"" . htmlspecialchars($licenseUrl) . "\">\n" .
+				($ccBadge?"\t\t\t\t\t<license-p>" . strip_tags($ccBadge) . "</license-p>\n":'') .
+			"\t\t\t\t</license>\n":'') .
 			"\t\t\t</permissions>\n" .
 			"\t\t\t<self-uri xlink:href=\"" . htmlspecialchars($request->url($journal->getPath(), 'article', 'view', $article->getBestArticleId())) . "\" />\n";
 
