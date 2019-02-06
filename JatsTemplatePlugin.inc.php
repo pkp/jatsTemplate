@@ -213,7 +213,11 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$response .=
 			(isset($pageCount)?"\t\t\t<counts><page-count count=\"" . (int) $pageCount. "\" /></counts>\n":'') .
 			"\t\t</article-meta>\n" .
-			"\t</front>\n";
+			"\t</front>\n" .
+			"\t<body>\n" .
+			"\t</body>\n" .
+			"\t<back>\n" .
+			"\t</back>\n";
 
 		// Include body text (for search indexing only)
 		import('classes.search.ArticleSearchIndex');
