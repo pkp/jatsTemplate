@@ -135,10 +135,11 @@ class JatsTemplatePlugin extends GenericPlugin {
 				$affiliationToken = 'aff-' . (count($affiliations)+1);
 				$affiliations[$affiliationToken] = $affiliation;
 			}
+			$surname = method_exists($author, 'getLastName')?$author->getLastName():$author->getLocalizedFamilyName();
 			$response .=
 				"\t\t\t\t<contrib " . ($author->getPrimaryContact()?'corresp="yes" ':'') . ">\n" .
 				"\t\t\t\t\t<name name-style=\"western\">\n" .
-				"\t\t\t\t\t\t<surname>" . htmlspecialchars(method_exists($author, 'getLastName')?$author->getLastName():$author->getLocalizedFamilyName()) . "</surname>\n" .
+				($surname!=''?"\t\t\t\t\t\t<surname>" . htmlspecialchars($surname) . "</surname>\n":'') .
 				"\t\t\t\t\t\t<given-names>" . htmlspecialchars(method_exists($author, 'getFirstName')?$author->getFirstName():$author->getLocalizedGivenName()) . (((method_exists($author, 'getMiddleName') && $s = $author->getMiddleName()) != '')?" $s":'') . "</given-names>\n" .
 				"\t\t\t\t\t</name>\n" .
 				($affiliationToken?"\t\t\t\t\t<xref ref-type=\"aff\" rid=\"$affiliationToken\" />\n":'') .
