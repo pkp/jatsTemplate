@@ -189,7 +189,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$copyrightYear = $article->getCopyrightYear();
 		$copyrightHolder = $article->getLocalizedCopyrightHolder();
 		$licenseUrl = $article->getLicenseURL();
-		$ccBadge = Application::getCCLicenseBadge($licenseUrl);
+		$ccBadge = Application::getCCLicenseBadge($licenseUrl, $article->getLocale());
 		if ($copyrightYear || $copyrightHolder || $licenseUrl || $ccBadge) $response .=
 			"\t\t\t<permissions>\n" .
 			(($copyrightYear||$copyrightHolder)?"\t\t\t\t<copyright-statement>" . htmlspecialchars(__('submission.copyrightStatement', array('copyrightYear' => $copyrightYear, 'copyrightHolder' => $copyrightHolder))) . "</copyright-statement>\n":'') .
