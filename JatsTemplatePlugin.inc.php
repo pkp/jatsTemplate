@@ -116,6 +116,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		// Include translated journal titles
 		foreach ($article->getTitle(null) as $locale => $title) {
 			if ($locale == $articleLocale) continue;
+			if (trim(htmlspecialchars(strip_tags($title))) === '') continue;
 			$response .= "\t\t\t\t<trans-title-group xml:lang=\"" . substr($locale, 0, 2) . "\">\n";
 			$response .= "\t\t\t\t\t<trans-title>" . htmlspecialchars(strip_tags($title)) . "</trans-title>\n";
 			if (!empty($subtitle = $article->getSubtitle($locale))) $response .= "\t\t\t\t\t<trans-subtitle>" . htmlspecialchars($subtitle) . "</trans-subtitle>\n";
