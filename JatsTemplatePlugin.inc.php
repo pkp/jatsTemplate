@@ -225,40 +225,44 @@ class JatsTemplatePlugin extends GenericPlugin {
 		// Include body text (for search indexing only)
 		import('classes.search.ArticleSearchIndex');
 		$text = '';
-		$galleys = $article->getGalleys();
 
-		// Give precedence to HTML galleys, as they're quickest to parse
-		usort($galleys, create_function('$a, $b', 'return $a->getFileType() == \'text/html\'?-1:1;'));
+		if (is_a($article, 'PublishedArticle')) {
 
-		// Provide the full-text.
-		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
-		foreach ($galleys as $galley) {
-			$submissionFiles = $submissionFileDao->getLatestRevisionsByAssocId(ASSOC_TYPE_GALLEY, $galley->getId(), $article->getId(), SUBMISSION_FILE_PROOF);
-			foreach ($submissionFiles as $submissionFile) {
-				if (in_array($submissionFile->getFileType(), array('text/html'))) {
-					static $purifier;
-					if (!$purifier) {
-						$config = HTMLPurifier_Config::createDefault();
-						$config->set('HTML.Allowed', 'p');
-						$config->set('Cache.SerializerPath', 'cache');
-						$purifier = new HTMLPurifier($config);
+			$galleys = $article->getGalleys();
+
+			// Give precedence to HTML galleys, as they're quickest to parse
+			usort($galleys, create_function('$a, $b', 'return $a->getFileType() == \'text/html\'?-1:1;'));
+
+			// Provide the full-text.
+			$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+			foreach ($galleys as $galley) {
+				$submissionFiles = $submissionFileDao->getLatestRevisionsByAssocId(ASSOC_TYPE_GALLEY, $galley->getId(), $article->getId(), SUBMISSION_FILE_PROOF);
+				foreach ($submissionFiles as $submissionFile) {
+					if (in_array($submissionFile->getFileType(), array('text/html'))) {
+						static $purifier;
+						if (!$purifier) {
+							$config = HTMLPurifier_Config::createDefault();
+							$config->set('HTML.Allowed', 'p');
+							$config->set('Cache.SerializerPath', 'cache');
+							$purifier = new HTMLPurifier($config);
+						}
+						// Remove non-paragraph content
+						$text = $purifier->purify(file_get_contents($submissionFile->getFilePath()));
+						// Remove empty paragraphs
+						$text = preg_replace('/<p>[\W]*<\/p>/', '', $text);
+					} else {
+						$parser =& SearchFileParser::fromFile($submissionFile);
+						if ($parser && $parser->open()) {
+							while (($s = $parser->read()) !== false) $text .= $s;
+							$parser->close();
+						}
+
+						$text = '<p>' . htmlspecialchars($text) . '</p>';
 					}
-					// Remove non-paragraph content
-					$text = $purifier->purify(file_get_contents($submissionFile->getFilePath()));
-					// Remove empty paragraphs
-					$text = preg_replace('/<p>[\W]*<\/p>/', '', $text);
-				} else {
-					$parser =& SearchFileParser::fromFile($submissionFile);
-					if ($parser && $parser->open()) {
-						while(($s = $parser->read()) !== false) $text .= $s;
-						$parser->close();
-					}
-
-					$text = '<p>' . htmlspecialchars($text) . '</p>';
+					if (!empty($text)) break 2;
 				}
-				if (!empty($text)) break 2;
+				// Use the first parseable galley.
 			}
-			// Use the first parseable galley.
 		}
 		if (!empty($text)) $response .= "\t<body>$text</body>\n";
 
