@@ -202,14 +202,11 @@ class JatsTemplatePlugin extends GenericPlugin {
 			"\t\t\t</permissions>\n" .
 			"\t\t\t<self-uri xlink:href=\"" . htmlspecialchars($request->url($journal->getPath(), 'article', 'view', $article->getBestArticleId())) . "\" />\n";
 
-		$subjects = array();
-		if (is_array($article->getSubject(null))) foreach ($article->getSubject(null) as $locale => $subject) {
-			$s = array_map('trim', explode(';', $subject));
-			if (!empty($s)) $subjects[$locale] = $s;
-		}
-		if (!empty($subjects)) foreach ($subjects as $locale => $s) {
+		$submissionKeywordDao = DAORegistry::getDAO('SubmissionKeywordDAO');
+		foreach ($submissionKeywordDao->getKeywords($article->getId(), $journal->getSupportedLocales()) as $locale => $keywords) {
+			if (empty($keywords)) continue;
 			$response .= "\t\t\t<kwd-group xml:lang=\"" . substr($locale, 0, 2) . "\">\n";
-			foreach ($s as $subject) $response .= "\t\t\t\t<kwd>" . htmlspecialchars($subject) . "</kwd>\n";
+			foreach ($keywords as $keyword) $response .= "\t\t\t\t<kwd>" . htmlspecialchars($keyword) . "</kwd>\n";
 			$response .= "\t\t\t</kwd-group>\n";
 		}
 
