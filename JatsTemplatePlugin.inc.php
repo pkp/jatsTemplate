@@ -253,7 +253,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 				if (!empty($text)) break 2;
 			}
 		}
-		if (!empty($text) $response .= "\t<body>$text</body>\n";
+		if (!empty($text)) $response .= "\t<body>$text</body>\n";
 
 		$response .= "</article>";
 		return $response;
