@@ -214,11 +214,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$response .=
 			(isset($pageCount)?"\t\t\t<counts><page-count count=\"" . (int) $pageCount. "\" /></counts>\n":'') .
 			"\t\t</article-meta>\n" .
-			"\t</front>\n" .
-			"\t<body>\n" .
-			"\t</body>\n" .
-			"\t<back>\n" .
-			"\t</back>\n";
+			"\t</front>\n";
 
 		// Include body text (for search indexing only)
 		import('classes.search.ArticleSearchIndex');
@@ -254,11 +250,11 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 					$text = '<p>' . htmlspecialchars($text) . '</p>';
 				}
+				// Use the first parseable galley.
 				if (!empty($text)) break 2;
 			}
-			// Use the first parseable galley.
 		}
-		if (!empty($text)) $response .= "\t<body>$text</body>\n";
+		if (!empty($text) $response .= "\t<body>$text</body>\n";
 
 		$response .= "</article>";
 		return $response;
