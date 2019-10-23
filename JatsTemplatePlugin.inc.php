@@ -70,7 +70,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$galleys =& $record->getData('galleys');
 		$articleId = $article->getId();
 
-		$request = Application::getRequest();
+		$request = Application::get()->getRequest();
 
 		$abbreviation = $journal->getLocalizedSetting('abbreviation');
 		$printIssn = $journal->getSetting('printIssn');
@@ -191,7 +191,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$copyrightYear = $article->getCopyrightYear();
 		$copyrightHolder = $article->getLocalizedCopyrightHolder();
 		$licenseUrl = $article->getLicenseURL();
-		$ccBadge = Application::getCCLicenseBadge($licenseUrl, $article->getLocale());
+		$ccBadge = Application::get()->getCCLicenseBadge($licenseUrl, $article->getLocale());
 		if ($copyrightYear || $copyrightHolder || $licenseUrl || $ccBadge) $response .=
 			"\t\t\t<permissions>\n" .
 			(($copyrightYear||$copyrightHolder)?"\t\t\t\t<copyright-statement>" . htmlspecialchars(__('submission.copyrightStatement', array('copyrightYear' => $copyrightYear, 'copyrightHolder' => $copyrightHolder))) . "</copyright-statement>\n":'') .
@@ -222,7 +222,9 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$galleys = $article->getGalleys();
 
 		// Give precedence to HTML galleys, as they're quickest to parse
-		usort($galleys, create_function('$a, $b', 'return $a->getFileType() == \'text/html\'?-1:1;'));
+		usort($galleys, function($a, $b) {
+			return $a->getFileType() == 'text/html'?-1:1;
+		});
 
 		// Provide the full-text.
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
@@ -242,7 +244,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 					// Remove empty paragraphs
 					$text = preg_replace('/<p>[\W]*<\/p>/', '', $text);
 				} else {
-					$parser =& SearchFileParser::fromFile($submissionFile);
+					$parser = SearchFileParser::fromFile($submissionFile);
 					if ($parser && $parser->open()) {
 						while(($s = $parser->read()) !== false) $text .= $s;
 						$parser->close();
