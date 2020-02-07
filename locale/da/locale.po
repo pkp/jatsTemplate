@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"PO-Revision-Date: 2020-02-07 09:35+0000\n"
+"PO-Revision-Date: 2020-02-08 03:34+0000\n"
 "Last-Translator: Niels Erik Frederiksen <nef@kb.dk>\n"
 "Language-Team: Danish <http://translate.pkp.sfu.ca/projects/plugins/"
 "jats-template-plugin/da/>\n"
@@ -17,4 +17,4 @@ msgstr ""
 "indsendelsesmetadata, når der ikke er noget JATS-dokument tilgængeligt."
 
 msgid "plugins.generic.jatsTemplate.displayName"
-msgstr "JATS-skabelonplugin"
+msgstr "JATS-skabelon-plugin"
