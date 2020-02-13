@@ -12,7 +12,7 @@ msgstr ""
 "Language: \n"
 
 msgid "plugins.generic.jatsTemplate.displayName"
-msgstr "Complemento JATS Template"
+msgstr "Módulo JATS Template"
 
 msgid "plugins.generic.jatsTemplate.description"
 msgstr "Genere automáticamente un mínimo documento JATS a partir de los metadatos suministrados cuando no haya un documento JATS disponible."
