@@ -259,6 +259,19 @@ class JatsTemplatePlugin extends GenericPlugin {
 		}
 		if (!empty($text)) $response .= "\t<body>$text</body>\n";
 
+		$citationDao = DAORegistry::getDAO('CitationDAO');
+		$citations = $citationDao->getByPublicationId($publication->getId());
+		if ($citations->getCount()) {
+			$response .= "\t<back>\n\t\t<ref-list>\n";
+			$i=1;
+			while ($citation = $citations->next()) {
+				$response .= "\t\t\t<ref id=\"R{$i}\"><mixed-citation>" . htmlspecialchars($citation->getRawCitation()) . "</mixed-citation></ref>\n";
+				$i++;
+			}
+			$response .= "\t\t</ref-list>\n\t</back>\n";
+
+		}
+
 		$response .= "</article>";
 		return $response;
 	}
