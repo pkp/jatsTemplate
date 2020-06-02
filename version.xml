@@ -4,17 +4,17 @@
 <!--
   * version.xml
   *
-  * Copyright (c) 2003-2019 Simon Fraser University
-  * Copyright (c) 2003-2019 John Willinsky
-  * Distributed under the GNU GPL v2. For full terms see the file docs/COPYING.
+  * Copyright (c) 2003-2020 Simon Fraser University
+  * Copyright (c) 2003-2020 John Willinsky
+  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
   *
   * Plugin version information.
   -->
 <version>
 	<application>jatsTemplate</application>
 	<type>plugins.generic</type>
-	<release>1.0.2.0</release>
-	<date>2019-10-24</date>
+	<release>1.0.3.0</release>
+	<date>2020-06-02</date>
 	<lazy-load>1</lazy-load>
 	<class>JatsTemplatePlugin</class>
 </version>
