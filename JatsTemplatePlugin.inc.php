@@ -229,42 +229,45 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 		// Provide the full-text.
 		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$fileService = Services::get('file');
 		foreach ($galleys as $galley) {
-			$submissionFiles = $submissionFileDao->getLatestRevisionsByAssocId(ASSOC_TYPE_GALLEY, $galley->getId(), $article->getId(), SUBMISSION_FILE_PROOF);
-			foreach ($submissionFiles as $submissionFile) {
-				if (in_array($submissionFile->getFileType(), array('text/html'))) {
-					static $purifier;
-					if (!$purifier) {
-						$config = HTMLPurifier_Config::createDefault();
-						$config->set('HTML.Allowed', 'p');
-						$config->set('Cache.SerializerPath', 'cache');
-						$purifier = new HTMLPurifier($config);
-					}
-					// Remove non-paragraph content
-					$text = $purifier->purify(file_get_contents($submissionFile->getFilePath()));
-					// Remove empty paragraphs
-					$text = preg_replace('/<p>[\W]*<\/p>/', '', $text);
-				} else {
-					$parser = SearchFileParser::fromFile($submissionFile);
-					if ($parser && $parser->open()) {
-						while(($s = $parser->read()) !== false) $text .= $s;
-						$parser->close();
-					}
+			$galleyFile = $submissionFileDao->getById($galley->getData('submissionFileId'));
+			if (!$galleyFile) continue;
 
-					$text = '<p>' . htmlspecialchars($text) . '</p>';
+			$filepath = $fileService->getPath($galleyFile->getData('fileId'));
+			$mimeType = $fileService->fs->getMimetype($filepath);
+			if (in_array($mimeType, ['text/html'])) {
+				static $purifier;
+				if (!$purifier) {
+					$config = HTMLPurifier_Config::createDefault();
+					$config->set('HTML.Allowed', 'p');
+					$config->set('Cache.SerializerPath', 'cache');
+					$purifier = new HTMLPurifier($config);
 				}
-				// Use the first parseable galley.
-				if (!empty($text)) break 2;
+				// Remove non-paragraph content
+				$text = $purifier->purify(file_get_contents($filepath));
+				// Remove empty paragraphs
+				$text = preg_replace('/<p>[\W]*<\/p>/', '', $text);
+			} else {
+				$parser = SearchFileParser::fromFile($galleyFile);
+				if ($parser && $parser->open()) {
+					while(($s = $parser->read()) !== false) $text .= $s;
+					$parser->close();
+				}
+
+				$text = '<p>' . htmlspecialchars($text) . '</p>';
 			}
+			// Use the first parseable galley.
+			if (!empty($text)) break;
 		}
 		if (!empty($text)) $response .= "\t<body>$text</body>\n";
 
 		$citationDao = DAORegistry::getDAO('CitationDAO');
-		$citations = $citationDao->getByPublicationId($publication->getId());
-		if ($citations->getCount()) {
+		$citations = $citationDao->getByPublicationId($publication->getId())->toArray();
+		if (count($citations)) {
 			$response .= "\t<back>\n\t\t<ref-list>\n";
 			$i=1;
-			while ($citation = $citations->next()) {
+			foreach ($citations as $citation) {
 				$response .= "\t\t\t<ref id=\"R{$i}\"><mixed-citation>" . htmlspecialchars($citation->getRawCitation()) . "</mixed-citation></ref>\n";
 				$i++;
 			}
