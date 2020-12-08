@@ -21,7 +21,8 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$this->addLocaleData();
 
 		if ($success && $this->getEnabled()) {
-			HookRegistry::register('OAIMetadataFormat_JATS::findJats', array($this, 'callback'));
+			HookRegistry::register('OAIMetadataFormat_JATS::findJats', [$this, 'callbackFindJats']);
+			HookRegistry::register('LoadHandler', [$this, 'callbackHandleContent']);
 		}
 		return $success;
 	}
@@ -41,11 +42,11 @@ class JatsTemplatePlugin extends GenericPlugin {
 	}
 
 	/**
-	 * Send submission files to iThenticate.
+	 * Prepare JATS template document
 	 * @param $hookName string
 	 * @param $args array
 	 */
-	public function callback($hookName, $args) {
+	public function callbackFindJats($hookName, $args) {
 		$plugin =& $args[0];
 		$record =& $args[1];
 		$candidateFiles =& $args[2];
@@ -188,6 +189,27 @@ class JatsTemplatePlugin extends GenericPlugin {
 			$pageCount = $matchedPageTo - $matchedPageFrom + 1;
 		}
 
+		$candidateFound = false;
+		$layoutResponse .= "\t\t\t\t<history>";
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$layoutFiles = $submissionFileDao->getLatestRevisions($article->getId(), SUBMISSION_FILE_PRODUCTION_READY);
+		foreach ($layoutFiles as $layoutFile) {
+			if (!$this->isCandidateFile($layoutFile)) continue;
+			$candidateFound = true;
+			$sourceFileUrl = $request->url(null, 'jatsTemplate', 'download', null,
+				[
+					'fileId' => $layoutFile->getFileId(),
+					'revision' => $layoutFile->getRevision(),
+					'submissionId' => $layoutFile->getSubmissionId(),
+					'stageId' => WORKFLOW_STAGE_ID_PRODUCTION,
+				]
+			);
+			$layoutResponse .= "\t\t\t\t\t<related-object source-id=\"" . htmlspecialchars($sourceFileUrl) . "\">";
+			$layoutResponse .= "\t\t\t\t\t</related-object>";
+		}
+		$layoutResponse .= "\t\t\t\t</history>";
+		if ($candidateFound) $response .= $layoutResponse;
+
 		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_SUBMISSION);
 		$copyrightYear = $article->getCopyrightYear();
 		$copyrightHolder = $article->getLocalizedCopyrightHolder();
@@ -274,5 +296,36 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 		$response .= "</article>";
 		return $response;
+	}
+
+	/**
+	 * Declare the handler function to process the actual page PATH
+	 * @param $hookName string The name of the invoked hook
+	 * @param $args array Hook parameters
+	 * @return boolean Hook handling status
+	 */
+	function callbackHandleContent($hookName, $args) {
+		$request = Application::get()->getRequest();
+		$templateMgr = TemplateManager::getManager($request);
+
+		$page =& $args[0];
+		$op =& $args[1];
+
+		if ($page == 'jatsTemplate' && $op == 'download') {
+			define('HANDLER_CLASS', 'JatsTemplateDownloadHandler');
+			$this->import('JatsTemplateDownloadHandler');
+			JatsTemplateDownloadHandler::setPlugin($this);
+			return true;
+		}
+		return false;
+	}
+
+	function isCandidateFile($submissionFile) {
+		return $submissionFile->getFileStage() == SUBMISSION_FILE_PRODUCTION_READY &&
+			in_array($submissionFile->getFileType(), [
+				'application/vnd.oasis.opendocument.text',
+				'application/msword',
+				'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+			]);
 	}
 }
