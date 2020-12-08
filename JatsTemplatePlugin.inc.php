@@ -21,7 +21,8 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$this->addLocaleData();
 
 		if ($success && $this->getEnabled()) {
-			HookRegistry::register('OAIMetadataFormat_JATS::findJats', array($this, 'callback'));
+			HookRegistry::register('OAIMetadataFormat_JATS::findJats', [$this, 'callbackFindJats']);
+			HookRegistry::register('LoadHandler', [$this, 'callbackHandleContent']);
 		}
 		return $success;
 	}
@@ -41,11 +42,11 @@ class JatsTemplatePlugin extends GenericPlugin {
 	}
 
 	/**
-	 * Send submission files to iThenticate.
+	 * Prepare JATS template document
 	 * @param $hookName string
 	 * @param $args array
 	 */
-	public function callback($hookName, $args) {
+	public function callbackFindJats($hookName, $args) {
 		$plugin =& $args[0];
 		$record =& $args[1];
 		$candidateFiles =& $args[2];
@@ -212,10 +213,31 @@ class JatsTemplatePlugin extends GenericPlugin {
 			$response .= "\t\t\t</kwd-group>\n";
 		}
 
-		$response .=
-			(isset($pageCount)?"\t\t\t<counts><page-count count=\"" . (int) $pageCount. "\" /></counts>\n":'') .
-			"\t\t</article-meta>\n" .
-			"\t</front>\n";
+		$response .= (isset($pageCount)?"\t\t\t<counts><page-count count=\"" . (int) $pageCount. "\" /></counts>\n":'');
+
+		$candidateFound = false;
+		$layoutResponse = "\t\t\t\t<custom-meta-group>";
+		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
+		$layoutFiles = Services::get('submissionFile')->getMany([
+                        'submissionIds' => [$article->getId()],
+                        'fileStages' => [SUBMISSION_FILE_PRODUCTION_READY],
+                ]);
+		foreach ($layoutFiles as $layoutFile) {
+			$candidateFound = true;
+			$sourceFileUrl = $request->url(null, 'jatsTemplate', 'download', null,
+				[
+					'submissionFileId' => $layoutFile->getId(),
+					'fileId' => $layoutFile->getData('fileId'),
+					'submissionId' => $article->getId(),
+					'stageId' => WORKFLOW_STAGE_ID_PRODUCTION,
+				]
+			);
+			$layoutResponse .= "\t\t\t\t\t<custom-meta>\t\t\t\t\t\t<meta-name>production-ready-file-url</meta-name>\n\t\t\t\t\t\t<meta-value><ext-link ext-link-type=\"uri\" xlink:href=\"" . htmlspecialchars($sourceFileUrl) . "\"/></meta-value>\n\t\t\t\t\t</custom-meta>\n";
+		}
+		$layoutResponse .= "\t\t\t\t</custom-meta-group>";
+		if ($candidateFound) $response .= $layoutResponse;
+
+		$response .= "\t\t</article-meta>\n\t</front>\n";
 
 		// Include body text (for search indexing only)
 		import('classes.search.ArticleSearchIndex');
@@ -277,5 +299,27 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 		$response .= "</article>";
 		return $response;
+	}
+
+	/**
+	 * Declare the handler function to process the actual page PATH
+	 * @param $hookName string The name of the invoked hook
+	 * @param $args array Hook parameters
+	 * @return boolean Hook handling status
+	 */
+	function callbackHandleContent($hookName, $args) {
+		$request = Application::get()->getRequest();
+		$templateMgr = TemplateManager::getManager($request);
+
+		$page =& $args[0];
+		$op =& $args[1];
+
+		if ($page == 'jatsTemplate' && $op == 'download') {
+			define('HANDLER_CLASS', 'JatsTemplateDownloadHandler');
+			$this->import('JatsTemplateDownloadHandler');
+			JatsTemplateDownloadHandler::setPlugin($this);
+			return true;
+		}
+		return false;
 	}
 }
