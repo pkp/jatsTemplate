@@ -10,7 +10,8 @@
  * @brief JATS template plugin
  */
 
-import('lib.pkp.classes.plugins.GenericPlugin');
+use PKP\plugins\GenericPlugin;
+use PKP\search\SearchFileParser;
 
 class JatsTemplatePlugin extends GenericPlugin {
 	/**
