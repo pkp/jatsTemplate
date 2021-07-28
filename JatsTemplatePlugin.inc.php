@@ -246,7 +246,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 					$purifier = new HTMLPurifier($config);
 				}
 				// Remove non-paragraph content
-				$text = $purifier->purify(file_get_contents($filepath));
+				$text = $purifier->purify(file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath));
 				// Remove empty paragraphs
 				$text = preg_replace('/<p>[\W]*<\/p>/', '', $text);
 			} else {
@@ -256,7 +256,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 					$parser->close();
 				}
 
-				$text = '<p>' . htmlspecialchars($text) . '</p>';
+				$text = '<p>' . htmlspecialchars($text, ENT_IGNORE) . '</p>';
 			}
 			// Use the first parseable galley.
 			if (!empty($text)) break;
