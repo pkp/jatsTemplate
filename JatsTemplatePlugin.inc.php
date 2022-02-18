@@ -10,6 +10,7 @@
  * @brief JATS template plugin
  */
 
+use APP\facades\Repo;
 use PKP\plugins\GenericPlugin;
 use PKP\search\SearchFileParser;
 
@@ -131,7 +132,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 		// Include authors
 		$affiliations = array();
-		foreach ($article->getAuthors() as $author) {
+		foreach ($article->getCurrentPublication()->getData('authors') as $author) {
 			$affiliation = $author->getLocalizedAffiliation();
 			$affiliationToken = array_search($affiliation, $affiliations);
 			if ($affiliation && !$affiliationToken) {
@@ -229,10 +230,9 @@ class JatsTemplatePlugin extends GenericPlugin {
 		});
 
 		// Provide the full-text.
-		$submissionFileDao = DAORegistry::getDAO('SubmissionFileDAO');
 		$fileService = Services::get('file');
 		foreach ($galleys as $galley) {
-			$galleyFile = $submissionFileDao->getById($galley->getData('submissionFileId'));
+			$galleyFile = Repo::submissionFile()->get($galley->getData('submissionFileId'));
 			if (!$galleyFile) continue;
 
 			$filepath = $fileService->get($galleyFile->getData('fileId'))->path;
