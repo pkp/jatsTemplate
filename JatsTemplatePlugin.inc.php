@@ -190,7 +190,6 @@ class JatsTemplatePlugin extends GenericPlugin {
 			$pageCount = $matchedPageTo - $matchedPageFrom + 1;
 		}
 
-		AppLocale::requireComponents(LOCALE_COMPONENT_PKP_SUBMISSION);
 		$copyrightYear = $article->getCopyrightYear();
 		$copyrightHolder = $article->getLocalizedCopyrightHolder();
 		$licenseUrl = $article->getLicenseURL();
