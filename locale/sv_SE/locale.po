@@ -1,2 +1,22 @@
+# Edvin Erdtman <edvin.erdtman@liu.se>, 2021.
 msgid ""
-msgstr "X-Generator: Weblate\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit"
+msgstr ""
+"PO-Revision-Date: 2021-09-13 08:15+0000\n"
+"Last-Translator: Edvin Erdtman <edvin.erdtman@liu.se>\n"
+"Language-Team: Swedish <http://translate.pkp.sfu.ca/projects/plugins/"
+"jats-template-plugin/sv_SE/>\n"
+"Language: sv_SE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 3.9.1\n"
+
+msgid "plugins.generic.jatsTemplate.description"
+msgstr ""
+"Om inte något JATS XML-dokument finns tillgängligt, genererar detta plugin "
+"automatiskt ett minimalt JATS XML-dokument utifrån inskickat bidrags "
+"metadata."
+
+msgid "plugins.generic.jatsTemplate.displayName"
+msgstr "Plugin för JATS XML-mall"
