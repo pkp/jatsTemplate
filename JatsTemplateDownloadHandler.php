@@ -11,20 +11,25 @@
  * @class JatsTemplateDownloadHandler
  */
 
+namespace APP\plugins\generic\jatsTemplate;
+
 use PKP\submissionFile\SubmissionFile;
+use PKP\db\DAORegistry;
+use PKP\config\Config;
 use APP\facades\Repo;
+use APP\core\Services;
+use APP\handler\Handler;
 use Firebase\JWT\JWT;
 
-class JatsTemplateDownloadHandler extends APP\handler\Handler {
+class JatsTemplateDownloadHandler extends Handler {
 	/** @var JatsTemplatePlugin The JATS Template plugin */
-	static $plugin;
+	var $plugin;
 
 	/**
-	 * Provide the JATS template plugin to the handler.
-	 * @param $plugin JATSTemplatePlugin
+	 * Constructor
 	 */
-	static function setPlugin($plugin) {
-		self::$plugin = $plugin;
+	function __construct(JatsTemplatePlugin $plugin) {
+		$this->plugin = $plugin;
 	}
 
 	/**

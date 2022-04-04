@@ -14,6 +14,5 @@
  * @ingroup plugins_generic_jatsTemplate
  *
  */
-require_once('JatsTemplatePlugin.inc.php');
 
-return new JatsTemplatePlugin();
+return new APP\plugins\generic\jatsTemplate\JatsTemplatePlugin();

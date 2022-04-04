@@ -10,8 +10,16 @@
  * @brief JATS template plugin
  */
 
+namespace APP\plugins\generic\jatsTemplate;
+
 use APP\facades\Repo;
+use APP\core\Services;
+use APP\core\Application;
+use APP\template\TemplateManager;
+use PKP\core\PKPString;
+use PKP\db\DAORegistry;
 use PKP\plugins\GenericPlugin;
+use PKP\plugins\HookRegistry;
 use PKP\search\SearchFileParser;
 use PKP\submissionFile\SubmissionFile;
 
@@ -56,7 +64,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$doc =& $args[3];
 
 		if (!$doc && empty($candidateFiles)) {
-			$doc = new DOMDocument();
+			$doc = new \DOMDocument();
 			$doc->loadXml($this->toXml($record));
 		}
 
@@ -315,11 +323,13 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$op =& $args[1];
 
 		if ($page == 'jatsTemplate' && $op == 'download') {
-			define('HANDLER_CLASS', 'JatsTemplateDownloadHandler');
-			$this->import('JatsTemplateDownloadHandler');
-			JatsTemplateDownloadHandler::setPlugin($this);
+			$args[3] = new JatsTemplateDownloadHandler($this);
 			return true;
 		}
 		return false;
 	}
+}
+
+if (!PKP_STRICT_MODE) {
+    class_alias('\APP\plugins\generic\jatsTemplate\JatsTemplatePlugin', '\JatsTemplatePlugin');
 }
