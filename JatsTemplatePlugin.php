@@ -265,7 +265,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			if (!$galleyFile) continue;
 
 			$filepath = $fileService->get($galleyFile->getData('fileId'))->path;
-			$mimeType = $fileService->fs->getMimetype($filepath);
+			$mimeType = $fileService->fs->mimeType($filepath);
 			if (in_array($mimeType, ['text/html'])) {
 				static $purifier;
 				if (!$purifier) {
