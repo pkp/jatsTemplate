@@ -20,6 +20,7 @@ use PKP\core\PKPString;
 use PKP\db\DAORegistry;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\HookRegistry;
+use PKP\plugins\PluginRegistry;
 use PKP\search\SearchFileParser;
 use PKP\submissionFile\SubmissionFile;
 
@@ -150,8 +151,21 @@ class JatsTemplatePlugin extends GenericPlugin {
 				$affiliations[$affiliationToken] = $affiliation;
 			}
 			$surname = method_exists($author, 'getLastName')?$author->getLastName():$author->getLocalizedFamilyName();
+
+			// If using the CRediT plugin, credit roles may be available.
+			$creditPlugin = PluginRegistry::getPlugin('generic', 'creditplugin');
+			if ($creditPlugin && $creditPlugin->getEnabled()) {
+			    $contributorRoles = $author->getData('creditRoles') ?? [];
+			    $creditRoles = $creditPlugin->getCreditRoles();
+			    foreach ($contributorRoles as $role) {
+				$roleName = $creditRoles[$role];
+				$creditData .= '<role vocab="credit" vocab-identifier="https://credit.niso.org/" vocab-term="' . htmlspecialchars($roleName) . '" vocab-term-identifier="' . htmlspecialchars($role) . '">' . htmlspecialchars($roleName) . "</role>\n";
+			    }
+			} else $creditData = '';
+
 			$response .=
 				"\t\t\t\t<contrib " . ($author->getPrimaryContact()?'corresp="yes" ':'') . ">\n" .
+				$creditData .
 				($author->getOrcid()?"\t\t\t\t\t<contrib-id contrib-id-type=\"orcid\">" . htmlspecialchars($author->getOrcid()) . "</contrib-id>\n":'') .
 				"\t\t\t\t\t<name name-style=\"western\">\n" .
 				($surname!=''?"\t\t\t\t\t\t<surname>" . htmlspecialchars($surname) . "</surname>\n":'') .
