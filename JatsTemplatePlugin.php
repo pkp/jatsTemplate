@@ -23,6 +23,7 @@ use PKP\plugins\HookRegistry;
 use PKP\plugins\PluginRegistry;
 use PKP\search\SearchFileParser;
 use PKP\submissionFile\SubmissionFile;
+use PKP\config\Config;
 
 class JatsTemplatePlugin extends GenericPlugin {
 	/**
@@ -283,10 +284,10 @@ class JatsTemplatePlugin extends GenericPlugin {
 			if (in_array($mimeType, ['text/html'])) {
 				static $purifier;
 				if (!$purifier) {
-					$config = HTMLPurifier_Config::createDefault();
+					$config = \HTMLPurifier_Config::createDefault();
 					$config->set('HTML.Allowed', 'p');
 					$config->set('Cache.SerializerPath', 'cache');
-					$purifier = new HTMLPurifier($config);
+					$purifier = new \HTMLPurifier($config);
 				}
 				// Remove non-paragraph content
 				$text = $purifier->purify(file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath));
