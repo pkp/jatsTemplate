@@ -242,11 +242,11 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 		$candidateFound = false;
 		$layoutResponse = "\t\t\t\t<custom-meta-group>";
-		$layoutFiles = Repo::submissionFile()->getMany(
-			Repo::submissionFile()->getCollector()
+		$layoutFiles = Repo::submissionFile()->getCollector()
 			->filterBySubmissionIds([$article->getId()])
 			->filterByFileStages([SubmissionFile::SUBMISSION_FILE_PRODUCTION_READY])
-		);
+			->getMany();
+
 		foreach ($layoutFiles as $layoutFile) {
 			$candidateFound = true;
 			$sourceFileUrl = $request->url(null, 'jatsTemplate', 'download', null,
