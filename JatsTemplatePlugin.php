@@ -125,16 +125,29 @@ class JatsTemplatePlugin extends GenericPlugin {
 			"\t\t\t<article-id pub-id-type=\"publisher-id\">" . $article->getId() . "</article-id>\n" .
 			"\t\t\t<article-categories><subj-group xml:lang=\"" . $journal->getPrimaryLocale() . "\" subj-group-type=\"heading\"><subject>" . htmlspecialchars($section->getLocalizedTitle()) . "</subject></subj-group></article-categories>\n" .
 			"\t\t\t<title-group>\n" .
-			"\t\t\t\t<article-title xml:lang=\"" . substr($articleLocale, 0, 2) . "\">" . htmlspecialchars(strip_tags($article->getTitle($articleLocale))) . "</article-title>\n";
-		if (!empty($subtitle = $article->getSubtitle($articleLocale))) $response .= "\t\t\t\t<subtitle xml:lang=\"" . substr($articleLocale, 0, 2) . "\">" . htmlspecialchars($subtitle) . "</subtitle>\n";
+			"\t\t\t\t<article-title xml:lang=\"" . substr($articleLocale, 0, 2) . "\">" . $this->mapHtmlTagsForTitle($article->getCurrentPublication()->getLocalizedTitle(null, 'html')) . "</article-title>\n";
 
-		// Include translated journal titles
-		foreach ($article->getTitle(null) as $locale => $title) {
-			if ($locale == $articleLocale) continue;
-			if (trim(htmlspecialchars(strip_tags($title))) === '') continue;
+		if (!empty($subtitle = $this->mapHtmlTagsForTitle($article->getCurrentPublication()->getLocalizedSubTitle(null, 'html')))) {
+			$response .= "\t\t\t\t<subtitle xml:lang=\"" . substr($articleLocale, 0, 2) . "\">" . $subtitle . "</subtitle>\n";
+		} 
+
+		// Include translated submission titles
+		foreach ($article->getCurrentPublication()->getTitles('html') as $locale => $title) {
+			if ($locale == $articleLocale) {
+				continue;
+			}
+
+			if (trim($translatedTitle = $this->mapHtmlTagsForTitle($article->getCurrentPublication()->getLocalizedTitle($locale, 'html'))) === '') {
+				continue;
+			}
+
 			$response .= "\t\t\t\t<trans-title-group xml:lang=\"" . substr($locale, 0, 2) . "\">\n";
-			$response .= "\t\t\t\t\t<trans-title>" . htmlspecialchars(strip_tags($title)) . "</trans-title>\n";
-			if (!empty($subtitle = $article->getSubtitle($locale))) $response .= "\t\t\t\t\t<trans-subtitle>" . htmlspecialchars($subtitle) . "</trans-subtitle>\n";
+			$response .= "\t\t\t\t\t<trans-title>" . $translatedTitle . "</trans-title>\n";
+
+			if (!empty($translatedSubTitle = $this->mapHtmlTagsForTitle($article->getCurrentPublication()->getLocalizedSubTitle($locale, 'html')))) {
+				$response .= "\t\t\t\t\t<trans-subtitle>" . $translatedSubTitle . "</trans-subtitle>\n";
+			}
+			
 			$response .= "\t\t\t\t\t</trans-title-group>\n";
 		}
 
@@ -342,6 +355,27 @@ class JatsTemplatePlugin extends GenericPlugin {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Map the specific HTML tags in title/ sub title for JATS schema compability
+	 * @see https://jats.nlm.nih.gov/publishing/0.4/xsd/JATS-journalpublishing0.xsd
+	 * 
+	 * @param  string $htmlTitle The submission title/sub title as in HTML 
+	 * @return string
+	 */
+	public function mapHtmlTagsForTitle(string $htmlTitle): string
+	{
+		$mappings = [
+			'<b>' 	=> '<bold>',
+			'</b>' 	=> '</bold>',
+			'<i>' 	=> '<italic>',
+			'</i>' 	=> '</italic>',
+			'<u>' 	=> '<underline>',
+			'</u>' 	=> '</underline>',
+		];
+
+		return str_replace(array_keys($mappings), array_values($mappings), $htmlTitle);
 	}
 }
 
