@@ -19,7 +19,7 @@ use APP\template\TemplateManager;
 use PKP\core\PKPString;
 use PKP\db\DAORegistry;
 use PKP\plugins\GenericPlugin;
-use PKP\plugins\HookRegistry;
+use PKP\plugins\Hook;
 use PKP\plugins\PluginRegistry;
 use PKP\search\SearchFileParser;
 use PKP\submissionFile\SubmissionFile;
@@ -34,8 +34,8 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$this->addLocaleData();
 
 		if ($success && $this->getEnabled()) {
-			HookRegistry::register('OAIMetadataFormat_JATS::findJats', [$this, 'callbackFindJats']);
-			HookRegistry::register('LoadHandler', [$this, 'callbackHandleContent']);
+			Hook::add('OAIMetadataFormat_JATS::findJats', [$this, 'callbackFindJats']);
+			Hook::add('LoadHandler', [$this, 'callbackHandleContent']);
 		}
 		return $success;
 	}
