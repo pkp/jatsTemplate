@@ -53,8 +53,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$doc =& $args[3];
 
 		if (!$doc && empty($candidateFiles)) {
-			$doc = new DOMDocument();
-			$doc->loadXml($this->toXml($record));
+            $doc = new \APP\plugins\generic\jatsTemplate\classes\JatsDom($record);
 		}
 
 		return false;
