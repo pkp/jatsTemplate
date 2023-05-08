@@ -15,6 +15,7 @@ namespace APP\plugins\generic\jatsTemplate;
 use APP\facades\Repo;
 use APP\core\Services;
 use APP\core\Application;
+use APP\plugins\generic\jatsTemplate\classes\JatsDom;
 use APP\template\TemplateManager;
 use PKP\core\PKPString;
 use PKP\db\DAORegistry;
@@ -26,6 +27,7 @@ use PKP\submissionFile\SubmissionFile;
 use PKP\config\Config;
 
 class JatsTemplatePlugin extends GenericPlugin {
+
 	/**
 	 * @copydoc Plugin::register()
 	 */
@@ -66,8 +68,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$doc =& $args[3];
 
 		if (!$doc && empty($candidateFiles)) {
-			$doc = new \DOMDocument();
-			$doc->loadXml($this->toXml($record));
+            $doc = new JatsDom($record);
 		}
 
 		return false;
@@ -129,7 +130,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 		if (!empty($subtitle = $this->mapHtmlTagsForTitle($article->getCurrentPublication()->getLocalizedSubTitle(null, 'html')))) {
 			$response .= "\t\t\t\t<subtitle xml:lang=\"" . substr($articleLocale, 0, 2) . "\">" . $subtitle . "</subtitle>\n";
-		} 
+		}
 
 		// Include translated submission titles
 		foreach ($article->getCurrentPublication()->getTitles('html') as $locale => $title) {
@@ -147,7 +148,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			if (!empty($translatedSubTitle = $this->mapHtmlTagsForTitle($article->getCurrentPublication()->getLocalizedSubTitle($locale, 'html')))) {
 				$response .= "\t\t\t\t\t<trans-subtitle>" . $translatedSubTitle . "</trans-subtitle>\n";
 			}
-			
+
 			$response .= "\t\t\t\t\t</trans-title-group>\n";
 		}
 
@@ -332,9 +333,8 @@ class JatsTemplatePlugin extends GenericPlugin {
 			$response .= "\t\t</ref-list>\n\t</back>\n";
 
 		}
-
 		$response .= "</article>";
-		return $response;
+        return $response;
 	}
 
 	/**
@@ -360,8 +360,8 @@ class JatsTemplatePlugin extends GenericPlugin {
 	/**
 	 * Map the specific HTML tags in title/ sub title for JATS schema compability
 	 * @see https://jats.nlm.nih.gov/publishing/0.4/xsd/JATS-journalpublishing0.xsd
-	 * 
-	 * @param  string $htmlTitle The submission title/sub title as in HTML 
+	 *
+	 * @param  string $htmlTitle The submission title/sub title as in HTML
 	 * @return string
 	 */
 	public function mapHtmlTagsForTitle(string $htmlTitle): string
