@@ -1,0 +1,23 @@
+# Marie-Hélène Vézina [UdeMontréal] <marie-helene.vezina@umontreal.ca>, 2023.
+msgid ""
+msgstr ""
+"PO-Revision-Date: 2023-04-24 10:30+0000\n"
+"Last-Translator: Marie-Hélène Vézina [UdeMontréal] <marie-helene."
+"vezina@umontreal.ca>\n"
+"Language-Team: French <http://translate.pkp.sfu.ca/projects/plugins/"
+"jats-template-plugin/fr/>\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
+"X-Generator: Weblate 4.13.1\n"
+
+msgid "plugins.generic.jatsTemplate.displayName"
+msgstr "Plugiciel de modèle JATS"
+
+msgid "plugins.generic.jatsTemplate.description"
+msgstr ""
+"Ce plugiciel génère automatiquement un document JATS minimal à partir des "
+"métadonnées de soumission lorsqu'aucun document JATS n'est disponible "
+"autrement."
