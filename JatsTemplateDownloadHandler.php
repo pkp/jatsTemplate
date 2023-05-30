@@ -77,11 +77,10 @@ class JatsTemplateDownloadHandler extends Handler {
 		if ($request->getUserVar('stageId') != WORKFLOW_STAGE_ID_PRODUCTION) $request->getDispatcher()->handle404();
 
 		$submissionId = $request->getUserVar('submissionId');
-		$layoutFiles = Repo::submissionFile()->getMany(
-			Repo::submissionFile()->getCollector()
+		$layoutFiles = Repo::submissionFile()->getCollector()
 			->filterBySubmissionIds([$submissionId])
 			->filterByFileStages([SubmissionFile::SUBMISSION_FILE_PRODUCTION_READY])
-                );
+			->getMany();
 		foreach ($layoutFiles as $layoutFile) {
 			if ($layoutFile->getId() != $request->getUserVar('submissionFileId') || $layoutFile->getData('fileId') != $request->getUserVar('fileId')) continue;
 
