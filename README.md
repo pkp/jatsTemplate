@@ -57,3 +57,16 @@ control would be required before the document is suitable for that purpose.
 | [ref-list](https://jats.nlm.nih.gov/archiving/tag-library/1.3d1/element/ref-list.html)                         | List of bibliographic references for a document or document component.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | :ok:    | :x:        |
 | [ref](https://jats.nlm.nih.gov/archiving/tag-library/1.3d1/element/ref.html)                                   | One item in a bibliographic list.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | :ok:    | :x:        |
 | [mixed-citation](https://jats.nlm.nih.gov/archiving/tag-library/1.3d1/element/mixed-citation.html)             | Bibliographic description of a work. Includes a combination of bibliographic reference elements and untagged text. Spacing and punctuation are preserved.                                                                                                                                                                                                                                                                                                                                                                                                                                                  | :ok:    | :x:        |
+
+## Installation
+
+This plugin should be available from the Plugin Gallery within OJS.
+
+## Automated Tests
+
+```
+./lib/pkp/lib/vendor/bin/phpunit ./plugins/generic/jatsTemplate/tests/functional/ArticleTest.php --configuration lib/pkp/tests/phpunit.xml
+./lib/pkp/lib/vendor/bin/phpunit ./plugins/generic/jatsTemplate/tests/functional/ArticleFrontTest.php --configuration lib/pkp/tests/phpunit.xml
+./lib/pkp/lib/vendor/bin/phpunit ./plugins/generic/jatsTemplate/tests/functional/ArticleBackTest.php --configuration lib/pkp/tests/phpunit.xml
+./lib/pkp/lib/vendor/bin/phpunit ./plugins/generic/jatsTemplate/tests/functional/ArticleBodyTest.php --configuration lib/pkp/tests/phpunit.xml
+```
