@@ -1,0 +1,20 @@
+<!--
+  * articleMetaArticle_ContribGroupElement.xml
+  *
+  * Copyright (c) 2013-2020 Simon Fraser University
+  * Copyright (c) 2003-2020 John Willinsky
+  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
+  *
+  * Article Contrib Group Element Test XML file.
+  -->
+
+<contrib-group content-type="author">
+    <contrib>
+        <name name-style="western">
+            <surname>author-lastname</surname>
+            <given-names>author-firstname</given-names>
+        </name>
+        <email>someone@example.com</email>
+        <xref ref-type="aff" rid="aff-1"/>
+    </contrib>
+</contrib-group>
