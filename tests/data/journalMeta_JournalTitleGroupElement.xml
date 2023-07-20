@@ -1,0 +1,16 @@
+<!--
+  * journalMeta_JournalTitleGroupElement.xml
+  *
+  * Copyright (c) 2013-2020 Simon Fraser University
+  * Copyright (c) 2003-2020 John Willinsky
+  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
+  *
+  * Journal Meta Journal Title Group Element Test XML file.
+  -->
+<journal-title-group>
+    <journal-title xml:lang="en">journal-title</journal-title>
+    <trans-title-group xml:lang="gr">
+        <trans-title>journal-title</trans-title>
+    </trans-title-group>
+    <abbrev-journal-title xml:lang="en">publicknowledgeJ Pub Know</abbrev-journal-title>
+</journal-title-group>
