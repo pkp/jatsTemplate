@@ -81,7 +81,7 @@ class ArticleBodyTest extends PKPTestCase
         $publication->setData('abstract', 'article-abstract', 'en');
         $publication->setData('sponsor', 'article-sponsor', 'en');
         $publication->setData('doiObject', $publicationDoiObject);
-        $publication->setData('languages', 'en');
+        $publication->setData('languages', ['en' => ['en']]);
         $publication->setData('copyrightHolder', 'article-copyright');
         $publication->setData('copyrightYear', 'year');
         $publication->setData('authors', collect([$author]));
