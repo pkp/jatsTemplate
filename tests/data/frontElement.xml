@@ -40,7 +40,7 @@
                 <trans-title>article-title-de</trans-title>
             </trans-title-group></title-group>
         <contrib-group content-type="author">
-            <contrib>
+            <contrib corresp="yes">
                 <name name-style="western">
                     <surname>author-lastname</surname>
                     <given-names>author-firstname</given-names>
@@ -61,8 +61,8 @@
         </permissions>
         <self-uri xlink:href="1"/>
         <kwd-group xml:lang="en">
-            <kwd xml:lang="en">Professional Development</kwd>
-            <kwd xml:lang="en">Social Transformation</kwd>
+            <kwd>Professional Development</kwd>
+            <kwd>Social Transformation</kwd>
         </kwd-group>
         <counts>
             <page-count count="1"/>

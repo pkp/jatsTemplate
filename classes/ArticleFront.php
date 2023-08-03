@@ -18,6 +18,7 @@ use APP\issue\Issue;
 use APP\journal\Journal;
 use APP\section\Section;
 use APP\submission\Submission;
+use APP\publication\Publication;
 use PKP\core\PKPString;
 use PKP\db\DAORegistry;
 use PKP\plugins\PluginRegistry;
@@ -27,161 +28,122 @@ class ArticleFront extends \DOMDocument
 {
 
     /**
-     * create article front element
-     * @param Journal $journal
-     * @param Submission $submission
-     * @param Section $section
-     * @param Issue $issue
-     * @param $request
-     * @param Article $article
-     * @return \DOMNode
+     * Create article front element
      */
     public function create(Journal $journal,Submission $submission, Section $section,Issue $issue, $request, Article $article): \DOMNode
     {
-        $journalMeta = $this->createJournalMeta($journal);
-        $articleMeta = $this->createArticleMeta($submission,$journal,$section,$issue,$request,$article);
         return $this->appendChild($this->createElement('front'))
-            ->appendChild($journalMeta)
+            ->appendChild($this->createJournalMeta($journal))
             ->parentNode
-            ->appendChild($articleMeta)
+            ->appendChild($this->createArticleMeta($submission, $journal, $section, $issue, $request, $article))
             ->parentNode;
     }
 
     /**
-     * create xml journal-meta DOMNode
-     * @param $journal Journal
-     * @return \DOMNode
+     * Create xml journal-meta DOMNode
      */
     public function createJournalMeta(Journal $journal): \DOMNode
     {
-        // create element journal-title-group
-        $journalTitleGroupElement = $this->createJournalMetaJournalTitleGroup($journal);
+        $journalMetaElement = $this->appendChild($this->createElement('journal-meta'));
 
-        $journalMetaElement = $this->appendChild($this->createElement('journal-meta'))
-                                ->appendChild($this->createElement('journal-id', htmlspecialchars($journal->getPath())))
-                                ->setAttribute('journal-id-type','ojs')
-                                ->parentNode
-                                ->parentNode
-                                ->appendChild($journalTitleGroupElement)
-                                ->parentNode
-                                ->appendChild($this->createElement('publisher'))
-                                ->appendChild($this->createElement('publisher-name', htmlspecialchars($journal->getSetting('publisherInstitution'))))
-                                ->parentNode
-                                ->parentNode;
+        $journalMetaElement->appendChild($this->createElement('journal-id'))
+            ->setAttribute('journal-id-type', 'ojs')->parentNode
+            ->appendChild($this->createTextNode($journal->getPath()))->parentNode;
 
-        // create element issn
+        $journalMetaElement->appendChild($this->createJournalMetaJournalTitleGroup($journal));
+
+        $journalMetaElement->appendChild($this->createElement('publisher'))
+            ->appendChild($this->createElement('publisher-name'))
+            ->appendChild($this->createTextNode($journal->getSetting('publisherInstitution')));
+
         if (!empty($journal->getSetting('onlineIssn'))) {
-            $journalMetaElement->appendChild($this->createElement('issn',htmlspecialchars($journal->getSetting('onlineIssn'))))
-                ->setAttribute('pub-type','epub')
-                ->parentNode
-                ->parentNode;
+            $journalMetaElement->appendChild($this->createElement('issn'))
+                ->appendChild($this->createTextNode($journal->getSetting('onlineIssn')))->parentNode
+                ->setAttribute('pub-type','epub');
         }
         if (!empty($journal->getSetting('printIssn'))) {
-            $journalMetaElement->appendChild($this->createElement('issn',htmlspecialchars($journal->getSetting('printIssn'))))
-                ->setAttribute('pub-type','ppub')
-                ->parentNode
-                ->parentNode;
+            $journalMetaElement->appendChild($this->createElement('issn'))
+                ->appendChild($this->createTextNode($journal->getSetting('printIssn')))->parentNode
+                ->setAttribute('pub-type','ppub');
         }
         return $journalMetaElement;
 
     }
 
     /**
-     * create Journal title group element
-     * @param Journal $journal
-     * @return \DOMElement
+     * Create Journal title group element
      */
     public function createJournalMetaJournalTitleGroup(Journal $journal): \DOMNode
     {
-        $journalTitleGroupElement = $this->appendChild($this->createElement('journal-title-group'))
-            ->appendChild($this->createElement('journal-title',htmlspecialchars($journal->getName($journal->getPrimaryLocale()))))
-            ->setAttribute('xml:lang',substr($journal->getPrimaryLocale(), 0, 2))
-            ->parentNode
-            ->parentNode;
+        $journalTitleGroupElement = $this->appendChild($this->createElement('journal-title-group'));
+
+        $journalTitleGroupElement->appendChild($this->createElement('journal-title'))
+            ->setAttribute('xml:lang', substr($journal->getPrimaryLocale(), 0, 2))->parentNode
+            ->appendChild($this->createTextNode($journal->getName($journal->getPrimaryLocale())));
 
         foreach ($journal->getName(null) as $locale => $title) {
             if ($locale == $journal->getPrimaryLocale()) continue;
             $journalTitleGroupElement->appendChild($this->createElement('trans-title-group'))
-                ->setAttribute('xml:lang',substr($locale, 0, 2))
-                ->parentNode
-                ->appendChild($this->createElement('trans-title',htmlspecialchars($title)))
-                ->parentNode
-                ->parentNode
-                ->parentNode;
+                ->setAttribute('xml:lang', substr($locale, 0, 2))->parentNode
+                ->appendChild($this->createElement('trans-title'))->appendChild($this->createTextNode($title));
         }
         //Include journal abbreviation titles
         foreach ($journal->getData('abbreviation') as $locale => $abbrevTitle) {
-            $journalTitleGroupElement->appendChild($this->createElement('abbrev-journal-title',$abbrevTitle))
-                ->setAttribute('xml:lang',substr($locale, 0, 2))
-                ->parentNode
-                ->parentNode;
+            $journalTitleGroupElement->appendChild($this->createElement('abbrev-journal-title'))
+                ->setAttribute('xml:lang', substr($locale, 0, 2))->parentNode
+                ->appendChild($this->createTextNode($abbrevTitle));
         }
         return $journalTitleGroupElement;
     }
 
     /**
-     * create xml article-meta DOMNode
-     * @param Submission $submission
-     * @param Journal $journal
-     * @param Section $section
-     * @param $request
-     * @param Issue $issue
-     * @param Article $article
-     * @return \DOMNode
+     * Create xml article-meta DOMNode
      */
     function createArticleMeta(Submission $submission, Journal $journal, Section $section, Issue $issue, $request, Article $article)
     {
-        // create element article-categories
-        $articleCategoriesElement = $this->createArticleCategories($journal, $section);
-        // create element article-meta
-        $articleMetaElement = $this->appendChild($this->createElement('article-meta'))
-            ->appendChild($this->createElement('article-id',$submission->getId()))
-            ->setAttribute('pub-id-type','publisher-id')
-            ->parentNode
-            ->parentNode
-            ->appendChild($articleCategoriesElement)
-            ->parentNode
-            ->appendChild($this->createElement('title-group'))
-            ->appendChild($this->createElement('article-title',$article->mapHtmlTagsForTitle($submission->getCurrentPublication()->getLocalizedTitle(null, 'html'))))
-            ->setAttribute('xml:lang',substr($submission->getLocale()=== null?'':$submission->getLocale(), 0, 2))
-            ->parentNode
-            ->parentNode
-            ->parentNode;
+        $publication = $submission->getCurrentPublication();
 
-        // create element subtitle
-        if (!empty($subtitle = $article->mapHtmlTagsForTitle($submission->getCurrentPublication()->getLocalizedSubTitle(null, 'html')))) {
-            $articleMetaElement
-                ->lastChild
-                ->appendChild($this->createElement('subtitle',$subtitle))
-                ->setAttribute('xml:lang',substr($submission->getLocale()=== null?'':$submission->getLocale(), 0, 2));
+        $articleMetaElement = $this->appendChild($this->createElement('article-meta'));
+
+        $articleMetaElement->appendChild($this->createElement('article-id'))
+            ->setAttribute('pub-id-type','publisher-id')->parentNode
+            ->appendChild($this->createTextNode($submission->getId()));
+
+        $articleMetaElement->appendChild($this->createElement('article-categories'))
+            ->appendChild($this->createElement('subj-group'))
+            ->setAttribute('xml:lang', $journal->getPrimaryLocale())->parentNode
+            ->setAttribute('subj-group-type','heading')->parentNode
+            ->appendChild($this->createElement('subject'))
+            ->appendChild($this->createTextNode($section->getLocalizedTitle()));
+
+        $titleGroupElement = $articleMetaElement->appendChild($this->createElement('title-group'));
+
+        $titleGroupElement->appendChild($this->createElement('article-title', $article->mapHtmlTagsForTitle($publication->getLocalizedTitle(null, 'html'))))
+            ->setAttribute('xml:lang', substr($submission->getLocale(), 0, 2));
+
+        if (!empty($subtitle = $article->mapHtmlTagsForTitle($publication->getLocalizedSubTitle(null, 'html')))) {
+            $titleGroupElement->appendChild($this->createElement('subtitle', $subtitle))
+                ->setAttribute('xml:lang', substr($submission->getLocale(), 0, 2));
         }
 
-        $translatedTitle='';
         // Include translated submission titles
-        foreach ($submission->getCurrentPublication()->getTitles('html') as $locale => $title) {
+        foreach ($publication->getTitles('html') as $locale => $title) {
             if ($locale == $submission->getLocale()) {
                 continue;
             }
 
-            if (trim($translatedTitle = $article->mapHtmlTagsForTitle($submission->getCurrentPublication()->getLocalizedTitle($locale, 'html'))) === '') {
+            if (trim($translatedTitle = $article->mapHtmlTagsForTitle($publication->getLocalizedTitle($locale, 'html'))) === '') {
                 continue;
             }
-            $articleMetaElement
-                ->lastChild
-                ->appendChild($this->createElement('trans-title-group'))
-                ->setAttribute('xml:lang',substr($locale, 0, 2))
-                ->parentNode
-                ->appendChild($this->createElement('trans-title',$translatedTitle));
+            $titleGroupElement->appendChild($this->createElement('trans-title-group'))
+                ->setAttribute('xml:lang', substr($locale, 0, 2))->parentNode
+                ->appendChild($this->createElement('trans-title', $translatedTitle));
 
-            if (!empty($translatedSubTitle = $article->mapHtmlTagsForTitle($submission->getCurrentPublication()->getLocalizedSubTitle($locale, 'html')))) {
-                $articleMetaElement
-                    ->lastChild
-                    ->lastChild
-                    ->appendChild($this->createElement('trans-subtitle',$translatedSubTitle));
+            if (!empty($translatedSubTitle = $article->mapHtmlTagsForTitle($publication->getLocalizedSubTitle($locale, 'html')))) {
+                $titleGroupElement->appendChild($this->createElement('trans-subtitle', $translatedSubTitle));
             }
         }
-        // create element contrib-group
-        $contribGroup = $this->createArticleContribGroup($submission);
+        $contribGroup = $this->createArticleContribGroup($submission, $publication);
 
         // Include authors
         $affiliations = $contribGroup['affiliations'];
@@ -190,69 +152,63 @@ class ArticleFront extends \DOMDocument
         $articleMetaElement->appendChild($contribGroup['contribGroupElement']);
 
         foreach ($affiliations as $affiliationToken => $affiliation) {
-            // create element aff
-            $articleMetaElement
-                ->appendChild($this->createElement('aff'))
-                ->setAttribute('id',$affiliationToken)
-                ->parentNode
-                ->appendChild($this->createElement('institution',htmlspecialchars($affiliation)))
-                ->setAttribute('content-type' , 'orgname');
+            $affNode = $articleMetaElement->appendChild($this->createElement('aff'))
+                ->setAttribute('id', $affiliationToken)->parentNode;
+
+            $affNode->appendChild($this->createElement('institution'))
+                ->appendChild($this->createTextNode($affiliation))->parentNode
+                ->setAttribute('content-type', 'orgname');
         }
 
         $datePublished = $submission->getDatePublished();
         if (!$datePublished) $datePublished = $issue->getDatePublished();
         if ($datePublished) $datePublished = strtotime($datePublished);
 
-        //include pub dates
+        // Include pub dates
         if ($submission->getDatePublished()){
-            // create element pub-date
-            $articleMetaElement
-                ->appendChild($this->createElement('pub-date'))
-                ->setAttribute('date-type', 'pub')
-                ->parentNode
-                ->setAttribute('publication-format','epub')
-                ->parentNode
-                ->appendChild($this->createElement('day',strftime('%d', (int)$datePublished)))
-                ->parentNode
-                ->appendChild($this->createElement('month',strftime('%m', (int)$datePublished)))
-                ->parentNode
-                ->appendChild($this->createElement('year',strftime('%Y', (int)$datePublished)));
+            $pubDateElement = $articleMetaElement->appendChild($this->createElement('pub-date'))
+                ->setAttribute('date-type', 'pub')->parentNode
+                ->setAttribute('publication-format','epub')->parentNode;
+
+            $pubDateElement->appendChild($this->createElement('day'))
+                ->appendChild($this->createTextNode(strftime('%d', (int)$datePublished)));
+
+            $pubDateElement->appendChild($this->createElement('month'))
+                ->appendChild($this->createTextNode(strftime('%m', (int)$datePublished)));
+
+            $pubDateElement->appendChild($this->createElement('year'))
+                ->appendChild($this->createTextNode(strftime('%Y', (int)$datePublished)));
         }
+
         // Include page info, if available and parseable.
         $matches = $pageCount = null;
         if (PKPString::regexp_match_get('/^(\d+)$/', $submission->getPages(), $matches)) {
-            $matchedPage = htmlspecialchars($matches[1]);
-            // create element fpage lpage
-            $articleMetaElement
-                ->appendChild($this->createElement('fpage',$matchedPage))
-                ->parentNode
-                ->appendChild($this->createElement('lpage',$matchedPage));
+            $articleMetaElement->appendChild($this->createElement('fpage'))
+                ->appendChild($this->createTextNode($matches[1]));
+            $articleMetaElement->appendChild($this->createElement('lpage'))
+                ->appendChild($this->createTextNode($matches[1]));
             $pageCount = 1;
         } elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)$/', $submission->getPages(), $matches)) {
-            $matchedPage = htmlspecialchars($matches[1]);
-            // create element fpage lpage
-            $articleMetaElement
-                ->appendChild($this->createElement('fpage',$matchedPage))
-                ->parentNode
-                ->appendChild($this->createElement('lpage',$matchedPage));
+            $articleMetaElement->appendChild($this->createElement('fpage'))
+                ->appendChild($this->createTextNode($matches[1]));
+            $articleMetaElement->appendChild($this->createElement('lpage'))
+                ->appendChild($this->createTextNode($matches[1]));
             $pageCount = 1;
         } elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/', $submission->getPages(), $matches)) {
-            $matchedPageFrom = htmlspecialchars($matches[1]);
-            $matchedPageTo = htmlspecialchars($matches[3]);
-            // create element fpage lpage
-            $articleMetaElement
-                ->appendChild($this->createElement('fpage',$matchedPageFrom))
-                ->parentNode
-                ->appendChild($this->createElement('lpage',$matchedPageTo));
+            $matchedPageFrom = $matches[1];
+            $matchedPageTo = $matches[3];
+            $articleMetaElement->appendChild($this->createElement('fpage'))
+                ->appendChild($this->createTextNode($matchedPageFrom));
+            $articleMetaElement->appendChild($this->createElement('lpage'))
+                ->appendChild($this->createTextNode($matchedPageTo));
             $pageCount = $matchedPageTo - $matchedPageFrom + 1;
         } elseif (PKPString::regexp_match_get('/^(\d+)[ ]?-[ ]?(\d+)$/', $submission->getPages(), $matches)) {
-            $matchedPageFrom = htmlspecialchars($matches[1]);
-            $matchedPageTo = htmlspecialchars($matches[2]);
-            // create element fpage lpage
-            $articleMetaElement
-                ->appendChild($this->createElement('fpage',$matchedPageFrom))
-                ->parentNode
-                ->appendChild($this->createElement('lpage',$matchedPageTo));
+            $matchedPageFrom = $matches[1];
+            $matchedPageTo = $matches[2];
+            $articleMetaElement->appendChild($this->createElement('fpage'))
+                ->appendChild($this->createTextNode($matchedPageFrom));
+            $articleMetaElement->appendChild($this->createElement('lpage'))
+                ->appendChild($this->createTextNode($matchedPageTo));
             $pageCount = $matchedPageTo - $matchedPageFrom + 1;
         }
 
@@ -260,103 +216,56 @@ class ArticleFront extends \DOMDocument
         $copyrightHolder = $submission->getLocalizedCopyrightHolder();
         $licenseUrl = $submission->getLicenseURL();
         $ccBadge = Application::get()->getCCLicenseBadge($licenseUrl, $submission->getLocale())=== null?'':Application::get()->getCCLicenseBadge($licenseUrl, $submission->getLocale());
-        if ($copyrightYear || $copyrightHolder || $licenseUrl || $ccBadge){
-            // create element permissions
-            $articleMetaElement->appendChild($this->createElement('permissions'));
-            if($copyrightYear||$copyrightHolder){
-                // create element copyright-statement
-                $articleMetaElement
-                    ->lastChild
-                    ->appendChild(
-                        $this->createElement(
-                            'copyright-statement',
-                            htmlspecialchars(__('submission.copyrightStatement', ['copyrightYear' => $copyrightYear, 'copyrightHolder' => $copyrightHolder])))
-                    );
+        if ($copyrightYear || $copyrightHolder || $licenseUrl || $ccBadge) {
+            $permissionsElement = $articleMetaElement->appendChild($this->createElement('permissions'));
+            if ($copyrightYear || $copyrightHolder){
+                $permissionsElement->appendChild($this->createElement('copyright-statement'))
+                    ->appendChild($this->createTextNode(__('submission.copyrightStatement', ['copyrightYear' => $copyrightYear, 'copyrightHolder' => $copyrightHolder])));
             }
-            if($copyrightYear){
-                // create element copyright-year
-                $articleMetaElement
-                    ->lastChild
-                    ->appendChild(
-                        $this->createElement(
-                            'copyright-year',
-                            htmlspecialchars($copyrightYear)
-                        )
-                    );
+            if ($copyrightYear) {
+                $permissionsElement->appendChild($this->createElement('copyright-year'))
+                    ->appendChild($this->createTextNode($copyrightYear));
             }
-            if($copyrightHolder){
-                // create element copyright-holder
-                $articleMetaElement
-                    ->lastChild
-                    ->appendChild(
-                        $this->createElement(
-                            'copyright-holder',
-                            htmlspecialchars($copyrightHolder)
-                        )
-                    );
+            if ($copyrightHolder) {
+                $permissionsElement->appendChild($this->createElement('copyright-holder'))
+                    ->appendChild($this->createTextNode($copyrightHolder));
             }
-            if($licenseUrl) {
-                // create element license
-                $articleMetaElement
-                    ->lastChild
-                    ->appendChild(
-                        $this->createElement(
-                            'license',
-                            htmlspecialchars($copyrightHolder)
-                        )
-                    )
-                    ->setAttribute('xlink:href' , htmlspecialchars($licenseUrl));
-                if($ccBadge){
-                    // create element license-p
-                    $articleMetaElement
-                        ->lastChild
-                        ->lastChild
-                        ->appendChild(
-                            $this->createElement(
-                                'license-p',
-                                strip_tags($ccBadge)
-                            )
-                        )
-                        ->setAttribute('xlink:href' , htmlspecialchars($licenseUrl));
+            if ($licenseUrl) {
+                $licenseElement = $permissionsElement->appendChild($this->createElement('license'))
+                    ->setAttribute('xlink:href', $licenseUrl)->parentNode;
+                if ($ccBadge) {
+                    $licenseElement->appendChild($this->createElement('license-p'))
+                                   ->appendChild($this->createTextNode($ccBadge));
                 }
             }
         }
 
-        // create element self-uri
         $articleMetaElement
-            ->appendChild($this->createElement('self-uri', strip_tags($ccBadge)))
-            ->setAttribute(
-                'xlink:href' ,
-                htmlspecialchars(
-                    $request->url($journal->getPath(), 'article', 'view', $submission->getBestArticleId()) != null && $request->url($journal->getPath(),
-                        'article', 'view', $submission->getBestArticleId()))
-            );
+            ->appendChild($this->createElement('self-uri'))
+            ->setAttribute('xlink:href', $request->url($journal->getPath(), 'article', 'view', $submission->getBestArticleId()));
 
         $submissionKeywordDao = DAORegistry::getDAO('SubmissionKeywordDAO');
-        foreach ($submissionKeywordDao->getKeywords($submission->getCurrentPublication()->getId(), $journal->getSupportedLocales()) as $locale => $keywords) {
+        foreach ($submissionKeywordDao->getKeywords($publication->getId(), $journal->getSupportedLocales()) as $locale => $keywords) {
             if (empty($keywords)) continue;
-            // create element kwd-group
-            $articleMetaElement
-                ->appendChild($this->createElement('kwd-group', strip_tags($ccBadge)))
-                ->setAttribute('xml:lang' , substr($locale, 0, 2));
+
+            $kwdGroupElement = $articleMetaElement
+                ->appendChild($this->createElement('kwd-group'))
+                ->setAttribute('xml:lang', substr($locale, 0, 2))->parentNode;
             foreach ($keywords as $keyword) {
-                // create element kwd
-                $articleMetaElement
-                    ->lastChild
-                    ->appendChild($this->createElement('kwd',htmlspecialchars($keyword)))
-                    ->setAttribute('xml:lang' , substr($locale, 0, 2));
+                $kwdGroupElement
+                    ->appendChild($this->createElement('kwd'))
+                    ->appendChild($this->createTextNode($keyword));
             }
         }
 
-        if(isset($pageCount)){
-            // create element counts
+        if ($pageCount) {
             $articleMetaElement
                 ->appendChild($this->createElement('counts'))
                 ->appendChild($this->createElement('page-count'))
-                ->setAttribute('count',(int) $pageCount);
+                ->setAttribute('count', $pageCount);
         }
-        // create element custom-meta-group
-        $articleMetaElement->appendChild($this->createElement('custom-meta-group'));
+
+        $customMetaGroupElement = $articleMetaElement->appendChild($this->createElement('custom-meta-group'));
         $layoutFiles = Repo::submissionFile()->getCollector()
             ->filterBySubmissionIds([$submission->getId()])
             ->filterByFileStages([SubmissionFile::SUBMISSION_FILE_PRODUCTION_READY])
@@ -371,140 +280,84 @@ class ArticleFront extends \DOMDocument
                     'stageId' => WORKFLOW_STAGE_ID_PRODUCTION,
                 ]
             );
-            // create element custom-meta-group
-            $articleMetaElement
-                ->lastChild
-                ->appendChild($this->createElement('custom-meta'))
-                ->appendChild($this->createElement('meta-name','production-ready-file-url'))
+            $customMetaGroupElement->appendChild($this->createElement('custom-meta'))
+                ->appendChild($this->createElement('meta-name', 'production-ready-file-url'))->parentNode
                 ->appendChild($this->createElement('meta-value'))
                 ->appendChild($this->createElement('ext-link'))
-                ->setAttribute('ext-link-type','uri')
-                ->parentNode
-                ->setAttribute('xlink:href',htmlspecialchars($sourceFileUrl));
+                ->setAttribute('ext-link-type','uri')->parentNode
+                ->setAttribute('xlink:href', $sourceFileUrl);
         }
         return $articleMetaElement;
     }
 
     /**
-     * @param Journal $journal
-     * @param Section $section
+     * Create article-meta contrib-group element
      */
-    public function createArticleCategories(Journal $journal, Section $section)
+    public function createArticleContribGroup(Submission $submission, Publication $publication): array
     {
-        return $this->appendChild($this->createElement('article-categories'))
-            ->appendChild($this->createElement('subj-group'))
-            ->setAttribute('xml:lang' ,$journal->getPrimaryLocale())
-            ->parentNode
-            ->setAttribute('subj-group-type','heading')
-            ->parentNode
-            ->appendChild($this->createElement('subject',htmlspecialchars($section->getLocalizedTitle())))
-            ->parentNode
-            ->parentNode;
-    }
-
-    /**
-     * create article-meta contrib-group element
-     * @param Submission $submission
-     * @return array
-     * @throws \DOMException
-     */
-    public function createArticleContribGroup(Submission $submission): array
-    {
-        // create element contrib-group
         $contribGroupElement = $this->appendChild($this->createElement('contrib-group'))
-            ->setAttribute('content-type','author')
-            ->parentNode;
+            ->setAttribute('content-type', 'author')->parentNode;
 
         // Include authors
         $affiliations = [];
-        foreach ($submission->getCurrentPublication()->getData('authors') as $author) {
+        foreach ($publication->getData('authors') as $author) {
             $affiliation = $author->getLocalizedAffiliation();
             $affiliationToken = array_search($affiliation, $affiliations);
             if ($affiliation && !$affiliationToken) {
                 $affiliationToken = 'aff-' . (count($affiliations) + 1);
                 $affiliations[$affiliationToken] = $affiliation;
             }
-            $surname = method_exists($author, 'getLastName') ? $author->getLastName() : $author->getLocalizedFamilyName();
 
-            // create element contrib
-            $contribGroupElement->appendChild($this->createElement('contrib'));
-            if($author->getPrimaryContact()){
-                $contribGroupElement
-                    ->setAttribute('corresp','yes')
-                    ->parentNode;
-            }
+            $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
+            if ($publication->getData('primaryContactId') == $author->getId()) $contribElement->setAttribute('corresp', 'yes');
+
             // If using the CRediT plugin, credit roles may be available.
             $creditPlugin = PluginRegistry::getPlugin('generic', 'creditplugin');
             if ($creditPlugin && $creditPlugin->getEnabled()) {
                 $contributorRoles = $author->getData('creditRoles') ?? [];
-                $creditRoles = $creditPlugin->getCreditRoles();
+                $creditRoles = $creditPlugin->getCreditRoles($submission->getLocale());
                 foreach ($contributorRoles as $role) {
                     $roleName = $creditRoles[$role];
-                    // create element role
-                    $contribGroupElement
-                        ->lastChild
-                        ->appendChild($this->createElement('role',htmlspecialchars($roleName)))
-                        ->setAttribute('vocab-identifier','https://credit.niso.org/')
-                        ->parentNode
-                        ->setAttribute('vocab-term',htmlspecialchars($roleName))
-                        ->parentNode
-                        ->setAttribute('vocab-term-identifier' ,htmlspecialchars($role));
+                    $roleElement = $contribElement->appendChild($this->createElement('role'))
+                        ->setAttribute('vocab-identifier','https://credit.niso.org/')->parentNode
+                        ->setAttribute('vocab-term', $roleName)->parentNode
+                        ->setAttribute('vocab-term-identifier', $role);
+
+                    $roleElement->appendChild($this->createTextNode($roleName));
                 }
             }
 
             if ($author->getOrcid()) {
-                $contribGroupElement
-                    ->lastChild
-                    ->appendChild($this->createElement('contrib-id',htmlspecialchars($author->getOrcid())))
-                    ->setAttribute('contrib-id-type' , 'orcid');
+                $contribElement->appendChild($this->createElement('contrib-id'))
+                    ->setAttribute('contrib-id-type', 'orcid')->parentNode
+                    ->appendChild($this->createTextNode($author->getOrcid()));
             }
-            // create element name
-            $contribGroupElement->lastChild->appendChild($this->createElement('name',htmlspecialchars($author->getOrcid())))
-                ->setAttribute('name-style' , 'western');
-            if ($surname != '') {
-                // create element surname
-                $contribGroupElement
-                    ->lastChild
-                    ->lastChild
-                    ->appendChild(
-                        $this->createElement('surname', htmlspecialchars($surname))
-                    );
+
+            $nameElement = $contribElement->appendChild($this->createElement('name'))
+                ->setAttribute('name-style', 'western')->parentNode;
+
+            if ($surname = $author->getLocalizedFamilyName()) {
+                $nameElement->appendChild($this->createElement('surname'))
+                    ->appendChild($this->createTextNode($surname));
             }
-            // create element given-names
-            $contribGroupElement
-                ->lastChild
-                ->lastChild
-                ->appendChild(
-                $this->createElement(
-                    'given-names',
-                    htmlspecialchars(method_exists($author, 'getFirstName') ? $author->getFirstName() : $author->getLocalizedGivenName()) . (((method_exists($author, 'getMiddleName') && $s = $author->getMiddleName()) != '') ? " $s" : '')
-                    )
-                );
-            // create element email
-            $contribGroupElement
-                ->lastChild
-                ->appendChild(
-                    $this->createElement('email',  htmlspecialchars($author->getEmail()))
-                );
+            $nameElement->appendChild($this->createElement('given-names'))
+                ->appendChild($this->createTextNode($author->getLocalizedGivenName()));
+
+            $contribElement->appendChild($this->createElement('email'))
+                ->appendChild($this->createTextNode($author->getEmail()));
+
             if ($affiliationToken) {
-                // create element xref
-                $contribGroupElement
-                    ->lastChild
-                    ->appendChild($this->createElement('xref'))
-                    ->setAttribute('ref-type' , 'aff')
-                    ->parentNode
-                    ->setAttribute( 'rid' ,$affiliationToken);
+                $contribElement->appendChild($this->createElement('xref'))
+                    ->setAttribute('ref-type', 'aff')->parentNode
+                    ->setAttribute( 'rid', $affiliationToken);
             }
             if (($s = $author->getUrl()) != '') {
-                // create element uri
-                $contribGroupElement
-                    ->lastChild
-                    ->appendChild($this->createElement('uri',htmlspecialchars($s)))
-                    ->setAttribute('ref-type' , 'aff')
-                    ->parentNode
-                    ->setAttribute( 'rid' ,$affiliationToken);
+                $contribElement->appendChild($this->createElement('uri'))
+                    ->setAttribute('ref-type', 'aff')->parentNode
+                    ->setAttribute( 'rid', $affiliationToken)->parentNode
+                    ->appendChild($this->createTextNode($s));
             }
         }
-        return ['contribGroupElement'=>$contribGroupElement,'affiliations'=>$affiliations];
+        return ['contribGroupElement' => $contribGroupElement, 'affiliations' => $affiliations];
     }
 }

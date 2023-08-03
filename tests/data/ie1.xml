@@ -60,8 +60,8 @@
             </permissions>
             <self-uri xlink:href=""/>
             <kwd-group xml:lang="en">
-                <kwd xml:lang="en">Professional Development</kwd>
-                <kwd xml:lang="en">Social Transformation</kwd>
+                <kwd>Professional Development</kwd>
+                <kwd>Social Transformation</kwd>
             </kwd-group>
             <counts>
                 <page-count count="1"/>

@@ -30,12 +30,11 @@ class ArticleBack extends \DOMDocument
         $citations = $citationDao->getByPublicationId($publication->getId())->toArray();
         if (count($citations)) {
             // create element ref-list
-            $backElement->appendChild($this->createElement('ref-list'));
+            $refListElement = $backElement->appendChild($this->createElement('ref-list'));
             $i=1;
             foreach ($citations as $citation) {
                 // create element ref
-                $backElement
-                    ->lastChild
+                $refListElement
                     ->appendChild($this->createElement('ref'))
                     ->setAttribute('id','R'.$i)
                     ->parentNode
@@ -44,6 +43,6 @@ class ArticleBack extends \DOMDocument
             }
         }
 
-        return  $backElement;
+        return $backElement;
     }
 }

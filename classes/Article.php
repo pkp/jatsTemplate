@@ -35,35 +35,24 @@ class Article extends \DOMDocument
         $section = $record->getData('section');
         $issue = $record->getData('issue');
         $publication = $submission->getCurrentPublication();
-
-
         $request = Application::get()->getRequest();
-        // create element front
+
+        $articleElement = $this->appendChild($this->createElement('article'))
+                ->setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink')->parentNode
+                ->setAttribute('xml:lang', substr($submission->getLocale(), 0, 2))->parentNode
+                ->setAttribute('xmlns:mml','http://www.w3.org/1998/Math/MathML')->parentNode
+                ->setAttribute('xmlns:xsi','http://www.w3.org/2001/XMLSchema-instance')->parentNode;
+
         $articleFront = new ArticleFront();
-        $frontElement = $articleFront->create($journal,$submission,$section,$issue,$request,$this);
-        // create element body
+        $articleElement->appendChild($this->importNode($articleFront->create($journal, $submission, $section, $issue, $request, $this), true));
+
         $articleBody = new ArticleBody();
-        $bodyElement = $articleBody->create($submission);
-        // create element back
+        $articleElement->appendChild($this->importNode($articleBody->create($submission), true));
+
         $articleBack = new ArticleBack();
-        $backElement = $articleBack->create($publication);
-        //append element front,body,back to element article
-       $article = $this->appendChild($this->createElement('article'))
-                ->setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink')
-                ->parentNode
-                ->setAttribute('xml:lang',substr($submission->getLocale()=== null?'':$submission->getLocale(), 0, 2))
-                ->parentNode
-                ->setAttribute('xmlns:mml','http://www.w3.org/1998/Math/MathML')
-                ->parentNode
-                ->setAttribute('xmlns:xsi','http://www.w3.org/2001/XMLSchema-instance')
-                ->parentNode
-                ->appendChild($this->importNode($frontElement,true))
-                ->parentNode
-                ->appendChild($this->importNode($bodyElement,true))
-                ->parentNode
-                ->appendChild($this->importNode($backElement,true))
-                ->parentNode;
-        return $this->loadXml($this->saveXML($article));
+        $articleElement->appendChild($this->importNode($articleBack->create($publication), true));
+
+        return $this->loadXml($this->saveXML($articleElement));
     }
 
 
