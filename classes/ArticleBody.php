@@ -16,6 +16,7 @@ use APP\core\Services;
 use APP\facades\Repo;
 use APP\submission\Submission;
 use PKP\config\Config;
+use PKP\core\PKPString;
 use PKP\search\SearchFileParser;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
@@ -48,14 +49,19 @@ class ArticleBody extends \DOMDocument
             $filepath = $fileService->get($galleyFile->getData('fileId'))->path;
             $mimeType = $fileService->fs->mimeType($filepath);
             if (in_array($mimeType, ['text/html'])) {
-                static $config = null, $sanitizer = null;
+                static $sanitizer = null;
                 if (!$sanitizer) {
-                    $config = (new HtmlSanitizerConfig())
-                        ->allowElement('p');
-                    $sanitizer = new HTMLSanitizer($config);
+                    $sanitizer = new HTMLSanitizer(
+                        (new HtmlSanitizerConfig())->allowElement('p')
+                    );
                 }
                 // Remove non-paragraph content
-                $text = $sanitizer->sanitize(file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath));
+                $text = PKPString::sanitizeHtmlString(
+                    file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath),
+                    'p',
+                    $sanitizer
+                );
+                
                 // Remove empty paragraphs
             } else {
                 $parser = SearchFileParser::fromFile($galleyFile);
