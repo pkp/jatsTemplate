@@ -141,7 +141,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			$surname = method_exists($author, 'getLastName')?$author->getLastName():$author->getLocalizedFamilyName();
 			$response .=
 				"\t\t\t\t<contrib " . ($author->getPrimaryContact()?'corresp="yes" ':'') . ">\n" .
-				($author->getOrcid()?"\t\t\t\t\t<contrib-id contrib-id-type=\"orcid\">" . htmlspecialchars($author->getOrcid()) . "</contrib-id>\n":'') .
+				($author->getOrcid()?"\t\t\t\t\t<contrib-id contrib-id-type=\"orcid\" authenticated=\"" . ($author->getData('orcidAccessToken') ? 'true' : 'false') . "\">" . htmlspecialchars($author->getOrcid()) . "</contrib-id>\n":'') .
 				"\t\t\t\t\t<name name-style=\"western\">\n" .
 				($surname!=''?"\t\t\t\t\t\t<surname>" . htmlspecialchars($surname) . "</surname>\n":'') .
 				"\t\t\t\t\t\t<given-names>" . htmlspecialchars(method_exists($author, 'getFirstName')?$author->getFirstName():$author->getLocalizedGivenName()) . (((method_exists($author, 'getMiddleName') && $s = $author->getMiddleName()) != '')?" $s":'') . "</given-names>\n" .
