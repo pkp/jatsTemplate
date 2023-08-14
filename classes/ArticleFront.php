@@ -330,6 +330,7 @@ class ArticleFront extends \DOMDocument
             if ($author->getOrcid()) {
                 $contribElement->appendChild($this->createElement('contrib-id'))
                     ->setAttribute('contrib-id-type', 'orcid')->parentNode
+                    ->setAttribute('authenticated', $author->getData('orcidAccessToken') ? 'true' : 'false')->parentNode
                     ->appendChild($this->createTextNode($author->getOrcid()));
             }
 
