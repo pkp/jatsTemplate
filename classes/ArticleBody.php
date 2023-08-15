@@ -56,10 +56,11 @@ class ArticleBody extends \DOMDocument
                     );
                 }
                 // Remove non-paragraph content
-                $text = PKPString::sanitizeHtmlString(
-                    file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath),
-                    'p',
-                    $sanitizer
+                $text = $sanitizer->sanitize(
+                    strip_tags(
+                        file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath),
+                        'p'
+                    )
                 );
                 
                 // Remove empty paragraphs
