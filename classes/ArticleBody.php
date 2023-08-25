@@ -51,17 +51,10 @@ class ArticleBody extends \DOMDocument
             if (in_array($mimeType, ['text/html'])) {
                 static $sanitizer = null;
                 if (!$sanitizer) {
-                    $sanitizer = new HTMLSanitizer(
-                        (new HtmlSanitizerConfig())->allowElement('p')
-                    );
+                    $sanitizer = new \PKP\core\PKPHtmlSanitizer('p,a');
                 }
                 // Remove non-paragraph content
-                $text = $sanitizer->sanitize(
-                    strip_tags(
-                        file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath),
-                        'p'
-                    )
-                );
+                $text = $sanitizer->sanitize(file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath));
                 
                 // Remove empty paragraphs
             } else {
