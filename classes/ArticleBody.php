@@ -51,7 +51,7 @@ class ArticleBody extends \DOMDocument
             if (in_array($mimeType, ['text/html'])) {
                 static $sanitizer = null;
                 if (!$sanitizer) {
-                    $sanitizer = new \PKP\core\PKPHtmlSanitizer('p,a');
+                    $sanitizer = new \PKP\core\PKPHtmlSanitizer('p');
                 }
                 // Remove non-paragraph content
                 $text = $sanitizer->sanitize(file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath));
