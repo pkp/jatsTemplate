@@ -79,7 +79,6 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$onlineIssn = $journal->getSetting('onlineIssn');
 		$articleLocale = $article->getLocale();
 
-		$publisherInstitution = $journal->getSetting('publisherInstitution');
 		$datePublished = $article->getDatePublished();
 		if (!$datePublished) $datePublished = $issue->getDatePublished();
 		if ($datePublished) $datePublished = strtotime($datePublished);
@@ -103,10 +102,25 @@ class JatsTemplatePlugin extends GenericPlugin {
 		}
 		$response .= '</journal-title-group>';
 
+		$publisherGroup = '';
+		$publisherInstitution = $journal->getSetting('publisherInstitution');
+		$citationStyleLanguagePlugin = PluginRegistry::getPlugin('generic', 'citationstylelanguageplugin');
+		$publisherLocation = $citationStyleLanguagePlugin ? $citationStyleLanguagePlugin->getSetting($journal->getId(), 'publisherLocation') : null;
+		$publisherUrl = $journal->getSetting('publisherUrl');
+
+		if ($publisherInstitution) $publisherGroup .= "\t\t\t<publisher-name>" . htmlspecialchars($publisherInstitution) . "</publisher-name>\n";
+		if ($publisherLocation) {
+			$publisherGroup .= "\t\t\t<publisher-loc>";
+			if ($publisherLocation) $publisherGroup .= htmlspecialchars($publisherLocation);
+			if ($publisherUrl) $publisherGroup .= '<uri>' . htmlspecialchars($publisherUrl) . '</uri>';
+			$publisherGroup .= "</publisher-loc>\n";
+		}
+
+
 		$response .=
 			(!empty($onlineIssn)?"\t\t\t<issn pub-type=\"epub\">" . htmlspecialchars($onlineIssn) . "</issn>":'') .
 			(!empty($printIssn)?"\t\t\t<issn pub-type=\"ppub\">" . htmlspecialchars($printIssn) . "</issn>":'') .
-			($publisherInstitution != ''?"\t\t\t<publisher><publisher-name>" . htmlspecialchars($publisherInstitution) . "</publisher-name></publisher>\n":'') .
+			($publisherGroup != ''?"\t\t\t<publisher>$publisherGroup</publisher>\n":'') .
 			"\t\t</journal-meta>\n" .
 			"\t\t<article-meta>\n" .
 			"\t\t\t<article-id pub-id-type=\"publisher-id\">" . $article->getId() . "</article-id>\n" .
