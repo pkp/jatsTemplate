@@ -156,10 +156,19 @@ class JatsTemplatePlugin extends GenericPlugin {
 			$response .=
 				"\t\t\t\t<contrib " . ($author->getPrimaryContact()?'corresp="yes" ':'') . ">\n" .
 				($author->getOrcid()?"\t\t\t\t\t<contrib-id contrib-id-type=\"orcid\" authenticated=\"" . ($author->getData('orcidAccessToken') ? 'true' : 'false') . "\">" . htmlspecialchars($author->getOrcid()) . "</contrib-id>\n":'') .
-				"\t\t\t\t\t<name name-style=\"western\">\n" .
-				($surname!=''?"\t\t\t\t\t\t<surname>" . htmlspecialchars($surname) . "</surname>\n":'') .
-				"\t\t\t\t\t\t<given-names>" . htmlspecialchars(method_exists($author, 'getFirstName')?$author->getFirstName():$author->getLocalizedGivenName()) . (((method_exists($author, 'getMiddleName') && $s = $author->getMiddleName()) != '')?" $s":'') . "</given-names>\n" .
-				"\t\t\t\t\t</name>\n" .
+				"\t\t\t\t\t<name-alternatives>\n";
+
+			$preferredName = $author->getPreferredPublicName($articleLocale);
+			if (!empty($preferredName)) {
+				$response .=
+					"\t\t\t\t\t\t<string-name specific-use=\"display\">" . htmlspecialchars($preferredName) . "</string-name>\n";
+			}
+
+			$response .= "\t\t\t\t\t\t<name name-style=\"western\" specific-use=\"primary\">\n" .
+				($surname!=''?"\t\t\t\t\t\t\t<surname>" . htmlspecialchars($surname) . "</surname>\n":'') .
+				"\t\t\t\t\t\t\t<given-names>" . htmlspecialchars(method_exists($author, 'getFirstName')?$author->getFirstName():$author->getLocalizedGivenName()) . (((method_exists($author, 'getMiddleName') && $s = $author->getMiddleName()) != '')?" $s":'') . "</given-names>\n" .
+				"\t\t\t\t\t\t</name>\n" .
+				"\t\t\t\t\t</name-alternatives>\n" .
 				($affiliationToken?"\t\t\t\t\t<xref ref-type=\"aff\" rid=\"$affiliationToken\" />\n":'') .
 				"\t\t\t\t\t<email>" . htmlspecialchars($author->getEmail()) . "</email>\n" .
 				(($s = $author->getUrl()) != ''?"\t\t\t\t\t<uri>" . htmlspecialchars($s) . "</uri>\n":'') .
