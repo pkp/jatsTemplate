@@ -52,9 +52,29 @@ class ArticleFront extends \DOMDocument
 
         $journalMetaElement->appendChild($this->createJournalMetaJournalTitleGroup($journal));
 
-        $journalMetaElement->appendChild($this->createElement('publisher'))
-            ->appendChild($this->createElement('publisher-name'))
+        $publisherCountry = $journal->getSetting('country');
+        $publisherUrl = $journal->getSetting('publisherUrl');
+        $publisherElement = $journalMetaElement->appendChild($this->createElement('publisher'));
+        $publisherElement->appendChild($this->createElement('publisher-name'))
             ->appendChild($this->createTextNode($journal->getSetting('publisherInstitution')));
+
+        $citationStyleLanguagePlugin = PluginRegistry::getPlugin('generic', 'citationstylelanguageplugin');
+        $publisherLocation = $citationStyleLanguagePlugin?->getSetting($journal->getId(), 'publisherLocation');
+        $publisherCountry = $journal->getSetting('country');
+        $publisherUrl = $journal->getSetting('publisherUrl');
+        if ($publisherLocation || $publisherCountry || $publisherUrl) {
+            $publisherLocElement = $publisherElement->appendChild($this->createElement('publisher-loc'));
+            if ($publisherLocation) {
+                $publisherLocElement->appendChild($this->createTextNode($publisherLocation));
+            }
+            if ($publisherCountry) {
+                $publisherLocElement->appendChild($this->createElement('country'))->appendChild($this->createTextNode($publisherCountry));
+            }
+            if ($publisherUrl) {
+                $publisherLocElement->appendChild($this->createElement('uri'))->appendChild($this->createTextNode($publisherUrl));
+            }
+
+        }
 
         if (!empty($journal->getSetting('onlineIssn'))) {
             $journalMetaElement->appendChild($this->createElement('issn'))
