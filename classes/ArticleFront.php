@@ -354,8 +354,18 @@ class ArticleFront extends \DOMDocument
                     ->appendChild($this->createTextNode($author->getOrcid()));
             }
 
-            $nameElement = $contribElement->appendChild($this->createElement('name'))
+            $nameAlternativesElement = $contribElement->appendChild($this->createElement('name-alternatives'));
+
+            $preferredName = $author->getPreferredPublicName($submission->getLocale());
+            if (!empty($preferredName)) {
+                $stringNameElement = $nameAlternativesElement->appendChild($this->createElement('string-name'))
+                    ->setAttribute('specific-use', 'display')->parentNode;
+                $stringNameElement->appendChild($this->createTextNode($preferredName));
+            }
+
+            $nameElement = $nameAlternativesElement->appendChild($this->createElement('name'))
                 ->setAttribute('name-style', 'western')->parentNode;
+            $nameElement->setAttribute('specific-use', 'primary');
 
             if ($surname = $author->getLocalizedFamilyName()) {
                 $nameElement->appendChild($this->createElement('surname'))
