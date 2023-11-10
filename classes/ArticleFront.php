@@ -23,6 +23,7 @@ use PKP\core\PKPString;
 use PKP\db\DAORegistry;
 use PKP\plugins\PluginRegistry;
 use PKP\submissionFile\SubmissionFile;
+use PKP\core\PKPRequest;
 
 class ArticleFront extends \DOMDocument
 {
@@ -30,10 +31,10 @@ class ArticleFront extends \DOMDocument
     /**
      * Create article front element
      */
-    public function create(Journal $journal,Submission $submission, Section $section,Issue $issue, $request, Article $article): \DOMNode
+    public function create(Journal $journal, Submission $submission, Section $section,Issue $issue, PKPRequest $request, Article $article): \DOMNode
     {
         return $this->appendChild($this->createElement('front'))
-            ->appendChild($this->createJournalMeta($journal))
+            ->appendChild($this->createJournalMeta($journal, $request))
             ->parentNode
             ->appendChild($this->createArticleMeta($submission, $journal, $section, $issue, $request, $article))
             ->parentNode;
@@ -42,7 +43,7 @@ class ArticleFront extends \DOMDocument
     /**
      * Create xml journal-meta DOMNode
      */
-    public function createJournalMeta(Journal $journal): \DOMNode
+    public function createJournalMeta(Journal $journal, PKPRequest $request): \DOMNode
     {
         $journalMetaElement = $this->appendChild($this->createElement('journal-meta'));
 
@@ -86,6 +87,10 @@ class ArticleFront extends \DOMDocument
                 ->appendChild($this->createTextNode($journal->getSetting('printIssn')))->parentNode
                 ->setAttribute('pub-type','ppub');
         }
+        $journalMetaElement
+            ->appendChild($this->createElement('self-uri'))
+            ->setAttribute('xlink:href', $request->url($journal->getPath()));
+
         return $journalMetaElement;
 
     }
