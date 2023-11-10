@@ -121,6 +121,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			(!empty($onlineIssn)?"\t\t\t<issn pub-type=\"epub\">" . htmlspecialchars($onlineIssn) . "</issn>":'') .
 			(!empty($printIssn)?"\t\t\t<issn pub-type=\"ppub\">" . htmlspecialchars($printIssn) . "</issn>":'') .
 			($publisherGroup != ''?"\t\t\t<publisher>$publisherGroup</publisher>\n":'') .
+			"\t\t\t<self-uri xlink:href=\"" . htmlspecialchars($request->url($journal->getPath())) . "\" />\n" .
 			"\t\t</journal-meta>\n" .
 			"\t\t<article-meta>\n" .
 			"\t\t\t<article-id pub-id-type=\"publisher-id\">" . $article->getId() . "</article-id>\n" .
