@@ -181,8 +181,12 @@ class JatsTemplatePlugin extends GenericPlugin {
 				$config->set('Cache.SerializerPath', 'cache');
 				$purifier = new HTMLPurifier($config);
 			}
-			$response .= (($bio = $author->getLocalizedBiography()) != '' ? "\t\t\t\t\t<bio>" . $purifier->purify($bio) . '</bio>\n' : '') .
-				"\t\t\t\t</contrib>\n";
+
+			foreach ($author->getData('biography') as $locale => $bio) {
+				$response .= "\t\t\t\t\t<bio xml:lang=\"" . substr($locale, 0, 2) . "\">" . $purifier->purify($bio) . "</bio>\n";
+			}
+
+			$response .= "\t\t\t\t</contrib>\n";
 		}
 		$response .= "\t\t\t</contrib-group>\n";
 		foreach ($affiliations as $affiliationToken => $affiliation) {
