@@ -16,6 +16,8 @@ use APP\facades\Repo;
 use APP\core\Services;
 use APP\core\Application;
 use APP\template\TemplateManager;
+use HTMLPurifier;
+use HTMLPurifier_Config;
 use PKP\core\PKPString;
 use PKP\db\DAORegistry;
 use PKP\plugins\GenericPlugin;
@@ -213,8 +215,21 @@ class JatsTemplatePlugin extends GenericPlugin {
 				"\t\t\t\t\t</name-alternatives>\n" .
 				($affiliationToken?"\t\t\t\t\t<xref ref-type=\"aff\" rid=\"$affiliationToken\" />\n":'') .
 				"\t\t\t\t\t<email>" . htmlspecialchars($author->getEmail()) . "</email>\n" .
-				(($s = $author->getUrl()) != ''?"\t\t\t\t\t<uri>" . htmlspecialchars($s) . "</uri>\n":'') .
-				"\t\t\t\t</contrib>\n";
+				(($s = $author->getUrl()) != ''?"\t\t\t\t\t<uri>" . htmlspecialchars($s) . "</uri>\n":'');
+
+            static $purifier;
+            if (!$purifier) {
+                $config = HTMLPurifier_Config::createDefault();
+                $config->set('HTML.Allowed', 'p,em,strong');
+                $config->set('Cache.SerializerPath', 'cache');
+                $purifier = new HTMLPurifier($config);
+            }
+
+            foreach ($author->getData('biography') as $locale => $bio) {
+                $response .= "\t\t\t\t\t<bio xml:lang=\"" . substr($locale, 0, 2) . "\">" . $purifier->purify($bio) . "</bio>\n";
+            }
+
+            $response .= "\t\t\t\t</contrib>\n";
 		}
 		$response .= "\t\t\t</contrib-group>\n";
 		foreach ($affiliations as $affiliationToken => $affiliation) {
