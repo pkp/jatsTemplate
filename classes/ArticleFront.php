@@ -393,6 +393,20 @@ class ArticleFront extends \DOMDocument
                     ->setAttribute( 'rid', $affiliationToken)->parentNode
                     ->appendChild($this->createTextNode($s));
             }
+
+            foreach ($author->getData('biography') as $locale => $bio) {
+                $bioElement = $this->createElement('bio');
+                $bioElement->setAttribute('xml:lang', substr($locale, 0, 2));
+
+                $strippedBio = PKPString::stripUnsafeHtml($bio);
+                $bioDocument = new \DOMDocument();
+                $bioDocument->createDocumentFragment();
+                $bioDocument->loadHTML($strippedBio);
+                foreach ($bioDocument->getElementsByTagName('body')->item(0)->childNodes->getIterator() as $bioChildNode) {
+                    $bioElement->appendChild($this->importNode($bioChildNode, true));
+                }
+                $contribElement->appendChild($bioElement);
+            }
         }
         return ['contribGroupElement' => $contribGroupElement, 'affiliations' => $affiliations];
     }
