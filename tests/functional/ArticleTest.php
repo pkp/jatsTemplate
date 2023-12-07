@@ -208,10 +208,10 @@ class ArticleTest extends PKPTestCase
     public function testConvertToXml()
     {
         $record = $this->createOAIRecordMockObject();
-        $article = new Article($record);
-        $xml = $article->convertToXml($record);
+        $article = new Article();
+        $article->convertOAIToXml($record);
         self::assertXmlStringEqualsXmlFile($this->xmlFilePath.'ie1.xml', $article->saveXml());
-        self::assertTrue($xml);
+        self::assertTrue($article);
     }
 
     /**
@@ -221,8 +221,9 @@ class ArticleTest extends PKPTestCase
         $expected = '<bold>test</bold>';
         $htmlString = '<b>test</b>';
         $record = $this->createOAIRecordMockObject();
-        $article = new Article($record);
+        $article = new Article();
+        $article->convertOAIToXml($record);
         $actual = $article->mapHtmlTagsForTitle($htmlString);
-        self::assertEquals($expected,$actual);
+        self::assertEquals($expected, $actual);
     }
 }

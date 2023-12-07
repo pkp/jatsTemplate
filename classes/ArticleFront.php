@@ -19,6 +19,7 @@ use APP\journal\Journal;
 use APP\section\Section;
 use APP\submission\Submission;
 use APP\publication\Publication;
+use PKP\core\PKPApplication;
 use PKP\core\PKPString;
 use PKP\db\DAORegistry;
 use PKP\plugins\PluginRegistry;
@@ -27,16 +28,15 @@ use PKP\core\PKPRequest;
 
 class ArticleFront extends \DOMDocument
 {
-
     /**
      * Create article front element
      */
-    public function create(Journal $journal, Submission $submission, Section $section,Issue $issue, PKPRequest $request, Article $article): \DOMNode
+    public function create(Journal $journal, Submission $submission, Section $section, ?Issue $issue, PKPRequest $request, Article $article, ?Publication $workingPublication = null): \DOMNode
     {
         return $this->appendChild($this->createElement('front'))
             ->appendChild($this->createJournalMeta($journal, $request))
             ->parentNode
-            ->appendChild($this->createArticleMeta($submission, $journal, $section, $issue, $request, $article))
+            ->appendChild($this->createArticleMeta($submission, $journal, $section, $issue, $request, $article, $workingPublication))
             ->parentNode;
     }
 
@@ -87,9 +87,14 @@ class ArticleFront extends \DOMDocument
                 ->appendChild($this->createTextNode($journal->getSetting('printIssn')))->parentNode
                 ->setAttribute('pub-type','ppub');
         }
+
+        $router = $request->getRouter();
+        $dispatcher = $router->getDispatcher();
+
+        $journalUrl = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath());
         $journalMetaElement
             ->appendChild($this->createElement('self-uri'))
-            ->setAttribute('xlink:href', $request->url($journal->getPath()));
+            ->setAttribute('xlink:href', $journalUrl);
 
         return $journalMetaElement;
 
@@ -124,9 +129,12 @@ class ArticleFront extends \DOMDocument
     /**
      * Create xml article-meta DOMNode
      */
-    function createArticleMeta(Submission $submission, Journal $journal, Section $section, Issue $issue, $request, Article $article)
+    function createArticleMeta(Submission $submission, Journal $journal, Section $section, ?Issue $issue, $request, Article $article, ?Publication $workingPublication = null)
     {
         $publication = $submission->getCurrentPublication();
+        if ($workingPublication) {
+            $publication = $workingPublication;
+        }
 
         $articleMetaElement = $this->appendChild($this->createElement('article-meta'));
 
@@ -186,11 +194,16 @@ class ArticleFront extends \DOMDocument
         }
 
         $datePublished = $submission->getDatePublished();
-        if (!$datePublished) $datePublished = $issue->getDatePublished();
-        if ($datePublished) $datePublished = strtotime($datePublished);
+        if ($datePublished) {
+            $datePublished = strtotime($datePublished);
+        } else {
+            if ($issue) {
+                $datePublished = $issue->getDatePublished();
+            }
+        }
 
         // Include pub dates
-        if ($submission->getDatePublished()){
+        if ($datePublished) {
             $pubDateElement = $articleMetaElement->appendChild($this->createElement('pub-date'))
                 ->setAttribute('date-type', 'pub')->parentNode
                 ->setAttribute('publication-format','epub')->parentNode;
@@ -237,9 +250,9 @@ class ArticleFront extends \DOMDocument
             $pageCount = $matchedPageTo - $matchedPageFrom + 1;
         }
 
-        $copyrightYear = $submission->getCopyrightYear();
-        $copyrightHolder = $submission->getLocalizedCopyrightHolder();
-        $licenseUrl = $submission->getLicenseURL();
+        $copyrightYear = $publication->getData('copyrightYear');
+        $copyrightHolder = $publication->getLocalizedData('copyrightHolder');
+        $licenseUrl = $publication->getData('licenseUrl');
         $ccBadge = Application::get()->getCCLicenseBadge($licenseUrl, $submission->getLocale())=== null?'':Application::get()->getCCLicenseBadge($licenseUrl, $submission->getLocale());
         if ($copyrightYear || $copyrightHolder || $licenseUrl || $ccBadge) {
             $permissionsElement = $articleMetaElement->appendChild($this->createElement('permissions'));
@@ -264,10 +277,15 @@ class ArticleFront extends \DOMDocument
                 }
             }
         }
+        
+        $router = $request->getRouter();
+        $dispatcher = $router->getDispatcher();
+
+        $url = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath(), 'article', 'view', $submission->getBestId(), null, null, true);
 
         $articleMetaElement
             ->appendChild($this->createElement('self-uri'))
-            ->setAttribute('xlink:href', $request->url($journal->getPath(), 'article', 'view', $submission->getBestArticleId()));
+            ->setAttribute('xlink:href', $url);
 
         $submissionKeywordDao = DAORegistry::getDAO('SubmissionKeywordDAO');
         foreach ($submissionKeywordDao->getKeywords($publication->getId(), $journal->getSupportedLocales()) as $locale => $keywords) {
