@@ -12,19 +12,11 @@
 
 namespace APP\plugins\generic\jatsTemplate;
 
-use APP\facades\Repo;
-use APP\core\Services;
 use APP\core\Application;
 use APP\plugins\generic\jatsTemplate\classes\Article;
 use APP\template\TemplateManager;
-use PKP\core\PKPString;
-use PKP\db\DAORegistry;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\Hook;
-use PKP\plugins\PluginRegistry;
-use PKP\search\SearchFileParser;
-use PKP\submissionFile\SubmissionFile;
-use PKP\config\Config;
 
 class JatsTemplatePlugin extends GenericPlugin {
 
@@ -68,7 +60,8 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$doc =& $args[3];
 
 		if (!$doc && empty($candidateFiles)) {
-            $doc = new Article($record);
+			$doc = new Article();
+			$doc->convertOAIToXml($record);
 		}
 
 		return false;
