@@ -51,7 +51,7 @@ class Article extends \DOMDocument
     {
         $articleElement = $this->appendChild($this->createElement('article'))
             ->setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink')->parentNode
-            ->setAttribute('xml:lang', substr($submission->getLocale(), 0, 2))->parentNode
+            ->setAttribute('xml:lang', substr($submission->getData('locale'), 0, 2))->parentNode
             ->setAttribute('xmlns:mml','http://www.w3.org/1998/Math/MathML')->parentNode
             ->setAttribute('xmlns:xsi','http://www.w3.org/2001/XMLSchema-instance')->parentNode;
 

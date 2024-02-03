@@ -152,16 +152,16 @@ class ArticleFront extends \DOMDocument
         $titleGroupElement = $articleMetaElement->appendChild($this->createElement('title-group'));
 
         $titleGroupElement->appendChild($this->createElement('article-title', $article->mapHtmlTagsForTitle($publication->getLocalizedTitle(null, 'html'))))
-            ->setAttribute('xml:lang', substr($submission->getLocale(), 0, 2));
+            ->setAttribute('xml:lang', substr($submission->getData('locale'), 0, 2));
 
         if (!empty($subtitle = $article->mapHtmlTagsForTitle($publication->getLocalizedSubTitle(null, 'html')))) {
             $titleGroupElement->appendChild($this->createElement('subtitle', $subtitle))
-                ->setAttribute('xml:lang', substr($submission->getLocale(), 0, 2));
+                ->setAttribute('xml:lang', substr($submission->getData('locale'), 0, 2));
         }
 
         // Include translated submission titles
         foreach ($publication->getTitles('html') as $locale => $title) {
-            if ($locale == $submission->getLocale()) {
+            if ($locale == $submission->getData('locale')) {
                 continue;
             }
 
@@ -193,13 +193,10 @@ class ArticleFront extends \DOMDocument
                 ->setAttribute('content-type', 'orgname');
         }
 
-        $datePublished = $submission->getDatePublished();
-        if ($datePublished) {
+        if ($datePublished = $publication->getData('datePublished')) {
             $datePublished = strtotime($datePublished);
-        } else {
-            if ($issue) {
-                $datePublished = $issue->getDatePublished();
-            }
+        } else if ($issue) {
+            $datePublished = $issue->getDatePublished();
         }
 
         // Include pub dates
@@ -220,19 +217,19 @@ class ArticleFront extends \DOMDocument
 
         // Include page info, if available and parseable.
         $matches = $pageCount = null;
-        if (PKPString::regexp_match_get('/^(\d+)$/', $submission->getPages(), $matches)) {
+        if (PKPString::regexp_match_get('/^(\d+)$/', $publication->getData('pages'), $matches)) {
             $articleMetaElement->appendChild($this->createElement('fpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $articleMetaElement->appendChild($this->createElement('lpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $pageCount = 1;
-        } elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)$/', $submission->getPages(), $matches)) {
+        } elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)$/', $publication->getData('pages'), $matches)) {
             $articleMetaElement->appendChild($this->createElement('fpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $articleMetaElement->appendChild($this->createElement('lpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $pageCount = 1;
-        } elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/', $submission->getPages(), $matches)) {
+        } elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/', $publication->getData('pages'), $matches)) {
             $matchedPageFrom = $matches[1];
             $matchedPageTo = $matches[3];
             $articleMetaElement->appendChild($this->createElement('fpage'))
@@ -240,7 +237,7 @@ class ArticleFront extends \DOMDocument
             $articleMetaElement->appendChild($this->createElement('lpage'))
                 ->appendChild($this->createTextNode($matchedPageTo));
             $pageCount = $matchedPageTo - $matchedPageFrom + 1;
-        } elseif (PKPString::regexp_match_get('/^(\d+)[ ]?-[ ]?(\d+)$/', $submission->getPages(), $matches)) {
+        } elseif (PKPString::regexp_match_get('/^(\d+)[ ]?-[ ]?(\d+)$/', $publication->getData('pages'), $matches)) {
             $matchedPageFrom = $matches[1];
             $matchedPageTo = $matches[2];
             $articleMetaElement->appendChild($this->createElement('fpage'))
@@ -253,7 +250,7 @@ class ArticleFront extends \DOMDocument
         $copyrightYear = $publication->getData('copyrightYear');
         $copyrightHolder = $publication->getLocalizedData('copyrightHolder');
         $licenseUrl = $publication->getData('licenseUrl');
-        $ccBadge = Application::get()->getCCLicenseBadge($licenseUrl, $submission->getLocale())=== null?'':Application::get()->getCCLicenseBadge($licenseUrl, $submission->getLocale());
+        $ccBadge = Application::get()->getCCLicenseBadge($licenseUrl, $submission->getData('locale'))=== null?'':Application::get()->getCCLicenseBadge($licenseUrl, $submission->getData('locale'));
         if ($copyrightYear || $copyrightHolder || $licenseUrl || $ccBadge) {
             $permissionsElement = $articleMetaElement->appendChild($this->createElement('permissions'));
             if ($copyrightYear || $copyrightHolder){
@@ -281,7 +278,7 @@ class ArticleFront extends \DOMDocument
         $router = $request->getRouter();
         $dispatcher = $router->getDispatcher();
 
-        $url = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath(), 'article', 'view', $submission->getBestId(), null, null, true);
+        $url = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath(), 'article', 'view', $publication->getData('urlPath') ?? $submission->getId(), null, null, true);
 
         $articleMetaElement
             ->appendChild($this->createElement('self-uri'))
@@ -358,7 +355,7 @@ class ArticleFront extends \DOMDocument
             $creditPlugin = PluginRegistry::getPlugin('generic', 'creditplugin');
             if ($creditPlugin && $creditPlugin->getEnabled()) {
                 $contributorRoles = $author->getData('creditRoles') ?? [];
-                $creditRoles = $creditPlugin->getCreditRoles($submission->getLocale());
+                $creditRoles = $creditPlugin->getCreditRoles($submission->getData('locale'));
                 foreach ($contributorRoles as $role) {
                     $roleName = $creditRoles[$role];
                     $roleElement = $contribElement->appendChild($this->createElement('role'))
@@ -379,7 +376,7 @@ class ArticleFront extends \DOMDocument
 
             $nameAlternativesElement = $contribElement->appendChild($this->createElement('name-alternatives'));
 
-            $preferredName = $author->getPreferredPublicName($submission->getLocale());
+            $preferredName = $author->getPreferredPublicName($submission->getData('locale'));
             if (!empty($preferredName)) {
                 $stringNameElement = $nameAlternativesElement->appendChild($this->createElement('string-name'))
                     ->setAttribute('specific-use', 'display')->parentNode;
@@ -412,7 +409,7 @@ class ArticleFront extends \DOMDocument
                     ->appendChild($this->createTextNode($s));
             }
 
-            foreach ($author->getData('biography') as $locale => $bio) {
+            foreach ((array) $author->getData('biography') as $locale => $bio) {
                 $bioElement = $this->createElement('bio');
                 $bioElement->setAttribute('xml:lang', substr($locale, 0, 2));
 
