@@ -217,19 +217,19 @@ class ArticleFront extends \DOMDocument
 
         // Include page info, if available and parseable.
         $matches = $pageCount = null;
-        if (PKPString::regexp_match_get('/^(\d+)$/', $publication->getData('pages'), $matches)) {
+        if (preg_match('/^(\d+)$/u', $publication->getData('pages'), $matches)) {
             $articleMetaElement->appendChild($this->createElement('fpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $articleMetaElement->appendChild($this->createElement('lpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $pageCount = 1;
-        } elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)$/', $publication->getData('pages'), $matches)) {
+        } elseif (preg_match('/^[Pp][Pp]?[.]?[ ]?(\d+)$/u', $publication->getData('pages'), $matches)) {
             $articleMetaElement->appendChild($this->createElement('fpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $articleMetaElement->appendChild($this->createElement('lpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $pageCount = 1;
-        } elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/', $publication->getData('pages'), $matches)) {
+        } elseif (preg_match('/^[Pp][Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/u', $publication->getData('pages'), $matches)) {
             $matchedPageFrom = $matches[1];
             $matchedPageTo = $matches[3];
             $articleMetaElement->appendChild($this->createElement('fpage'))
@@ -237,7 +237,7 @@ class ArticleFront extends \DOMDocument
             $articleMetaElement->appendChild($this->createElement('lpage'))
                 ->appendChild($this->createTextNode($matchedPageTo));
             $pageCount = $matchedPageTo - $matchedPageFrom + 1;
-        } elseif (PKPString::regexp_match_get('/^(\d+)[ ]?-[ ]?(\d+)$/', $publication->getData('pages'), $matches)) {
+        } elseif (preg_match('/^(\d+)[ ]?-[ ]?(\d+)$/u', $publication->getData('pages'), $matches)) {
             $matchedPageFrom = $matches[1];
             $matchedPageTo = $matches[2];
             $articleMetaElement->appendChild($this->createElement('fpage'))
