@@ -47,7 +47,7 @@ class Article extends \DOMDocument
     /**
      * Convert submission metadata to JATS XML 
      */
-    public function convertSubmission(Submission $submission, Context $context, Section $section, ?Issue $issue = null, ?Publication $publication = null, PKPRequest $request): void
+    public function convertSubmission(Submission $submission, Context $context, Section $section, ?Issue $issue = null, ?Publication $publication = null, PKPRequest $request = null): void
     {
         $articleElement = $this->appendChild($this->createElement('article'))
             ->setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink')->parentNode
