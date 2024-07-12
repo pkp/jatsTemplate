@@ -12,7 +12,6 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
-use APP\core\Services;
 use APP\facades\Repo;
 use APP\submission\Submission;
 use PKP\config\Config;
@@ -41,7 +40,7 @@ class ArticleBody extends \DOMDocument
         });
 
         // Provide the full-text.
-        $fileService = Services::get('file');
+        $fileService = app()->get('file');
         foreach ($galleys as $galley) {
             $galleyFile = Repo::submissionFile()->get($galley->getData('submissionFileId'));
             if (!$galleyFile) continue;

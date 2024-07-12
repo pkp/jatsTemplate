@@ -17,7 +17,6 @@ use PKP\submissionFile\SubmissionFile;
 use PKP\db\DAORegistry;
 use PKP\config\Config;
 use APP\facades\Repo;
-use APP\core\Services;
 use APP\handler\Handler;
 use Firebase\JWT\JWT;
 
@@ -84,8 +83,8 @@ class JatsTemplateDownloadHandler extends Handler {
 		foreach ($layoutFiles as $layoutFile) {
 			if ($layoutFile->getId() != $request->getUserVar('submissionFileId') || $layoutFile->getData('fileId') != $request->getUserVar('fileId')) continue;
 
-			$filename = Services::get('file')->formatFilename($layoutFile->getData('path'), $layoutFile->getLocalizedData('name'));
-			Services::get('file')->download($layoutFile->getData('fileId'), $filename);
+			$filename = app()->get('file')->formatFilename($layoutFile->getData('path'), $layoutFile->getLocalizedData('name'));
+			app()->get('file')->download($layoutFile->getData('fileId'), $filename);
 			return;
 		}
 		$request->getDispatcher()->handle404();
