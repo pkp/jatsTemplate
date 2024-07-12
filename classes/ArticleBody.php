@@ -18,8 +18,6 @@ use APP\submission\Submission;
 use PKP\config\Config;
 use PKP\core\PKPString;
 use PKP\search\SearchFileParser;
-use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
-use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
 class ArticleBody extends \DOMDocument
 {
@@ -49,12 +47,15 @@ class ArticleBody extends \DOMDocument
             $filepath = $fileService->get($galleyFile->getData('fileId'))->path;
             $mimeType = $fileService->fs->mimeType($filepath);
             if (in_array($mimeType, ['text/html'])) {
-                static $sanitizer = null;
-                if (!$sanitizer) {
-                    $sanitizer = new \PKP\core\PKPHtmlSanitizer('p');
+                static $purifier;
+                if (!$purifier) {
+                    $config = \HTMLPurifier_Config::createDefault();
+                    $config->set('HTML.Allowed', 'p');
+                    $config->set('Cache.SerializerPath', 'cache');
+                    $purifier = new \HTMLPurifier($config);
                 }
                 // Remove non-paragraph content
-                $text = $sanitizer->sanitize(file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath));
+                $text = $purifier->purify(file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath));
                 
                 // Remove empty paragraphs
             } else {
