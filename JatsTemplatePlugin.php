@@ -148,7 +148,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 
 		if (!empty($subtitle = $this->mapHtmlTagsForTitle($article->getCurrentPublication()->getLocalizedSubTitle(null, 'html')))) {
 			$response .= "\t\t\t\t<subtitle xml:lang=\"" . substr($articleLocale, 0, 2) . "\">" . $subtitle . "</subtitle>\n";
-		} 
+		}
 
 		// Include translated submission titles
 		foreach ($article->getCurrentPublication()->getTitles('html') as $locale => $title) {
@@ -166,7 +166,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			if (!empty($translatedSubTitle = $this->mapHtmlTagsForTitle($article->getCurrentPublication()->getLocalizedSubTitle($locale, 'html')))) {
 				$response .= "\t\t\t\t\t<trans-subtitle>" . $translatedSubTitle . "</trans-subtitle>\n";
 			}
-			
+
 			$response .= "\t\t\t\t\t</trans-title-group>\n";
 		}
 
@@ -217,19 +217,21 @@ class JatsTemplatePlugin extends GenericPlugin {
 				"\t\t\t\t\t<email>" . htmlspecialchars($author->getEmail()) . "</email>\n" .
 				(($s = $author->getUrl()) != ''?"\t\t\t\t\t<uri>" . htmlspecialchars($s) . "</uri>\n":'');
 
-            static $purifier;
-            if (!$purifier) {
-                $config = HTMLPurifier_Config::createDefault();
-                $config->set('HTML.Allowed', 'p,em,strong');
-                $config->set('Cache.SerializerPath', 'cache');
-                $purifier = new HTMLPurifier($config);
-            }
+			static $purifier;
+			if (!$purifier) {
+				$config = HTMLPurifier_Config::createDefault();
+				$config->set('HTML.Allowed', 'p,em,strong');
+				$config->set('Cache.SerializerPath', 'cache');
+				$purifier = new HTMLPurifier($config);
+			}
 
-            foreach ($author->getData('biography') as $locale => $bio) {
-                $response .= "\t\t\t\t\t<bio xml:lang=\"" . substr($locale, 0, 2) . "\">" . $purifier->purify($bio) . "</bio>\n";
-            }
+			foreach ($author->getData('biography') as $locale => $bio) {
+				if (!empty($bio)) {
+					$response .= "\t\t\t\t\t<bio xml:lang=\"" . substr($locale, 0, 2) . "\">" . $purifier->purify($bio) . "</bio>\n";
+				}
+			}
 
-            $response .= "\t\t\t\t</contrib>\n";
+			$response .= "\t\t\t\t</contrib>\n";
 		}
 		$response .= "\t\t\t</contrib-group>\n";
 		foreach ($affiliations as $affiliationToken => $affiliation) {
@@ -401,8 +403,8 @@ class JatsTemplatePlugin extends GenericPlugin {
 	/**
 	 * Map the specific HTML tags in title/ sub title for JATS schema compability
 	 * @see https://jats.nlm.nih.gov/publishing/0.4/xsd/JATS-journalpublishing0.xsd
-	 * 
-	 * @param  string $htmlTitle The submission title/sub title as in HTML 
+	 *
+	 * @param  string $htmlTitle The submission title/sub title as in HTML
 	 * @return string
 	 */
 	public function mapHtmlTagsForTitle(string $htmlTitle): string
