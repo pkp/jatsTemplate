@@ -287,7 +287,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 			"\t\t\t<self-uri xlink:href=\"" . htmlspecialchars($request->url($journal->getPath(), 'article', 'view', $article->getBestArticleId())) . "\" />\n";
 
 		$submissionKeywordDao = DAORegistry::getDAO('SubmissionKeywordDAO');
-		foreach ($submissionKeywordDao->getKeywords($publication->getId(), $journal->getSupportedLocales()) as $locale => $keywords) {
+		foreach ($submissionKeywordDao->getKeywords($publication->getId(), $journal->getSupportedSubmissionLocales()) as $locale => $keywords) {
 			if (empty($keywords)) continue;
 			$response .= "\t\t\t<kwd-group xml:lang=\"" . substr($locale, 0, 2) . "\">\n";
 			foreach ($keywords as $keyword) $response .= "\t\t\t\t<kwd>" . htmlspecialchars($keyword) . "</kwd>\n";
