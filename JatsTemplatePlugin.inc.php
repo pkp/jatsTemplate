@@ -183,7 +183,9 @@ class JatsTemplatePlugin extends GenericPlugin {
 			}
 
 			foreach ($author->getData('biography') as $locale => $bio) {
-				$response .= "\t\t\t\t\t<bio xml:lang=\"" . substr($locale, 0, 2) . "\">" . $purifier->purify($bio) . "</bio>\n";
+				if (!empty($bio)) {
+					$response .= "\t\t\t\t\t<bio xml:lang=\"" . substr($locale, 0, 2) . "\">" . $purifier->purify($bio) . "</bio>\n";
+				}
 			}
 
 			$response .= "\t\t\t\t</contrib>\n";
