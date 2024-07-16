@@ -274,7 +274,7 @@ class ArticleFront extends \DOMDocument
                 }
             }
         }
-        
+
         $router = $request->getRouter();
         $dispatcher = $router->getDispatcher();
 
@@ -410,6 +410,10 @@ class ArticleFront extends \DOMDocument
             }
 
             foreach ((array) $author->getData('biography') as $locale => $bio) {
+                if (empty($bio)) {
+                    continue;
+                }
+                
                 $bioElement = $this->createElement('bio');
                 $bioElement->setAttribute('xml:lang', substr($locale, 0, 2));
 
