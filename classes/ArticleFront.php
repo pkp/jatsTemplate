@@ -285,7 +285,7 @@ class ArticleFront extends \DOMDocument
             ->setAttribute('xlink:href', $url);
 
         $submissionKeywordDao = DAORegistry::getDAO('SubmissionKeywordDAO');
-        foreach ($submissionKeywordDao->getKeywords($publication->getId(), $journal->getSupportedLocales()) as $locale => $keywords) {
+        foreach ($submissionKeywordDao->getKeywords($publication->getId(), $journal->getSupportedSubmissionLocales()) as $locale => $keywords) {
             if (empty($keywords)) continue;
 
             $kwdGroupElement = $articleMetaElement
@@ -413,7 +413,7 @@ class ArticleFront extends \DOMDocument
                 if (empty($bio)) {
                     continue;
                 }
-                
+
                 $bioElement = $this->createElement('bio');
                 $bioElement->setAttribute('xml:lang', substr($locale, 0, 2));
 
