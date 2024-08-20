@@ -39,7 +39,7 @@ class ArticleTest extends PKPTestCase
      */
     protected function getMockedDAOs(): array
     {
-        return [...parent::getMockedDAOs(), 'OAIDAO', 'SubmissionSubjectDAO', 'SubmissionKeywordDAO'];
+        return [...parent::getMockedDAOs(), 'OAIDAO'];
     }
 
     /**
