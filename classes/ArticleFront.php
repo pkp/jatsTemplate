@@ -12,19 +12,19 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
-use APP\core\Application;
-use APP\facades\Repo;
 use APP\issue\Issue;
+use APP\facades\Repo;
+use PKP\core\PKPString;
 use APP\journal\Journal;
 use APP\section\Section;
-use APP\submission\Submission;
-use APP\publication\Publication;
-use PKP\core\PKPApplication;
-use PKP\core\PKPString;
-use PKP\db\DAORegistry;
-use PKP\plugins\PluginRegistry;
-use PKP\submissionFile\SubmissionFile;
 use PKP\core\PKPRequest;
+use APP\core\Application;
+use PKP\core\PKPApplication;
+use APP\submission\Submission;
+use PKP\plugins\PluginRegistry;
+use APP\publication\Publication;
+use PKP\submissionFile\SubmissionFile;
+use PKP\submission\SubmissionKeywordVocab;
 
 class ArticleFront extends \DOMDocument
 {
@@ -284,8 +284,7 @@ class ArticleFront extends \DOMDocument
             ->appendChild($this->createElement('self-uri'))
             ->setAttribute('xlink:href', $url);
 
-        $submissionKeywordDao = DAORegistry::getDAO('SubmissionKeywordDAO');
-        foreach ($submissionKeywordDao->getKeywords($publication->getId(), $journal->getSupportedSubmissionLocales()) as $locale => $keywords) {
+        foreach (SubmissionKeywordVocab::getKeywords($publication->getId(), $journal->getSupportedSubmissionLocales()) as $locale => $keywords) {
             if (empty($keywords)) continue;
 
             $kwdGroupElement = $articleMetaElement
