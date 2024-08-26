@@ -23,8 +23,8 @@ use PKP\core\PKPApplication;
 use APP\submission\Submission;
 use PKP\plugins\PluginRegistry;
 use APP\publication\Publication;
+use PKP\controlledVocab\ControlledVocab;
 use PKP\submissionFile\SubmissionFile;
-use PKP\submission\SubmissionKeywordVocab;
 
 class ArticleFront extends \DOMDocument
 {
@@ -284,7 +284,14 @@ class ArticleFront extends \DOMDocument
             ->appendChild($this->createElement('self-uri'))
             ->setAttribute('xlink:href', $url);
 
-        foreach (SubmissionKeywordVocab::getKeywords($publication->getId(), $journal->getSupportedSubmissionLocales()) as $locale => $keywords) {
+        $keywordVocabs = Repo::controlledVocab()->getBySymbolic(
+            ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_KEYWORD,
+            Application::ASSOC_TYPE_PUBLICATION,
+            $publication->getId(),
+            $journal->getSupportedSubmissionLocales()
+        );
+
+        foreach ($keywordVocabs as $locale => $keywords) {
             if (empty($keywords)) continue;
 
             $kwdGroupElement = $articleMetaElement
