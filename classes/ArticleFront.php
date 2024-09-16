@@ -278,7 +278,7 @@ class ArticleFront extends \DOMDocument
         $router = $request->getRouter();
         $dispatcher = $router->getDispatcher();
 
-        $url = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath(), 'article', 'view', $publication->getData('urlPath') ?? $submission->getId(), null, null, true);
+        $url = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath(), 'article', 'view', [$publication->getData('urlPath') ?? $submission->getId()], null, null, true);
 
         $articleMetaElement
             ->appendChild($this->createElement('self-uri'))
