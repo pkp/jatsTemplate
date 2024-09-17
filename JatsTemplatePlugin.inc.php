@@ -83,6 +83,8 @@ class JatsTemplatePlugin extends GenericPlugin {
 		if (!$datePublished) $datePublished = $issue->getDatePublished();
 		if ($datePublished) $datePublished = strtotime($datePublished);
 
+		static $purifier;
+
 		$response = "<article
 			xmlns:xlink=\"http://www.w3.org/1999/xlink\"
 			xmlns:mml=\"http://www.w3.org/1998/Math/MathML\"
@@ -174,7 +176,6 @@ class JatsTemplatePlugin extends GenericPlugin {
 				"\t\t\t\t\t<email>" . htmlspecialchars($author->getEmail()) . "</email>\n" .
 				(($s = $author->getUrl()) != ''?"\t\t\t\t\t<uri>" . htmlspecialchars($s) . "</uri>\n":'');
 
-			static $purifier;
 			if (!$purifier) {
 				$config = HTMLPurifier_Config::createDefault();
 				$config->set('HTML.Allowed', 'p,em,strong');
@@ -298,7 +299,6 @@ class JatsTemplatePlugin extends GenericPlugin {
 			$filepath = $fileService->get($galleyFile->getData('fileId'))->path;
 			$mimeType = $fileService->fs->getMimetype($filepath);
 			if (in_array($mimeType, ['text/html'])) {
-				static $purifier;
 				if (!$purifier) {
 					$config = HTMLPurifier_Config::createDefault();
 					$config->set('HTML.Allowed', 'p');
