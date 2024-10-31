@@ -333,7 +333,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 		// Provide the full-text.
 		$fileService = Services::get('file');
 		foreach ($galleys as $galley) {
-			$galleyFile = Repo::submissionFile()->get($galley->getData('submissionFileId'));
+			$galleyFile = Repo::submissionFile()->get((int) $galley->getData('submissionFileId'));
 			if (!$galleyFile) continue;
 
 			$filepath = $fileService->get($galleyFile->getData('fileId'))->path;
