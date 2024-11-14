@@ -21,6 +21,7 @@
             </publisher>
             <issn pub-type="epub">onlineIssn</issn>
             <issn pub-type="ppub">printIssn</issn>
+            <self-uri xlink:href="journal-path--"/>
         </journal-meta>
         <article-meta>
             <article-id pub-id-type="publisher-id">9</article-id>
@@ -39,11 +40,13 @@
                 </trans-title-group>
             </title-group>
             <contrib-group content-type="author">
-                <contrib>
-                    <name name-style="western">
-                        <surname>author-lastname</surname>
-                        <given-names>author-firstname</given-names>
-                    </name>
+                <contrib corresp="yes">
+                    <name-alternatives>
+                        <name name-style="western" specific-use="primary">
+                            <surname>author-lastname</surname>
+                            <given-names>author-firstname</given-names>
+                        </name>
+                    </name-alternatives>
                     <email>someone@example.com</email>
                     <xref ref-type="aff" rid="aff-1"/>
                 </contrib>
@@ -51,6 +54,11 @@
             <aff id="aff-1">
                 <institution content-type="orgname">author-affiliation</institution>
             </aff>
+                <pub-date date-type="pub" publication-format="epub">
+                    <day>01</day>
+                    <month>01</month>
+                    <year>1970</year>
+                </pub-date>
             <fpage>15</fpage>
             <lpage>15</lpage>
             <permissions>
@@ -58,7 +66,7 @@
                 <copyright-year>year</copyright-year>
                 <copyright-holder>article-copyright</copyright-holder>
             </permissions>
-            <self-uri xlink:href=""/>
+            <self-uri xlink:href="journal-path-article-view"/>
             <kwd-group xml:lang="en">
                 <kwd>Professional Development</kwd>
                 <kwd>Social Transformation</kwd>

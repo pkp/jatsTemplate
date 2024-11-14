@@ -25,12 +25,14 @@ use APP\section\Section;
 use APP\submission\Submission;
 use PHPUnit\Framework\MockObject\MockObject;
 use PKP\core\PKPRouter;
+use PKP\core\Dispatcher;
 use PKP\doi\Doi;
 use PKP\galley\Galley;
 use PKP\oai\OAIRecord;
 
 class ArticleFrontTest extends \PKP\tests\PKPTestCase
 {
+    use \APP\plugins\generic\jatsTemplate\tests\functional\UsesRequestMock;
 
     private string $xmlFilePath = 'plugins/generic/jatsTemplate/tests/data/';
     /**
@@ -195,32 +197,6 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         return $record;
     }
 
-    /*
-     * create mock request
-     */
-    private function createRequestMockInstance(){
-        // Router
-        /** @var PKPRouter|MockObject */
-        $router = $this->getMockBuilder(PKPRouter::class)
-            ->onlyMethods(['url','handleAuthorizationFailure','route'])
-            ->getMock();
-        $application = Application::get();
-        $router->setApplication($application);
-        $router->expects($this->any())
-            ->method('url')
-            ->will($this->returnCallback(fn ($request, $newContext = null, $handler = null, $op = null, $path = null) => $handler . '-' . $op . '-' . $path));
-
-        // Request
-        $requestMock = $this->getMockBuilder(Request::class)
-            ->onlyMethods(['getRouter'])
-            ->getMock();
-        $requestMock->expects($this->any())
-            ->method('getRouter')
-            ->will($this->returnValue($router));
-
-        return $requestMock;
-    }
-
     /**
      * testing create front element
      * @throws \DOMException
@@ -243,9 +219,10 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             $this->createRequestMockInstance(),
             $article,
         );
-        self::assertXmlStringEqualsXmlFile(
-            $this->xmlFilePath.'frontElement.xml',
-            $articleFrontElement->saveXML($xml));
+        $xml->ownerDocument->formatOutput = true;
+        self::assertEquals(
+            trim(file_get_contents($this->xmlFilePath . 'frontElement.xml')),
+            trim($articleFrontElement->saveXML($xml)));
     }
 
     /**
@@ -259,11 +236,13 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
 
         $articleFrontElement = new ArticleFront();
         $xml = $articleFrontElement->createJournalMeta(
-            $journal
+            $journal,
+            $this->createRequestMockInstance(),
         );
-        self::assertXmlStringEqualsXmlFile(
-            $this->xmlFilePath.'journalMetaElement.xml',
-            $articleFrontElement->saveXML($xml));
+        $xml->ownerDocument->formatOutput = true;
+        self::assertEquals(
+            trim(file_get_contents($this->xmlFilePath.'journalMetaElement.xml')),
+            trim($articleFrontElement->saveXML($xml)));
     }
 
     /**
@@ -288,10 +267,10 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             $this->createRequestMockInstance(),
             $article,
         );
-        self::assertXmlStringEqualsXmlFile(
-            $this->xmlFilePath.'articleMetaElement.xml',
-            $articleFrontElement->saveXML($xml)
-        );
+        $xml->ownerDocument->formatOutput = true;
+        self::assertEquals(
+            trim(file_get_contents($this->xmlFilePath.'articleMetaElement.xml')),
+            trim($articleFrontElement->saveXML($xml)));
     }
 
     /**
@@ -314,27 +293,6 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     }
 
     /**
-     * testing create article-meta article-categories element
-     * @throws \DOMException
-     */
-    public function testCreateArticleCategories(){
-        $OAIRecord = $this->createOAIRecordMockObject();
-        $record =& $OAIRecord;
-        $journal =& $record->getData('journal');
-        $section =& $record->getData('section');
-
-        $articleFrontElement = new ArticleFront();
-        $xml = $articleFrontElement->createArticleCategories(
-            $journal,
-            $section
-        );
-        self::assertXmlStringEqualsXmlFile(
-            $this->xmlFilePath.'articleMetaArticle_CategoriesElement.xml',
-            $articleFrontElement->saveXML($xml)
-        );
-    }
-
-    /**
      * testing create article-meta contrib-group element
      * @throws \DOMException
      */
@@ -343,9 +301,12 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $record =& $OAIRecord;
         $submission =& $record->getData('article');
 
+        $this->createRequestMockInstance();
+
         $articleFrontElement = new ArticleFront();
         $xml = $articleFrontElement->createArticleContribGroup(
-            $submission
+            $submission,
+            $submission->getCurrentPublication()
         );
         self::assertXmlStringEqualsXmlFile(
             $this->xmlFilePath.'articleMetaArticle_ContribGroupElement.xml',

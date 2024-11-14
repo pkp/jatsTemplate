@@ -1,24 +1,16 @@
-<!--
-  * journalMetaElement.xml
-  *
-  * Copyright (c) 2013-2020 Simon Fraser University
-  * Copyright (c) 2003-2020 John Willinsky
-  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
-  *
-  * Journal Meta Element Test XML file.
-  -->
 <journal-meta>
-    <journal-id journal-id-type="ojs">journal-path</journal-id>
-    <journal-title-group>
-        <journal-title xml:lang="en">journal-title</journal-title>
-        <trans-title-group xml:lang="gr">
-            <trans-title>journal-title</trans-title>
-        </trans-title-group>
-        <abbrev-journal-title xml:lang="en">publicknowledgeJ Pub Know</abbrev-journal-title>
-    </journal-title-group>
-    <publisher>
-        <publisher-name>journal-publisher</publisher-name>
-    </publisher>
-    <issn pub-type="epub">onlineIssn</issn>
-    <issn pub-type="ppub">printIssn</issn>
+  <journal-id journal-id-type="ojs">journal-path</journal-id>
+  <journal-title-group>
+    <journal-title xml:lang="en">journal-title</journal-title>
+    <trans-title-group xml:lang="gr">
+      <trans-title>journal-title</trans-title>
+    </trans-title-group>
+    <abbrev-journal-title xml:lang="en">publicknowledgeJ Pub Know</abbrev-journal-title>
+  </journal-title-group>
+  <publisher>
+    <publisher-name>journal-publisher</publisher-name>
+  </publisher>
+  <issn pub-type="epub">onlineIssn</issn>
+  <issn pub-type="ppub">printIssn</issn>
+  <self-uri xlink:href="journal-path--"/>
 </journal-meta>

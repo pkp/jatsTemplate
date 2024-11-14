@@ -32,14 +32,13 @@ class Article extends \DOMDocument
     /**
      * 
      */
-    public function convertOAIToXml(OAIRecord $record): void
+    public function convertOAIToXml(OAIRecord $record, PKPRequest $request): void
     {
         $submission = $record->getData('article');
         $journal = $record->getData('journal');
         $section = $record->getData('section');
         $issue = $record->getData('issue');
         $publication = $submission->getCurrentPublication();
-        $request = Application::get()->getRequest();
 
         $this->convertSubmission($submission, $journal, $section, $issue, $publication, $request);
     }

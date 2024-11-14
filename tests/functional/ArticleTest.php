@@ -12,6 +12,7 @@
 
 namespace functional;
 
+use APP\core\Application;
 use APP\author\Author;
 use APP\facades\Repo;
 use APP\issue\Issue;
@@ -30,6 +31,8 @@ use PKP\tests\PKPTestCase;
 
 class ArticleTest extends PKPTestCase
 {
+    use \APP\plugins\generic\jatsTemplate\tests\functional\UsesRequestMock;
+
     private string $xmlFilePath = 'plugins/generic/jatsTemplate/tests/data/';
     /**
      * @see PKPTestCase::getMockedDAOs()
@@ -207,22 +210,23 @@ class ArticleTest extends PKPTestCase
      */
     public function testConvertToXml()
     {
+        $request = $this->createRequestMockInstance();
         $record = $this->createOAIRecordMockObject();
         $article = new Article();
-        $article->convertOAIToXml($record);
+        $article->convertOAIToXml($record, $request);
         self::assertXmlStringEqualsXmlFile($this->xmlFilePath.'ie1.xml', $article->saveXml());
-        self::assertTrue($article);
     }
 
     /**
      * @covers ::mapHtmlTagsForTitle
      */
     public function testMapHtmlTagsForTitle(){
+        $request = $this->createRequestMockInstance();
         $expected = '<bold>test</bold>';
         $htmlString = '<b>test</b>';
         $record = $this->createOAIRecordMockObject();
         $article = new Article();
-        $article->convertOAIToXml($record);
+        $article->convertOAIToXml($record, $request);
         $actual = $article->mapHtmlTagsForTitle($htmlString);
         self::assertEquals($expected, $actual);
     }

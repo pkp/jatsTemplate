@@ -9,11 +9,13 @@
   -->
 
 <contrib-group content-type="author">
-    <contrib>
-        <name name-style="western">
-            <surname>author-lastname</surname>
-            <given-names>author-firstname</given-names>
-        </name>
+    <contrib corresp="yes">
+        <name-alternatives>
+            <name name-style="western" specific-use="primary">
+                <surname>author-lastname</surname>
+                <given-names>author-firstname</given-names>
+            </name>
+        </name-alternatives>
         <email>someone@example.com</email>
         <xref ref-type="aff" rid="aff-1"/>
     </contrib>

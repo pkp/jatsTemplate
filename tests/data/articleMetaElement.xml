@@ -1,54 +1,53 @@
-<!--
-  * articleMetaElement.xml
-  *
-  * Copyright (c) 2013-2020 Simon Fraser University
-  * Copyright (c) 2003-2020 John Willinsky
-  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
-  *
-  * Article Meta Element Test XML file.
-  -->
 <article-meta>
-    <article-id pub-id-type="publisher-id">9</article-id>
-    <article-categories>
-        <subj-group xml:lang="en" subj-group-type="heading">
-            <subject>section-identify-type</subject>
-        </subj-group>
-    </article-categories>
-    <title-group>
-        <article-title xml:lang="">article-title-en</article-title>
-        <trans-title-group xml:lang="en">
-            <trans-title>article-title-en</trans-title>
-        </trans-title-group>
-        <trans-title-group xml:lang="de">
-            <trans-title>article-title-de</trans-title>
-        </trans-title-group></title-group>
-    <contrib-group content-type="author">
-        <contrib corresp="yes">
-            <name name-style="western">
-                <surname>author-lastname</surname>
-                <given-names>author-firstname</given-names>
-            </name>
-            <email>someone@example.com</email>
-            <xref ref-type="aff" rid="aff-1"/>
-        </contrib>
-    </contrib-group>
-    <aff id="aff-1">
-        <institution content-type="orgname">author-affiliation</institution>
-    </aff>
-    <fpage>15</fpage>
-    <lpage>15</lpage>
-    <permissions>
-        <copyright-statement>Copyright (c) year article-copyright</copyright-statement>
-        <copyright-year>year</copyright-year>
-        <copyright-holder>article-copyright</copyright-holder>
-    </permissions>
-    <self-uri xlink:href="1"/>
-    <kwd-group xml:lang="en">
-        <kwd>Professional Development</kwd>
-        <kwd>Social Transformation</kwd>
-    </kwd-group>
-    <counts>
-        <page-count count="1"/>
-    </counts>
-    <custom-meta-group/>
+  <article-id pub-id-type="publisher-id">9</article-id>
+  <article-categories>
+    <subj-group xml:lang="en" subj-group-type="heading">
+      <subject>section-identify-type</subject>
+    </subj-group>
+  </article-categories>
+  <title-group>
+    <article-title xml:lang="">article-title-en</article-title>
+    <trans-title-group xml:lang="en">
+      <trans-title>article-title-en</trans-title>
+    </trans-title-group>
+    <trans-title-group xml:lang="de">
+      <trans-title>article-title-de</trans-title>
+    </trans-title-group>
+  </title-group>
+  <contrib-group content-type="author">
+    <contrib corresp="yes">
+      <name-alternatives>
+        <name name-style="western" specific-use="primary">
+          <surname>author-lastname</surname>
+          <given-names>author-firstname</given-names>
+        </name>
+      </name-alternatives>
+      <email>someone@example.com</email>
+      <xref ref-type="aff" rid="aff-1"/>
+    </contrib>
+  </contrib-group>
+  <aff id="aff-1">
+    <institution content-type="orgname">author-affiliation</institution>
+  </aff>
+  <pub-date date-type="pub" publication-format="epub">
+    <day>01</day>
+    <month>01</month>
+    <year>1970</year>
+  </pub-date>
+  <fpage>15</fpage>
+  <lpage>15</lpage>
+  <permissions>
+    <copyright-statement>Copyright (c) year article-copyright</copyright-statement>
+    <copyright-year>year</copyright-year>
+    <copyright-holder>article-copyright</copyright-holder>
+  </permissions>
+  <self-uri xlink:href="journal-path-article-view"/>
+  <kwd-group xml:lang="en">
+    <kwd>Professional Development</kwd>
+    <kwd>Social Transformation</kwd>
+  </kwd-group>
+  <counts>
+    <page-count count="1"/>
+  </counts>
+  <custom-meta-group/>
 </article-meta>
