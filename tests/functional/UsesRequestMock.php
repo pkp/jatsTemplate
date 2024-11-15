@@ -51,11 +51,11 @@ trait UsesRequestMock
 
         $router->expects($this->any())
             ->method('getDispatcher')
-            ->will($this->returnValue($dispatcher));
+            ->willReturn($dispatcher);
 
         $router->expects($this->any())
             ->method('getContext')
-            ->will($this->returnValue($journal));
+            ->willReturn($journal);
 
         // Request
         $requestMock = $this->getMockBuilder(Request::class)
@@ -63,10 +63,10 @@ trait UsesRequestMock
             ->getMock();
         $requestMock->expects($this->any())
             ->method('getRouter')
-            ->will($this->returnValue($router));
+            ->willReturn($router);
         $requestMock->expects($this->any())
             ->method('getContext')
-            ->will($this->returnValue($journal));
+            ->willReturn($journal);
 
         \PKP\core\Registry::set('request', $requestMock);
         return $requestMock;

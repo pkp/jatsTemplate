@@ -114,10 +114,10 @@ class ArticleTest extends PKPTestCase
             ->getMock();
         $galley->expects(self::any())
             ->method('getFileType')
-            ->will($this->returnValue('galley-filetype'));
+            ->willReturn('galley-filetype');
         $galley->expects(self::any())
             ->method('getBestGalleyId')
-            ->will($this->returnValue(98));
+            ->willReturn(98);
         $galley->setId(98);
         $galley->setData('submissionFileId',98);
         $galley->setData('doiObject', $galleyDoiObject);
@@ -137,16 +137,16 @@ class ArticleTest extends PKPTestCase
             ->getMock();
         $article->expects($this->any())
             ->method('getBestId')
-            ->will($this->returnValue(9));
+            ->willReturn(9);
         $article->expects($this->any())
             ->method('getGalleys')
-            ->will($this->returnValue($galleys));
+            ->willReturn($galleys);
         $article->setId(9);
         $article->setData('contextId', $journalId);
         $author->setSubmissionId($article->getId());
         $article->expects($this->any())
             ->method('getCurrentPublication')
-            ->will($this->returnValue($publication));
+            ->willReturn($publication);
 
         // Journal
         /** @var Journal|MockObject */
@@ -185,7 +185,7 @@ class ArticleTest extends PKPTestCase
             ->getMock();
         $issue->expects($this->any())
             ->method('getIssueIdentification')
-            ->will($this->returnValue('issue-identification'));
+            ->willReturn('issue-identification');
         $issue->setId(96);
         $issue->setDatePublished('2010-11-05');
         $issue->setData('doiObject', $issueDoiObject);
