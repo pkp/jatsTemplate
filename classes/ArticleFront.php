@@ -206,13 +206,13 @@ class ArticleFront extends \DOMDocument
                 ->setAttribute('publication-format','epub')->parentNode;
 
             $pubDateElement->appendChild($this->createElement('day'))
-                ->appendChild($this->createTextNode(strftime('%d', (int)$datePublished)));
+                ->appendChild($this->createTextNode(date('d', (int)$datePublished)));
 
             $pubDateElement->appendChild($this->createElement('month'))
-                ->appendChild($this->createTextNode(strftime('%m', (int)$datePublished)));
+                ->appendChild($this->createTextNode(date('m', (int)$datePublished)));
 
             $pubDateElement->appendChild($this->createElement('year'))
-                ->appendChild($this->createTextNode(strftime('%Y', (int)$datePublished)));
+                ->appendChild($this->createTextNode(date('Y', (int)$datePublished)));
         }
 
         // Include page info, if available and parseable.
