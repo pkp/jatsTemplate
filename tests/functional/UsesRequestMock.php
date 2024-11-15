@@ -43,7 +43,7 @@ trait UsesRequestMock
             ->getMock();
         $dispatcher->expects($this->any())
             ->method('url')
-            ->will($this->returnCallback(fn ($request, $newContext = null, $handler = null, $op = null, $path = null) => $handler . '-' . $op . '-' . $path));
+            ->willReturnCallback(fn ($request, $newContext = null, $handler = null, $op = null, $path = null) => $handler . '-' . $op . '-' . $path);
 
         $router = $this->getMockBuilder(PKPRouter::class)
             ->onlyMethods(['url', 'handleAuthorizationFailure', 'route', 'getDispatcher', 'getContext'])
