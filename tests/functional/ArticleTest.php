@@ -206,7 +206,7 @@ class ArticleTest extends PKPTestCase
     }
 
     /**
-     * @covers ::convertToXml
+     * @covers \APP\plugins\generic\jatsTemplate\classes\Article::convertOAIToXml
      */
     public function testConvertToXml()
     {
@@ -218,7 +218,7 @@ class ArticleTest extends PKPTestCase
     }
 
     /**
-     * @covers ::mapHtmlTagsForTitle
+     * @covers \APP\plugins\generic\jatsTemplate\classes\Article::mapHtmlTagsForTitle
      */
     public function testMapHtmlTagsForTitle(){
         $request = $this->createRequestMockInstance();
