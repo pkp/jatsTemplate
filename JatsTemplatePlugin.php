@@ -20,6 +20,7 @@ use HTMLPurifier;
 use HTMLPurifier_Config;
 use PKP\core\PKPString;
 use PKP\db\DAORegistry;
+use PKP\galley\Galley;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\Hook;
 use PKP\plugins\PluginRegistry;
@@ -325,10 +326,24 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$text = '';
 		$galleys = $article->getGalleys();
 
-		// Give precedence to HTML galleys, as they're quickest to parse
-		usort($galleys, function($a, $b) {
-			return $a->getFileType() == 'text/html'?-1:1;
-		});
+		// Get HTML galleys for top of list, as they're quickest to parse
+		// PDFs have second-highest priority over other file types
+		$items = array_reduce($galleys, function(array $carry, Galley $galley) {
+			$fileType = $galley->getFileType();
+
+			switch ($fileType) {
+				case 'text/html':
+					$carry['html'][] = $galley;
+					break;
+				case 'application/pdf':
+					$carry['pdf'][] = $galley;
+					break;
+				default:
+					$carry['other'][] = $galley;
+			}
+			return $carry;
+		}, ['html' => [], 'pdf' => [], 'other' => []]);
+		$galleys = array_merge($items['html'], $items['pdf'], $items['other']);
 
 		// Provide the full-text.
 		$fileService = Services::get('file');
