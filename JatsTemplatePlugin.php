@@ -60,8 +60,10 @@ class JatsTemplatePlugin extends GenericPlugin {
 		$doc =& $args[3];
 
 		if (!$doc && empty($candidateFiles)) {
+			$request = Application::get()->getRequest();
+
 			$doc = new Article();
-			$doc->convertOAIToXml($record);
+			$doc->convertOAIToXml($record, $request);
 		}
 
 		return false;
