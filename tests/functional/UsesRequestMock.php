@@ -12,22 +12,10 @@
 
 namespace APP\plugins\generic\jatsTemplate\tests\functional;
 
-use APP\core\Application;
 use APP\core\Request;
-use APP\facades\Repo;
-use APP\issue\Issue;
-use APP\journal\Journal;
-use APP\plugins\generic\jatsTemplate\classes\Article;
-use APP\plugins\generic\jatsTemplate\classes\ArticleFront;
-use APP\publication\Publication;
-use APP\section\Section;
-use APP\submission\Submission;
 use PHPUnit\Framework\MockObject\MockObject;
 use PKP\core\PKPRouter;
 use PKP\core\Dispatcher;
-use PKP\doi\Doi;
-use PKP\galley\Galley;
-use PKP\oai\OAIRecord;
 
 trait UsesRequestMock
 {
