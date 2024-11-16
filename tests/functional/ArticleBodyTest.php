@@ -12,25 +12,27 @@
 
 namespace functional;
 
-use APP\author\Author;
-use APP\facades\Repo;
-use APP\issue\Issue;
-use APP\journal\Journal;
-use APP\plugins\generic\jatsTemplate\classes\Article;
-use APP\plugins\generic\jatsTemplate\classes\ArticleBody;
-use APP\publication\Publication;
-use APP\section\Section;
-use APP\submission\Submission;
-use PHPUnit\Framework\MockObject\MockObject;
 use PKP\doi\Doi;
+use APP\issue\Issue;
+use APP\facades\Repo;
+use APP\author\Author;
 use PKP\galley\Galley;
 use PKP\oai\OAIRecord;
+use APP\journal\Journal;
+use APP\section\Section;
 use PKP\tests\PKPTestCase;
+use APP\submission\Submission;
+use APP\publication\Publication;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\Attributes\CoversClass;
+use APP\plugins\generic\jatsTemplate\classes\Article;
+use APP\plugins\generic\jatsTemplate\classes\ArticleBody;
 
+#[CoversClass(ArticleBody::class)]
 class ArticleBodyTest extends PKPTestCase
 {
-
     private string $xmlFilePath = 'plugins/generic/jatsTemplate/tests/data/';
+
     /**
      * @throws \DOMException
      */
@@ -97,7 +99,6 @@ class ArticleBodyTest extends PKPTestCase
         /** @var Galley|MockObject */
         $galley = $this->getMockBuilder(Galley::class)
             ->onlyMethods(['getFileType', 'getBestGalleyId'])
-            ->setProxyTarget($galley)
             ->getMock();
         $galley->expects(self::any())
             ->method('getFileType')

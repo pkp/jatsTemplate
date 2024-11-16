@@ -12,23 +12,24 @@
 
 namespace functional;
 
-use APP\core\Application;
-use APP\author\Author;
-use APP\facades\Repo;
-use APP\issue\Issue;
-use APP\journal\Journal;
-use APP\plugins\generic\jatsTemplate\classes\Article;
-use APP\publication\Publication;
-use APP\section\Section;
-use APP\submission\Submission;
-use PHPUnit\Framework\MockObject\MockObject;
-use PKP\author\Repository as AuthorRepository;
 use PKP\doi\Doi;
-use PKP\galley\Collector as GalleyCollector;
+use APP\issue\Issue;
+use APP\facades\Repo;
+use APP\author\Author;
 use PKP\galley\Galley;
 use PKP\oai\OAIRecord;
+use APP\journal\Journal;
+use APP\section\Section;
 use PKP\tests\PKPTestCase;
+use APP\submission\Submission;
+use APP\publication\Publication;
+use PHPUnit\Framework\MockObject\MockObject;
+use PKP\galley\Collector as GalleyCollector;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PKP\author\Repository as AuthorRepository;
+use APP\plugins\generic\jatsTemplate\classes\Article;
 
+#[CoversClass(Article::class)]
 class ArticleTest extends PKPTestCase
 {
     use \APP\plugins\generic\jatsTemplate\tests\functional\UsesRequestMock;
@@ -110,7 +111,6 @@ class ArticleTest extends PKPTestCase
         /** @var Galley|MockObject */
         $galley = $this->getMockBuilder(Galley::class)
             ->onlyMethods(['getFileType', 'getBestGalleyId'])
-            ->setProxyTarget($galley)
             ->getMock();
         $galley->expects(self::any())
             ->method('getFileType')
@@ -205,9 +205,6 @@ class ArticleTest extends PKPTestCase
         return $record;
     }
 
-    /**
-     * @covers \APP\plugins\generic\jatsTemplate\classes\Article::convertOAIToXml
-     */
     public function testConvertToXml()
     {
         $request = $this->createRequestMockInstance();
@@ -217,9 +214,6 @@ class ArticleTest extends PKPTestCase
         self::assertXmlStringEqualsXmlFile($this->xmlFilePath.'ie1.xml', $article->saveXml());
     }
 
-    /**
-     * @covers \APP\plugins\generic\jatsTemplate\classes\Article::mapHtmlTagsForTitle
-     */
     public function testMapHtmlTagsForTitle(){
         $request = $this->createRequestMockInstance();
         $expected = '<bold>test</bold>';
