@@ -30,7 +30,7 @@ class Article extends \DOMDocument
     }
 
     /**
-     * 
+     *
      */
     public function convertOAIToXml(OAIRecord $record, PKPRequest $request): void
     {
@@ -44,13 +44,13 @@ class Article extends \DOMDocument
     }
 
     /**
-     * Convert submission metadata to JATS XML 
+     * Convert submission metadata to JATS XML
      */
     public function convertSubmission(Submission $submission, Context $context, Section $section, ?Issue $issue = null, ?Publication $publication = null, PKPRequest $request = null): void
     {
         $articleElement = $this->appendChild($this->createElement('article'))
             ->setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink')->parentNode
-            ->setAttribute('xml:lang', substr($submission->getData('locale'), 0, 2))->parentNode
+            ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $submission->getData('locale')))->parentNode
             ->setAttribute('xmlns:mml','http://www.w3.org/1998/Math/MathML')->parentNode
             ->setAttribute('xmlns:xsi','http://www.w3.org/2001/XMLSchema-instance')->parentNode;
 
