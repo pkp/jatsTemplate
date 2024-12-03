@@ -108,19 +108,19 @@ class ArticleFront extends \DOMDocument
         $journalTitleGroupElement = $this->appendChild($this->createElement('journal-title-group'));
 
         $journalTitleGroupElement->appendChild($this->createElement('journal-title'))
-            ->setAttribute('xml:lang', substr($journal->getPrimaryLocale(), 0, 2))->parentNode
+            ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $journal->getPrimaryLocale()))->parentNode
             ->appendChild($this->createTextNode($journal->getName($journal->getPrimaryLocale())));
 
         foreach ($journal->getName(null) as $locale => $title) {
             if ($locale == $journal->getPrimaryLocale()) continue;
             $journalTitleGroupElement->appendChild($this->createElement('trans-title-group'))
-                ->setAttribute('xml:lang', substr($locale, 0, 2))->parentNode
+                ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale))->parentNode
                 ->appendChild($this->createElement('trans-title'))->appendChild($this->createTextNode($title));
         }
         //Include journal abbreviation titles
         foreach ($journal->getData('abbreviation') as $locale => $abbrevTitle) {
             $journalTitleGroupElement->appendChild($this->createElement('abbrev-journal-title'))
-                ->setAttribute('xml:lang', substr($locale, 0, 2))->parentNode
+                ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale))->parentNode
                 ->appendChild($this->createTextNode($abbrevTitle));
         }
         return $journalTitleGroupElement;
@@ -144,7 +144,7 @@ class ArticleFront extends \DOMDocument
 
         $articleMetaElement->appendChild($this->createElement('article-categories'))
             ->appendChild($this->createElement('subj-group'))
-            ->setAttribute('xml:lang', $journal->getPrimaryLocale())->parentNode
+            ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $journal->getPrimaryLocale()))->parentNode
             ->setAttribute('subj-group-type','heading')->parentNode
             ->appendChild($this->createElement('subject'))
             ->appendChild($this->createTextNode($section->getLocalizedTitle()));
@@ -152,11 +152,11 @@ class ArticleFront extends \DOMDocument
         $titleGroupElement = $articleMetaElement->appendChild($this->createElement('title-group'));
 
         $titleGroupElement->appendChild($this->createElement('article-title', $article->mapHtmlTagsForTitle($publication->getLocalizedTitle(null, 'html'))))
-            ->setAttribute('xml:lang', substr($submission->getData('locale'), 0, 2));
+            ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $submission->getData('locale')));
 
         if (!empty($subtitle = $article->mapHtmlTagsForTitle($publication->getLocalizedSubTitle(null, 'html')))) {
             $titleGroupElement->appendChild($this->createElement('subtitle', $subtitle))
-                ->setAttribute('xml:lang', substr($submission->getData('locale'), 0, 2));
+                ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $submission->getData('locale')));
         }
 
         // Include translated submission titles
@@ -169,7 +169,7 @@ class ArticleFront extends \DOMDocument
                 continue;
             }
             $titleGroupElement->appendChild($this->createElement('trans-title-group'))
-                ->setAttribute('xml:lang', substr($locale, 0, 2))->parentNode
+                ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale))->parentNode
                 ->appendChild($this->createElement('trans-title', $translatedTitle));
 
             if (!empty($translatedSubTitle = $article->mapHtmlTagsForTitle($publication->getLocalizedSubTitle($locale, 'html')))) {
@@ -290,7 +290,7 @@ class ArticleFront extends \DOMDocument
 
             $kwdGroupElement = $articleMetaElement
                 ->appendChild($this->createElement('kwd-group'))
-                ->setAttribute('xml:lang', substr($locale, 0, 2))->parentNode;
+                ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale))->parentNode;
             foreach ($keywords as $keyword) {
                 $kwdGroupElement
                     ->appendChild($this->createElement('kwd'))
@@ -415,7 +415,7 @@ class ArticleFront extends \DOMDocument
                 }
 
                 $bioElement = $this->createElement('bio');
-                $bioElement->setAttribute('xml:lang', substr($locale, 0, 2));
+                $bioElement->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale));
 
                 $strippedBio = PKPString::stripUnsafeHtml($bio);
                 $bioDocument = new \DOMDocument();
