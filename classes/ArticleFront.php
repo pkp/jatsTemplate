@@ -285,7 +285,7 @@ class ArticleFront extends \DOMDocument
             ->setAttribute('xlink:href', $url);
 
         $submissionKeywordDao = DAORegistry::getDAO('SubmissionKeywordDAO');
-        foreach ($submissionKeywordDao->getKeywords($publication->getId(), $journal->getSupportedSubmissionLocales()) as $locale => $keywords) {
+        foreach ($submissionKeywordDao->getKeywords($publication->getId()) as $locale => $keywords) {
             if (empty($keywords)) continue;
 
             $kwdGroupElement = $articleMetaElement
