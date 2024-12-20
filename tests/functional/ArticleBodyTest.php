@@ -10,7 +10,7 @@
  * @brief JATS xml article body element unit tests
  */
 
-namespace functional;
+namespace APP\plugins\generic\jatsTemplate\functional;
 
 use PKP\doi\Doi;
 use APP\issue\Issue;
@@ -111,6 +111,7 @@ class ArticleBodyTest extends PKPTestCase
         $galley->setData('doiObject', $galleyDoiObject);
 
         $galleys = [$galley];
+        $publication->setData('galleys', $galleys);
 
         // Article
         /** @var Submission|MockObject */
