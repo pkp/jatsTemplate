@@ -69,11 +69,15 @@ class JatsTemplateDownloadHandler extends Handler {
 	 * @param $request PKPRequest Request object.
 	 */
 	function download($args, $request) {
-		if (!$this->_isUserAllowedAccess($request)) $request->getDispatcher()->handle404();
+		if (!$this->_isUserAllowedAccess($request)) {
+			throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+		}
 
 		// Check the stage (this is only for consistency with other download URLs in the system
 		// in case the built-in download handler can be used in place of this in the future)
-		if ($request->getUserVar('stageId') != WORKFLOW_STAGE_ID_PRODUCTION) $request->getDispatcher()->handle404();
+		if ($request->getUserVar('stageId') != WORKFLOW_STAGE_ID_PRODUCTION) {
+			throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+		}
 
 		$submissionId = $request->getUserVar('submissionId');
 		$layoutFiles = Repo::submissionFile()->getCollector()
@@ -87,7 +91,7 @@ class JatsTemplateDownloadHandler extends Handler {
 			app()->get('file')->download($layoutFile->getData('fileId'), $filename);
 			return;
 		}
-		$request->getDispatcher()->handle404();
+		throw new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
 	}
 }
 
