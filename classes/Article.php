@@ -10,7 +10,6 @@
  * @brief JATS xml article
  */
 
-
 namespace APP\plugins\generic\jatsTemplate\classes;
 
 use APP\core\Application;
@@ -24,7 +23,7 @@ use PKP\oai\OAIRecord;
 
 class Article extends \DOMDocument
 {
-    function __construct()
+    public function __construct()
     {
         parent::__construct('1.0', 'UTF-8');
     }
@@ -49,10 +48,10 @@ class Article extends \DOMDocument
     public function convertSubmission(Submission $submission, Context $context, Section $section, ?Issue $issue = null, ?Publication $publication = null, PKPRequest $request = null): void
     {
         $articleElement = $this->appendChild($this->createElement('article'))
-            ->setAttribute('xmlns:xlink','http://www.w3.org/1999/xlink')->parentNode
+            ->setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')->parentNode
             ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $submission->getData('locale')))->parentNode
-            ->setAttribute('xmlns:mml','http://www.w3.org/1998/Math/MathML')->parentNode
-            ->setAttribute('xmlns:xsi','http://www.w3.org/2001/XMLSchema-instance')->parentNode;
+            ->setAttribute('xmlns:mml', 'http://www.w3.org/1998/Math/MathML')->parentNode
+            ->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')->parentNode;
 
         $articleFront = new ArticleFront();
         $articleElement->appendChild($this->importNode($articleFront->create($context, $submission, $section, $issue, $request, $this, $publication), true));
@@ -74,15 +73,14 @@ class Article extends \DOMDocument
     public function mapHtmlTagsForTitle(string $htmlTitle): string
     {
         $mappings = [
-            '<b>' 	=> '<bold>',
-            '</b>' 	=> '</bold>',
-            '<i>' 	=> '<italic>',
-            '</i>' 	=> '</italic>',
-            '<u>' 	=> '<underline>',
-            '</u>' 	=> '</underline>',
+            '<b>'   => '<bold>',
+            '</b>'  => '</bold>',
+            '<i>'   => '<italic>',
+            '</i>'  => '</italic>',
+            '<u>'   => '<underline>',
+            '</u>'  => '</underline>',
         ];
 
         return str_replace(array_keys($mappings), array_values($mappings), $htmlTitle);
     }
-
 }

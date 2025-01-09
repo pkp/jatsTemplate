@@ -3,8 +3,8 @@
 /**
  * @file ArticleFront.php
  *
- * Copyright (c) 2003-2022 Simon Fraser University
- * Copyright (c) 2003-2022 John Willinsky
+ * Copyright (c) 2003-2025 Simon Fraser University
+ * Copyright (c) 2003-2025 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article front element
@@ -53,16 +53,14 @@ class ArticleFront extends \DOMDocument
 
         $journalMetaElement->appendChild($this->createJournalMetaJournalTitleGroup($journal));
 
-        $publisherCountry = $journal->getSetting('country');
-        $publisherUrl = $journal->getSetting('publisherUrl');
         $publisherElement = $journalMetaElement->appendChild($this->createElement('publisher'));
         $publisherElement->appendChild($this->createElement('publisher-name'))
-            ->appendChild($this->createTextNode($journal->getSetting('publisherInstitution')));
+            ->appendChild($this->createTextNode($journal->getData('publisherInstitution')));
 
         $citationStyleLanguagePlugin = PluginRegistry::getPlugin('generic', 'citationstylelanguageplugin');
         $publisherLocation = $citationStyleLanguagePlugin?->getSetting($journal->getId(), 'publisherLocation');
-        $publisherCountry = $journal->getSetting('country');
-        $publisherUrl = $journal->getSetting('publisherUrl');
+        $publisherCountry = $journal->getData('country');
+        $publisherUrl = $journal->getData('publisherUrl');
         if ($publisherLocation || $publisherCountry || $publisherUrl) {
             $publisherLocElement = $publisherElement->appendChild($this->createElement('publisher-loc'));
             if ($publisherLocation) {
@@ -74,18 +72,17 @@ class ArticleFront extends \DOMDocument
             if ($publisherUrl) {
                 $publisherLocElement->appendChild($this->createElement('uri'))->appendChild($this->createTextNode($publisherUrl));
             }
-
         }
 
-        if (!empty($journal->getSetting('onlineIssn'))) {
+        if (!empty($journal->getData('onlineIssn'))) {
             $journalMetaElement->appendChild($this->createElement('issn'))
-                ->appendChild($this->createTextNode($journal->getSetting('onlineIssn')))->parentNode
-                ->setAttribute('pub-type','epub');
+                ->appendChild($this->createTextNode($journal->getData('onlineIssn')))->parentNode
+                ->setAttribute('pub-type', 'epub');
         }
-        if (!empty($journal->getSetting('printIssn'))) {
+        if (!empty($journal->getData('printIssn'))) {
             $journalMetaElement->appendChild($this->createElement('issn'))
-                ->appendChild($this->createTextNode($journal->getSetting('printIssn')))->parentNode
-                ->setAttribute('pub-type','ppub');
+                ->appendChild($this->createTextNode($journal->getData('printIssn')))->parentNode
+                ->setAttribute('pub-type', 'ppub');
         }
 
         $router = $request->getRouter();
@@ -97,7 +94,6 @@ class ArticleFront extends \DOMDocument
             ->setAttribute('xlink:href', $journalUrl);
 
         return $journalMetaElement;
-
     }
 
     /**
@@ -112,7 +108,9 @@ class ArticleFront extends \DOMDocument
             ->appendChild($this->createTextNode($journal->getName($journal->getPrimaryLocale())));
 
         foreach ($journal->getName(null) as $locale => $title) {
-            if ($locale == $journal->getPrimaryLocale()) continue;
+            if ($locale == $journal->getPrimaryLocale()) {
+                continue;
+            }
             $journalTitleGroupElement->appendChild($this->createElement('trans-title-group'))
                 ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale))->parentNode
                 ->appendChild($this->createElement('trans-title'))->appendChild($this->createTextNode($title));
@@ -139,13 +137,13 @@ class ArticleFront extends \DOMDocument
         $articleMetaElement = $this->appendChild($this->createElement('article-meta'));
 
         $articleMetaElement->appendChild($this->createElement('article-id'))
-            ->setAttribute('pub-id-type','publisher-id')->parentNode
+            ->setAttribute('pub-id-type', 'publisher-id')->parentNode
             ->appendChild($this->createTextNode($submission->getId()));
 
         $articleMetaElement->appendChild($this->createElement('article-categories'))
             ->appendChild($this->createElement('subj-group'))
             ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $journal->getPrimaryLocale()))->parentNode
-            ->setAttribute('subj-group-type','heading')->parentNode
+            ->setAttribute('subj-group-type', 'heading')->parentNode
             ->appendChild($this->createElement('subject'))
             ->appendChild($this->createTextNode($section->getLocalizedTitle()));
 
@@ -195,7 +193,7 @@ class ArticleFront extends \DOMDocument
 
         if ($datePublished = $publication->getData('datePublished')) {
             $datePublished = strtotime($datePublished);
-        } else if ($issue) {
+        } elseif ($issue) {
             $datePublished = $issue->getDatePublished();
         }
 
@@ -203,7 +201,7 @@ class ArticleFront extends \DOMDocument
         if ($datePublished) {
             $pubDateElement = $articleMetaElement->appendChild($this->createElement('pub-date'))
                 ->setAttribute('date-type', 'pub')->parentNode
-                ->setAttribute('publication-format','epub')->parentNode;
+                ->setAttribute('publication-format', 'epub')->parentNode;
 
             $pubDateElement->appendChild($this->createElement('day'))
                 ->appendChild($this->createTextNode(date('d', (int)$datePublished)));
@@ -223,13 +221,13 @@ class ArticleFront extends \DOMDocument
             $articleMetaElement->appendChild($this->createElement('lpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $pageCount = 1;
-        } elseif (preg_match('/^[Pp][Pp]?[.]?[ ]?(\d+)$/u', $publication->getData('pages'), $matches)) {
+        } elseif (preg_match('/^[Pp]?[Pp]?[.]?[ ]?(\d+)$/u', $publication->getData('pages'), $matches)) {
             $articleMetaElement->appendChild($this->createElement('fpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $articleMetaElement->appendChild($this->createElement('lpage'))
                 ->appendChild($this->createTextNode($matches[1]));
             $pageCount = 1;
-        } elseif (preg_match('/^[Pp][Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/u', $publication->getData('pages'), $matches)) {
+        } elseif (preg_match('/^[Pp]?[Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/u', $publication->getData('pages'), $matches)) {
             $matchedPageFrom = $matches[1];
             $matchedPageTo = $matches[3];
             $articleMetaElement->appendChild($this->createElement('fpage'))
@@ -250,10 +248,10 @@ class ArticleFront extends \DOMDocument
         $copyrightYear = $publication->getData('copyrightYear');
         $copyrightHolder = $publication->getLocalizedData('copyrightHolder');
         $licenseUrl = $publication->getData('licenseUrl');
-        $ccBadge = Application::get()->getCCLicenseBadge($licenseUrl, $submission->getData('locale'))=== null?'':Application::get()->getCCLicenseBadge($licenseUrl, $submission->getData('locale'));
+        $ccBadge = Application::get()->getCCLicenseBadge($licenseUrl, $submission->getData('locale')) === null ? '' : Application::get()->getCCLicenseBadge($licenseUrl, $submission->getData('locale'));
         if ($copyrightYear || $copyrightHolder || $licenseUrl || $ccBadge) {
             $permissionsElement = $articleMetaElement->appendChild($this->createElement('permissions'));
-            if ($copyrightYear || $copyrightHolder){
+            if ($copyrightYear || $copyrightHolder) {
                 $permissionsElement->appendChild($this->createElement('copyright-statement'))
                     ->appendChild($this->createTextNode(__('submission.copyrightStatement', ['copyrightYear' => $copyrightYear, 'copyrightHolder' => $copyrightHolder])));
             }
@@ -291,7 +289,9 @@ class ArticleFront extends \DOMDocument
         );
 
         foreach ($keywordVocabs as $locale => $keywords) {
-            if (empty($keywords)) continue;
+            if (empty($keywords)) {
+                continue;
+            }
 
             $kwdGroupElement = $articleMetaElement
                 ->appendChild($this->createElement('kwd-group'))
@@ -317,7 +317,11 @@ class ArticleFront extends \DOMDocument
             ->getMany();
 
         foreach ($layoutFiles as $layoutFile) {
-            $sourceFileUrl = $request->url(null, 'jatsTemplate', 'download', null,
+            $sourceFileUrl = $request->url(
+                null,
+                'jatsTemplate',
+                'download',
+                null,
                 [
                     'submissionFileId' => $layoutFile->getId(),
                     'fileId' => $layoutFile->getData('fileId'),
@@ -329,7 +333,7 @@ class ArticleFront extends \DOMDocument
                 ->appendChild($this->createElement('meta-name', 'production-ready-file-url'))->parentNode
                 ->appendChild($this->createElement('meta-value'))
                 ->appendChild($this->createElement('ext-link'))
-                ->setAttribute('ext-link-type','uri')->parentNode
+                ->setAttribute('ext-link-type', 'uri')->parentNode
                 ->setAttribute('xlink:href', $sourceFileUrl);
         }
         return $articleMetaElement;
@@ -354,7 +358,9 @@ class ArticleFront extends \DOMDocument
             }
 
             $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
-            if ($publication->getData('primaryContactId') == $author->getId()) $contribElement->setAttribute('corresp', 'yes');
+            if ($publication->getData('primaryContactId') == $author->getId()) {
+                $contribElement->setAttribute('corresp', 'yes');
+            }
 
             // If using the CRediT plugin, credit roles may be available.
             $creditPlugin = PluginRegistry::getPlugin('generic', 'creditplugin');
@@ -364,7 +370,7 @@ class ArticleFront extends \DOMDocument
                 foreach ($contributorRoles as $role) {
                     $roleName = $creditRoles[$role];
                     $roleElement = $contribElement->appendChild($this->createElement('role'))
-                        ->setAttribute('vocab-identifier','https://credit.niso.org/')->parentNode
+                        ->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
                         ->setAttribute('vocab-term', $roleName)->parentNode
                         ->setAttribute('vocab-term-identifier', $role);
 
@@ -405,12 +411,12 @@ class ArticleFront extends \DOMDocument
             if ($affiliationToken) {
                 $contribElement->appendChild($this->createElement('xref'))
                     ->setAttribute('ref-type', 'aff')->parentNode
-                    ->setAttribute( 'rid', $affiliationToken);
+                    ->setAttribute('rid', $affiliationToken);
             }
             if (($s = $author->getUrl()) != '') {
                 $contribElement->appendChild($this->createElement('uri'))
                     ->setAttribute('ref-type', 'aff')->parentNode
-                    ->setAttribute( 'rid', $affiliationToken)->parentNode
+                    ->setAttribute('rid', $affiliationToken)->parentNode
                     ->appendChild($this->createTextNode($s));
             }
 

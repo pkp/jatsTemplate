@@ -119,7 +119,7 @@ class ArticleTest extends PKPTestCase
             ->method('getBestGalleyId')
             ->willReturn(98);
         $galley->setId(98);
-        $galley->setData('submissionFileId',98);
+        $galley->setData('submissionFileId', 98);
         $galley->setData('doiObject', $galleyDoiObject);
 
         $galleys = [$galley];
@@ -165,7 +165,7 @@ class ArticleTest extends PKPTestCase
         $journal->setPrimaryLocale('en');
         $journal->setPath('journal-path');
         $journal->setData(Journal::SETTING_ENABLE_DOIS, true);
-        $journal->setData('abbreviation', 'publicknowledgeJ Pub Know','en');
+        $journal->setData('abbreviation', 'publicknowledgeJ Pub Know', 'en');
         $journal->setId($journalId);
 
         // Section
@@ -212,10 +212,11 @@ class ArticleTest extends PKPTestCase
         $record = $this->createOAIRecordMockObject();
         $article = new Article();
         $article->convertOAIToXml($record, $request);
-        self::assertXmlStringEqualsXmlFile($this->xmlFilePath.'ie1.xml', $article->saveXml());
+        self::assertXmlStringEqualsXmlFile($this->xmlFilePath . 'ie1.xml', $article->saveXml());
     }
 
-    public function testMapHtmlTagsForTitle(){
+    public function testMapHtmlTagsForTitle()
+    {
         $request = $this->createRequestMockInstance();
         $expected = '<bold>test</bold>';
         $htmlString = '<b>test</b>';

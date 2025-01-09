@@ -107,7 +107,7 @@ class ArticleBodyTest extends PKPTestCase
             ->method('getBestGalleyId')
             ->willReturn(98);
         $galley->setId(98);
-        $galley->setData('submissionFileId',12);
+        $galley->setData('submissionFileId', 12);
         $galley->setData('doiObject', $galleyDoiObject);
 
         $galleys = [$galley];
@@ -147,7 +147,7 @@ class ArticleBodyTest extends PKPTestCase
         $journal->setPrimaryLocale('en');
         $journal->setPath('journal-path');
         $journal->setData(Journal::SETTING_ENABLE_DOIS, true);
-        $journal->setData('abbreviation', 'publicknowledgeJ Pub Know','en');
+        $journal->setData('abbreviation', 'publicknowledgeJ Pub Know', 'en');
         $journal->setId($journalId);
 
         // Section
@@ -193,13 +193,14 @@ class ArticleBodyTest extends PKPTestCase
      * testing body element if there is no file
      * @throws \DOMException
      */
-    public function testCreate(){
+    public function testCreate()
+    {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
         $submission =& $record->getData('article');
 
         $articleBodyElement = new ArticleBody();
         $xml = $articleBodyElement->create($submission);
-        self::assertXmlStringEqualsXmlString('<body/>',$articleBodyElement->saveXML($xml));
+        self::assertXmlStringEqualsXmlString('<body/>', $articleBodyElement->saveXML($xml));
     }
 }

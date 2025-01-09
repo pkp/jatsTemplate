@@ -21,7 +21,7 @@ class ArticleBack extends \DOMDocument
      * @param $publication
      * @return \DOMNode
      */
-    public function create($publication):\DOMNode
+    public function create($publication): \DOMNode
     {
         // create element back
         $backElement = $this->appendChild($this->createElement('back'));
@@ -31,12 +31,12 @@ class ArticleBack extends \DOMDocument
         if (count($citations)) {
             // create element ref-list
             $refListElement = $backElement->appendChild($this->createElement('ref-list'));
-            $i=1;
+            $i = 1;
             foreach ($citations as $citation) {
                 // create element ref
                 $refListElement
                     ->appendChild($this->createElement('ref'))
-                    ->setAttribute('id','R'.$i)
+                    ->setAttribute('id', 'R' . $i)
                     ->parentNode
                     ->appendChild($this->createElement('mixed-citation', htmlspecialchars($citation->getRawCitation())));
                 $i++;
