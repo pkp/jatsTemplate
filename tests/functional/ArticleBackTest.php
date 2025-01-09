@@ -108,7 +108,7 @@ class ArticleBackTest extends PKPTestCase
             ->method('getBestGalleyId')
             ->willReturn(98);
         $galley->setId(98);
-        $galley->setData('submissionFileId',98);
+        $galley->setData('submissionFileId', 98);
         $galley->setData('doiObject', $galleyDoiObject);
 
         $galleys = [$galley];
@@ -147,7 +147,7 @@ class ArticleBackTest extends PKPTestCase
         $journal->setPrimaryLocale('en');
         $journal->setPath('journal-path');
         $journal->setData(Journal::SETTING_ENABLE_DOIS, true);
-        $journal->setData('abbreviation', 'publicknowledgeJ Pub Know','en');
+        $journal->setData('abbreviation', 'publicknowledgeJ Pub Know', 'en');
         $journal->setId($journalId);
 
         // Section
@@ -192,7 +192,8 @@ class ArticleBackTest extends PKPTestCase
      * test back element if citations table doesn't have records
      * @throws \DOMException
      */
-    public function testCreate(){
+    public function testCreate()
+    {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
         $submission =& $record->getData('article');
@@ -200,6 +201,6 @@ class ArticleBackTest extends PKPTestCase
 
         $articleBackElement = new ArticleBack();
         $xml = $articleBackElement->create($publication);
-        self::assertXmlStringEqualsXmlString('<back/>',$articleBackElement->saveXML($xml));
+        self::assertXmlStringEqualsXmlString('<back/>', $articleBackElement->saveXML($xml));
     }
 }

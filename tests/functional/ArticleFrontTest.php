@@ -14,7 +14,6 @@ namespace APP\plugins\generic\jatsTemplate\functional;
 
 use PKP\doi\Doi;
 use APP\issue\Issue;
-use APP\core\Request;
 use APP\facades\Repo;
 use APP\author\Author;
 use PKP\galley\Galley;
@@ -153,7 +152,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $journal->setPrimaryLocale('en');
         $journal->setPath('journal-path');
         $journal->setData(Journal::SETTING_ENABLE_DOIS, true);
-        $journal->setData('abbreviation', 'publicknowledgeJ Pub Know','en');
+        $journal->setData('abbreviation', 'publicknowledgeJ Pub Know', 'en');
         $journal->setId($journalId);
 
         // Section
@@ -199,7 +198,8 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
      * testing create front element
      * @throws \DOMException
      */
-    public function testCreate(){
+    public function testCreate()
+    {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
         $submission =& $record->getData('article');
@@ -220,14 +220,16 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $xml->ownerDocument->formatOutput = true;
         self::assertEquals(
             trim(file_get_contents($this->xmlFilePath . 'frontElement.xml')),
-            trim($articleFrontElement->saveXML($xml)));
+            trim($articleFrontElement->saveXML($xml))
+        );
     }
 
     /**
      * testing create journal-meta element
      * @throws \DOMException
      */
-    public function testCreateJournalMeta(){
+    public function testCreateJournalMeta()
+    {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
         $journal =& $record->getData('journal');
@@ -239,15 +241,17 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         );
         $xml->ownerDocument->formatOutput = true;
         self::assertEquals(
-            trim(file_get_contents($this->xmlFilePath.'journalMetaElement.xml')),
-            trim($articleFrontElement->saveXML($xml)));
+            trim(file_get_contents($this->xmlFilePath . 'journalMetaElement.xml')),
+            trim($articleFrontElement->saveXML($xml))
+        );
     }
 
     /**
      * testing create article-meta element
      * @throws \DOMException
      */
-    public function testCreateArticleMeta(){
+    public function testCreateArticleMeta()
+    {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
         $submission =& $record->getData('article');
@@ -267,15 +271,17 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         );
         $xml->ownerDocument->formatOutput = true;
         self::assertEquals(
-            trim(file_get_contents($this->xmlFilePath.'articleMetaElement.xml')),
-            trim($articleFrontElement->saveXML($xml)));
+            trim(file_get_contents($this->xmlFilePath . 'articleMetaElement.xml')),
+            trim($articleFrontElement->saveXML($xml))
+        );
     }
 
     /**
      * testing create journal-meta journal-title-group element
      * @throws \DOMException
      */
-    public function testCreateJournalMetaJournalTitleGroup(){
+    public function testCreateJournalMetaJournalTitleGroup()
+    {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
         $journal =& $record->getData('journal');
@@ -285,7 +291,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             $journal
         );
         self::assertXmlStringEqualsXmlFile(
-            $this->xmlFilePath.'journalMeta_JournalTitleGroupElement.xml',
+            $this->xmlFilePath . 'journalMeta_JournalTitleGroupElement.xml',
             $articleFrontElement->saveXML($xml)
         );
     }
@@ -294,7 +300,8 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
      * testing create article-meta contrib-group element
      * @throws \DOMException
      */
-    public function testCreateArticleContribGroup(){
+    public function testCreateArticleContribGroup()
+    {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
         $submission =& $record->getData('article');
@@ -307,9 +314,8 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             $submission->getCurrentPublication()
         );
         self::assertXmlStringEqualsXmlFile(
-            $this->xmlFilePath.'articleMetaArticle_ContribGroupElement.xml',
+            $this->xmlFilePath . 'articleMetaArticle_ContribGroupElement.xml',
             $articleFrontElement->saveXML($xml['contribGroupElement'])
         );
     }
-
 }

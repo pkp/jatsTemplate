@@ -13,17 +13,20 @@
 namespace APP\plugins\generic\jatsTemplate\tests\functional;
 
 use APP\core\Request;
+use APP\journal\Journal;
 use PHPUnit\Framework\MockObject\MockObject;
 use PKP\core\PKPRouter;
 use PKP\core\Dispatcher;
+use PKP\core\Registry;
 
 trait UsesRequestMock
 {
     /*
      * create mock request
      */
-    protected function createRequestMockInstance(){
-        $journal = new \APP\journal\Journal();
+    protected function createRequestMockInstance()
+    {
+        $journal = new Journal();
 
         /** @var PKPRouter|MockObject */
         $dispatcher = $this->getMockBuilder(Dispatcher::class)
@@ -56,8 +59,7 @@ trait UsesRequestMock
             ->method('getContext')
             ->willReturn($journal);
 
-        \PKP\core\Registry::set('request', $requestMock);
+        Registry::set('request', $requestMock);
         return $requestMock;
     }
 }
-

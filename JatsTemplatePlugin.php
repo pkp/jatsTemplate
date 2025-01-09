@@ -18,78 +18,79 @@ use APP\template\TemplateManager;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\Hook;
 
-class JatsTemplatePlugin extends GenericPlugin {
+class JatsTemplatePlugin extends GenericPlugin
+{
+    /**
+     * @copydoc Plugin::register()
+     */
+    public function register($category, $path, $mainContextId = null)
+    {
+        $success = parent::register($category, $path, $mainContextId);
+        $this->addLocaleData();
 
-	/**
-	 * @copydoc Plugin::register()
-	 */
-	public function register($category, $path, $mainContextId = null) {
-		$success = parent::register($category, $path, $mainContextId);
-		$this->addLocaleData();
+        if ($success && $this->getEnabled()) {
+            Hook::add('OAIMetadataFormat_JATS::findJats', [$this, 'callbackFindJats']);
+            Hook::add('LoadHandler', [$this, 'callbackHandleContent']);
+        }
+        return $success;
+    }
 
-		if ($success && $this->getEnabled()) {
-			Hook::add('OAIMetadataFormat_JATS::findJats', [$this, 'callbackFindJats']);
-			Hook::add('LoadHandler', [$this, 'callbackHandleContent']);
-		}
-		return $success;
-	}
+    /**
+     * @copydoc Plugin::getDisplayName()
+     */
+    public function getDisplayName()
+    {
+        return __('plugins.generic.jatsTemplate.displayName');
+    }
 
-	/**
-	 * @copydoc Plugin::getDisplayName()
-	 */
-	public function getDisplayName() {
-		return __('plugins.generic.jatsTemplate.displayName');
-	}
+    /**
+     * @copydoc Plugin::getDescription()
+     */
+    public function getDescription()
+    {
+        return __('plugins.generic.jatsTemplate.description');
+    }
 
-	/**
-	 * @copydoc Plugin::getDescription()
-	 */
-	public function getDescription() {
-		return __('plugins.generic.jatsTemplate.description');
-	}
+    /**
+     * Prepare JATS template document
+     * @param $hookName string
+     * @param $args array
+     */
+    public function callbackFindJats($hookName, $args)
+    {
+        $plugin =& $args[0];
+        $record =& $args[1];
+        $candidateFiles =& $args[2];
+        $doc =& $args[3];
 
-	/**
-	 * Prepare JATS template document
-	 * @param $hookName string
-	 * @param $args array
-	 */
-	public function callbackFindJats($hookName, $args) {
-		$plugin =& $args[0];
-		$record =& $args[1];
-		$candidateFiles =& $args[2];
-		$doc =& $args[3];
+        if (!$doc && empty($candidateFiles)) {
+            $request = Application::get()->getRequest();
 
-		if (!$doc && empty($candidateFiles)) {
-			$request = Application::get()->getRequest();
+            $doc = new Article();
+            $doc->convertOAIToXml($record, $request);
+        }
 
-			$doc = new Article();
-			$doc->convertOAIToXml($record, $request);
-		}
+        return false;
+    }
 
-		return false;
-	}
+    /**
+     * Declare the handler function to process the actual page PATH
+     * @param $hookName string The name of the invoked hook
+     * @param $args array Hook parameters
+     * @return boolean Hook handling status
+     */
+    public function callbackHandleContent($hookName, $args)
+    {
+        $request = Application::get()->getRequest();
+        $templateMgr = TemplateManager::getManager($request);
 
-	/**
-	 * Declare the handler function to process the actual page PATH
-	 * @param $hookName string The name of the invoked hook
-	 * @param $args array Hook parameters
-	 * @return boolean Hook handling status
-	 */
-	function callbackHandleContent($hookName, $args) {
-		$request = Application::get()->getRequest();
-		$templateMgr = TemplateManager::getManager($request);
+        $page =& $args[0];
+        $op =& $args[1];
 
-		$page =& $args[0];
-		$op =& $args[1];
-
-		if ($page == 'jatsTemplate' && $op == 'download') {
-			$args[3] = new JatsTemplateDownloadHandler($this);
-			return true;
-		}
-		return false;
-	}
-}
-
-if (!PKP_STRICT_MODE) {
-    class_alias('\APP\plugins\generic\jatsTemplate\JatsTemplatePlugin', '\JatsTemplatePlugin');
+        if ($page == 'jatsTemplate' && $op == 'download') {
+            $args[3] = new JatsTemplateDownloadHandler($this);
+            return true;
+        }
+        return false;
+    }
 }

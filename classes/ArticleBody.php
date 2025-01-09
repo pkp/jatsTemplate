@@ -15,7 +15,6 @@ namespace APP\plugins\generic\jatsTemplate\classes;
 use APP\facades\Repo;
 use APP\submission\Submission;
 use PKP\config\Config;
-use PKP\core\PKPString;
 use PKP\galley\Galley;
 use PKP\search\SearchFileParser;
 
@@ -26,16 +25,16 @@ class ArticleBody extends \DOMDocument
      * @param Submission $submission
      * @return \DOMNode
      */
-    public function create(Submission $submission):\DOMNode
+    public function create(Submission $submission): \DOMNode
     {
         // create element body
         $bodyElement = $this->appendChild($this->createElement('body'));
         $text = '';
-        $galleys = $submission->getCurrentPublication()->getData('galleys');
+        $galleys = $submission->getCurrentPublication()->getData('galleys')->toArray();
 
         // Get HTML galleys for top of list, as they're quickest to parse
         // PDFs have second-highest priority over other file types
-        $items = array_reduce($galleys, function(array $carry, Galley $galley) {
+        $items = array_reduce($galleys, function (array $carry, Galley $galley) {
             $fileType = $galley->getFileType();
 
             switch ($fileType) {
@@ -56,7 +55,9 @@ class ArticleBody extends \DOMDocument
         $fileService = app()->get('file');
         foreach ($galleys as $galley) {
             $galleyFile = Repo::submissionFile()->get((int) $galley->getData('submissionFileId'));
-            if (!$galleyFile) continue;
+            if (!$galleyFile) {
+                continue;
+            }
 
             $filepath = $fileService->get($galleyFile->getData('fileId'))->path;
             $mimeType = $fileService->fs->mimeType($filepath);
@@ -75,7 +76,9 @@ class ArticleBody extends \DOMDocument
             } else {
                 $parser = SearchFileParser::fromFile($galleyFile);
                 if ($parser && $parser->open()) {
-                    while(($s = $parser->read()) !== false) $text .= $s;
+                    while (($s = $parser->read()) !== false) {
+                        $text .= $s;
+                    }
                     $parser->close();
                 }
                 if (!empty($text)) {
@@ -87,7 +90,9 @@ class ArticleBody extends \DOMDocument
                 }
             }
             // Use the first parseable galley.
-            if (!empty($text)) break;
+            if (!empty($text)) {
+                break;
+            }
         }
 
         return $bodyElement;
