@@ -287,8 +287,7 @@ class ArticleFront extends \DOMDocument
         $keywordVocabs = Repo::controlledVocab()->getBySymbolic(
             ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_KEYWORD,
             Application::ASSOC_TYPE_PUBLICATION,
-            $publication->getId(),
-            $journal->getSupportedSubmissionLocales()
+            $publication->getId()
         );
 
         foreach ($keywordVocabs as $locale => $keywords) {
