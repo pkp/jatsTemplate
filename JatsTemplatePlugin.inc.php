@@ -209,11 +209,11 @@ class JatsTemplatePlugin extends GenericPlugin {
 			$matchedPage = htmlspecialchars($matches[1]);
 			$response .= "\t\t\t\t<fpage>$matchedPage</fpage><lpage>$matchedPage</lpage>\n";
 			$pageCount = 1;
-		} elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)$/', $article->getPages(), $matches)) {
+		} elseif (PKPString::regexp_match_get('/^[Pp]?[Pp]?[.]?[ ]?(\d+)$/', $article->getPages(), $matches)) {
 			$matchedPage = htmlspecialchars($matches[1]);
 			$response .= "\t\t\t\t<fpage>$matchedPage</fpage><lpage>$matchedPage</lpage>\n";
 			$pageCount = 1;
-		} elseif (PKPString::regexp_match_get('/^[Pp][Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/', $article->getPages(), $matches)) {
+		} elseif (PKPString::regexp_match_get('/^[Pp]?[Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/', $article->getPages(), $matches)) {
 			$matchedPageFrom = htmlspecialchars($matches[1]);
 			$matchedPageTo = htmlspecialchars($matches[3]);
 			$response .=
