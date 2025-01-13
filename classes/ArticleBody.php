@@ -30,11 +30,11 @@ class ArticleBody extends \DOMDocument
         // create element body
         $bodyElement = $this->appendChild($this->createElement('body'));
         $text = '';
-        $galleys = $submission->getCurrentPublication()->getData('galleys')->toArray();
+        $galleys = $submission->getCurrentPublication()->getData('galleys');
 
         // Get HTML galleys for top of list, as they're quickest to parse
         // PDFs have second-highest priority over other file types
-        $items = array_reduce($galleys, function (array $carry, Galley $galley) {
+        $items = $galleys->reduce(function (array $carry, Galley $galley) {
             $fileType = $galley->getFileType();
 
             switch ($fileType) {
@@ -50,7 +50,6 @@ class ArticleBody extends \DOMDocument
             return $carry;
         }, ['html' => [], 'pdf' => [], 'other' => []]);
         $galleys = array_merge($items['html'], $items['pdf'], $items['other']);
-
         // Provide the full-text.
         $fileService = app()->get('file');
         foreach ($galleys as $galley) {

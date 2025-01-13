@@ -96,7 +96,6 @@ class ArticleBackTest extends PKPTestCase
         $galleyDoiObject->setData('doi', 'galley-doi');
 
         // Galleys
-        $galley = Repo::galley()->newDataObject();
         /** @var Galley|MockObject */
         $galley = $this->getMockBuilder(Galley::class)
             ->onlyMethods(['getFileType', 'getBestGalleyId'])
@@ -111,7 +110,7 @@ class ArticleBackTest extends PKPTestCase
         $galley->setData('submissionFileId', 98);
         $galley->setData('doiObject', $galleyDoiObject);
 
-        $galleys = [$galley];
+        $galleys = collect([$galley]);
 
         // Article
         /** @var Submission|MockObject */
@@ -148,6 +147,9 @@ class ArticleBackTest extends PKPTestCase
         $journal->setPath('journal-path');
         $journal->setData(Journal::SETTING_ENABLE_DOIS, true);
         $journal->setData('abbreviation', 'publicknowledgeJ Pub Know', 'en');
+        $journal->setData('publisherInstitution', 'journal-publisher');
+        $journal->setData('onlineIssn', 'onlineIssn');
+        $journal->setData('printIssn', 'printIssn');
         $journal->setId($journalId);
 
         // Section
