@@ -144,6 +144,7 @@ class ArticleTest extends PKPTestCase
             ->willReturn($galleys);
         $article->setId(9);
         $article->setData('contextId', $journalId);
+        $article->setData('locale', 'en');
         $author->setSubmissionId($article->getId());
         $article->expects($this->any())
             ->method('getCurrentPublication')
@@ -152,15 +153,11 @@ class ArticleTest extends PKPTestCase
         // Journal
         /** @var Journal|MockObject */
         $journal = $this->getMockBuilder(Journal::class)
-            ->onlyMethods(['getSetting'])
+            ->onlyMethods([])
             ->getMock();
-        $journal->expects($this->any())
-            ->method('getSetting')
-            ->willReturnMap([
-                ['publisherInstitution', null, 'journal-publisher'],
-                ['onlineIssn', null, 'onlineIssn'],
-                ['printIssn', null, 'printIssn'],
-            ]);
+        $journal->setData('publisherInstitution', 'journal-publisher');
+        $journal->setData('onlineIssn', 'onlineIssn');
+        $journal->setData('printIssn', 'printIssn');
         $journal->setName('journal-title', 'en');
         $journal->setPrimaryLocale('en');
         $journal->setPath('journal-path');

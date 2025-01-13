@@ -30,7 +30,7 @@ class ArticleBody extends \DOMDocument
         // create element body
         $bodyElement = $this->appendChild($this->createElement('body'));
         $text = '';
-        $galleys = $submission->getCurrentPublication()->getData('galleys')->toArray();
+        $galleys = $submission->getCurrentPublication()->getData('galleys');
 
         // Get HTML galleys for top of list, as they're quickest to parse
         // PDFs have second-highest priority over other file types
