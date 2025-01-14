@@ -13,8 +13,8 @@
 <version>
 	<application>jatsTemplate</application>
 	<type>plugins.generic</type>
-	<release>1.0.6.2</release>
-	<date>2024-03-11</date>
+	<release>1.0.6.3</release>
+	<date>2025-01-14</date>
 	<lazy-load>1</lazy-load>
 	<class>JatsTemplatePlugin</class>
 </version>
