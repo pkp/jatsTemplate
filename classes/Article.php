@@ -12,7 +12,6 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
-use APP\core\Application;
 use APP\issue\Issue;
 use APP\publication\Publication;
 use APP\section\Section;
@@ -65,20 +64,20 @@ class Article extends \DOMDocument
 
     /**
      * Map the specific HTML tags in title/ sub title for JATS schema compability
+     *
      * @see https://jats.nlm.nih.gov/publishing/0.4/xsd/JATS-journalpublishing0.xsd
      *
      * @param  string $htmlTitle The submission title/sub title as in HTML
-     * @return string
      */
     public function mapHtmlTagsForTitle(string $htmlTitle): string
     {
         $mappings = [
-            '<b>'   => '<bold>',
-            '</b>'  => '</bold>',
-            '<i>'   => '<italic>',
-            '</i>'  => '</italic>',
-            '<u>'   => '<underline>',
-            '</u>'  => '</underline>',
+            '<b>' => '<bold>',
+            '</b>' => '</bold>',
+            '<i>' => '<italic>',
+            '</i>' => '</italic>',
+            '<u>' => '<underline>',
+            '</u>' => '</underline>',
         ];
 
         return str_replace(array_keys($mappings), array_values($mappings), $htmlTitle);

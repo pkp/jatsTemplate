@@ -12,20 +12,19 @@
 
 namespace APP\plugins\generic\jatsTemplate\functional;
 
-use PKP\doi\Doi;
-use APP\issue\Issue;
-use APP\facades\Repo;
 use APP\author\Author;
-use PKP\galley\Galley;
-use PKP\oai\OAIRecord;
+use APP\issue\Issue;
 use APP\journal\Journal;
-use APP\section\Section;
-use APP\submission\Submission;
-use APP\publication\Publication;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\Attributes\CoversClass;
 use APP\plugins\generic\jatsTemplate\classes\Article;
 use APP\plugins\generic\jatsTemplate\classes\ArticleFront;
+use APP\publication\Publication;
+use APP\section\Section;
+use APP\submission\Submission;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\MockObject\MockObject;
+use PKP\doi\Doi;
+use PKP\galley\Galley;
+use PKP\oai\OAIRecord;
 
 #[CoversClass(ArticleFront::class)]
 class ArticleFrontTest extends \PKP\tests\PKPTestCase
@@ -43,6 +42,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
 
     /**
      * create article mock instance
+     *
      * @throws \DOMException
      */
     private function createArticleMockInstance(OAIRecord $record)
@@ -57,7 +57,6 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
 
     /**
      * create mock OAIRecord object
-     * @return OAIRecord
      */
     private function createOAIRecordMockObject(): OAIRecord
     {
@@ -198,16 +197,17 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
 
     /**
      * testing create front element
+     *
      * @throws \DOMException
      */
     public function testCreate()
     {
         $OAIRecord = $this->createOAIRecordMockObject();
-        $record =& $OAIRecord;
-        $submission =& $record->getData('article');
-        $journal =& $record->getData('journal');
-        $section =& $record->getData('section');
-        $issue =& $record->getData('issue');
+        $record = &$OAIRecord;
+        $submission = &$record->getData('article');
+        $journal = &$record->getData('journal');
+        $section = &$record->getData('section');
+        $issue = &$record->getData('issue');
         $article = $this->createArticleMockInstance($record);
 
         $articleFrontElement = new ArticleFront();
@@ -228,13 +228,14 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
 
     /**
      * testing create journal-meta element
+     *
      * @throws \DOMException
      */
     public function testCreateJournalMeta()
     {
         $OAIRecord = $this->createOAIRecordMockObject();
-        $record =& $OAIRecord;
-        $journal =& $record->getData('journal');
+        $record = &$OAIRecord;
+        $journal = &$record->getData('journal');
 
         $articleFrontElement = new ArticleFront();
         $xml = $articleFrontElement->createJournalMeta(
@@ -250,16 +251,17 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
 
     /**
      * testing create article-meta element
+     *
      * @throws \DOMException
      */
     public function testCreateArticleMeta()
     {
         $OAIRecord = $this->createOAIRecordMockObject();
-        $record =& $OAIRecord;
-        $submission =& $record->getData('article');
-        $journal =& $record->getData('journal');
-        $section =& $record->getData('section');
-        $issue =& $record->getData('issue');
+        $record = &$OAIRecord;
+        $submission = &$record->getData('article');
+        $journal = &$record->getData('journal');
+        $section = &$record->getData('section');
+        $issue = &$record->getData('issue');
         $article = $this->createArticleMockInstance($record);
 
         $articleFrontElement = new ArticleFront();
@@ -280,13 +282,14 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
 
     /**
      * testing create journal-meta journal-title-group element
+     *
      * @throws \DOMException
      */
     public function testCreateJournalMetaJournalTitleGroup()
     {
         $OAIRecord = $this->createOAIRecordMockObject();
-        $record =& $OAIRecord;
-        $journal =& $record->getData('journal');
+        $record = &$OAIRecord;
+        $journal = &$record->getData('journal');
 
         $articleFrontElement = new ArticleFront();
         $xml = $articleFrontElement->createJournalMetaJournalTitleGroup(
@@ -300,13 +303,14 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
 
     /**
      * testing create article-meta contrib-group element
+     *
      * @throws \DOMException
      */
     public function testCreateArticleContribGroup()
     {
         $OAIRecord = $this->createOAIRecordMockObject();
-        $record =& $OAIRecord;
-        $submission =& $record->getData('article');
+        $record = &$OAIRecord;
+        $submission = &$record->getData('article');
 
         $this->createRequestMockInstance();
 

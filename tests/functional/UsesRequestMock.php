@@ -15,8 +15,8 @@ namespace APP\plugins\generic\jatsTemplate\tests\functional;
 use APP\core\Request;
 use APP\journal\Journal;
 use PHPUnit\Framework\MockObject\MockObject;
-use PKP\core\PKPRouter;
 use PKP\core\Dispatcher;
+use PKP\core\PKPRouter;
 use PKP\core\Registry;
 
 trait UsesRequestMock

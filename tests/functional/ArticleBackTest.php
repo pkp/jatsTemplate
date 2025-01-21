@@ -12,21 +12,20 @@
 
 namespace APP\plugins\generic\jatsTemplate\functional;
 
-use PKP\doi\Doi;
-use APP\issue\Issue;
-use APP\facades\Repo;
 use APP\author\Author;
-use PKP\galley\Galley;
-use PKP\oai\OAIRecord;
+use APP\issue\Issue;
 use APP\journal\Journal;
-use APP\section\Section;
-use PKP\tests\PKPTestCase;
-use APP\submission\Submission;
-use APP\publication\Publication;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\Attributes\CoversClass;
 use APP\plugins\generic\jatsTemplate\classes\Article;
 use APP\plugins\generic\jatsTemplate\classes\ArticleBack;
+use APP\publication\Publication;
+use APP\section\Section;
+use APP\submission\Submission;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\MockObject\MockObject;
+use PKP\doi\Doi;
+use PKP\galley\Galley;
+use PKP\oai\OAIRecord;
+use PKP\tests\PKPTestCase;
 
 #[CoversClass(ArticleBack::class)]
 class ArticleBackTest extends PKPTestCase
@@ -35,6 +34,7 @@ class ArticleBackTest extends PKPTestCase
 
     /**
      * create article mock instance
+     *
      * @throws \DOMException
      */
     private function createArticleMockInstance(OAIRecord $record)
@@ -49,7 +49,6 @@ class ArticleBackTest extends PKPTestCase
 
     /**
      * create mock OAIRecord object
-     * @return OAIRecord
      */
     private function createOAIRecordMockObject(): OAIRecord
     {
@@ -192,13 +191,14 @@ class ArticleBackTest extends PKPTestCase
     }
     /**
      * test back element if citations table doesn't have records
+     *
      * @throws \DOMException
      */
     public function testCreate()
     {
         $OAIRecord = $this->createOAIRecordMockObject();
-        $record =& $OAIRecord;
-        $submission =& $record->getData('article');
+        $record = &$OAIRecord;
+        $submission = &$record->getData('article');
         $publication = $submission->getCurrentPublication();
 
         $articleBackElement = new ArticleBack();

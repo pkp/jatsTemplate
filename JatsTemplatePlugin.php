@@ -22,6 +22,8 @@ class JatsTemplatePlugin extends GenericPlugin
 {
     /**
      * @copydoc Plugin::register()
+     *
+     * @param null|mixed $mainContextId
      */
     public function register($category, $path, $mainContextId = null)
     {
@@ -53,15 +55,16 @@ class JatsTemplatePlugin extends GenericPlugin
 
     /**
      * Prepare JATS template document
+     *
      * @param $hookName string
      * @param $args array
      */
     public function callbackFindJats($hookName, $args)
     {
-        $plugin =& $args[0];
-        $record =& $args[1];
-        $candidateFiles =& $args[2];
-        $doc =& $args[3];
+        $plugin = &$args[0];
+        $record = &$args[1];
+        $candidateFiles = &$args[2];
+        $doc = &$args[3];
 
         if (!$doc && empty($candidateFiles)) {
             $request = Application::get()->getRequest();
@@ -75,8 +78,10 @@ class JatsTemplatePlugin extends GenericPlugin
 
     /**
      * Declare the handler function to process the actual page PATH
+     *
      * @param $hookName string The name of the invoked hook
      * @param $args array Hook parameters
+     *
      * @return boolean Hook handling status
      */
     public function callbackHandleContent($hookName, $args)
@@ -84,8 +89,8 @@ class JatsTemplatePlugin extends GenericPlugin
         $request = Application::get()->getRequest();
         $templateMgr = TemplateManager::getManager($request);
 
-        $page =& $args[0];
-        $op =& $args[1];
+        $page = &$args[0];
+        $op = &$args[1];
 
         if ($page == 'jatsTemplate' && $op == 'download') {
             $args[3] = new JatsTemplateDownloadHandler($this);
