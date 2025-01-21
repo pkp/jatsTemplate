@@ -18,8 +18,6 @@ class ArticleBack extends \DOMDocument
 {
     /**
      * create xml back DOMNode
-     * @param $publication
-     * @return \DOMNode
      */
     public function create($publication): \DOMNode
     {

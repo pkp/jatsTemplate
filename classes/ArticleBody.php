@@ -22,8 +22,6 @@ class ArticleBody extends \DOMDocument
 {
     /**
      * create xml body DOMNode
-     * @param Submission $submission
-     * @return \DOMNode
      */
     public function create(Submission $submission): \DOMNode
     {

@@ -12,18 +12,18 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
-use APP\issue\Issue;
-use APP\facades\Repo;
-use PKP\core\PKPString;
-use APP\journal\Journal;
-use APP\section\Section;
-use PKP\core\PKPRequest;
 use APP\core\Application;
-use PKP\core\PKPApplication;
-use APP\submission\Submission;
-use PKP\plugins\PluginRegistry;
+use APP\facades\Repo;
+use APP\issue\Issue;
+use APP\journal\Journal;
 use APP\publication\Publication;
+use APP\section\Section;
+use APP\submission\Submission;
 use PKP\controlledVocab\ControlledVocab;
+use PKP\core\PKPApplication;
+use PKP\core\PKPRequest;
+use PKP\core\PKPString;
+use PKP\plugins\PluginRegistry;
 use PKP\submissionFile\SubmissionFile;
 
 class ArticleFront extends \DOMDocument
@@ -127,7 +127,7 @@ class ArticleFront extends \DOMDocument
     /**
      * Create xml article-meta DOMNode
      */
-    function createArticleMeta(Submission $submission, Journal $journal, Section $section, ?Issue $issue, $request, Article $article, ?Publication $workingPublication = null)
+    public function createArticleMeta(Submission $submission, Journal $journal, Section $section, ?Issue $issue, $request, Article $article, ?Publication $workingPublication = null)
     {
         $publication = $submission->getCurrentPublication();
         if ($workingPublication) {
@@ -268,7 +268,7 @@ class ArticleFront extends \DOMDocument
                     ->setAttribute('xlink:href', $licenseUrl)->parentNode;
                 if ($ccBadge) {
                     $licenseElement->appendChild($this->createElement('license-p'))
-                                   ->appendChild($this->createTextNode($ccBadge));
+                        ->appendChild($this->createTextNode($ccBadge));
                 }
             }
         }

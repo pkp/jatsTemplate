@@ -8,20 +8,21 @@
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
  * @package plugins.generic.jatsTemplate
+ *
  * @class JatsTemplateDownloadHandler
  */
 
 namespace APP\plugins\generic\jatsTemplate;
 
-use PKP\core\PKPRequest;
-use PKP\security\Role;
-use PKP\security\RoleDAO;
-use PKP\submissionFile\SubmissionFile;
-use PKP\db\DAORegistry;
-use PKP\config\Config;
 use APP\facades\Repo;
 use APP\handler\Handler;
 use Firebase\JWT\JWT;
+use PKP\config\Config;
+use PKP\core\PKPRequest;
+use PKP\db\DAORegistry;
+use PKP\security\Role;
+use PKP\security\RoleDAO;
+use PKP\submissionFile\SubmissionFile;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class JatsTemplateDownloadHandler extends Handler
@@ -44,9 +45,9 @@ class JatsTemplateDownloadHandler extends Handler
     {
         // Permit the use of the Authorization header and an API key for access to unpublished/subscription content
         if ($header = array_search('Authorization', array_flip(getallheaders()))) {
-            list($bearer, $jwt) = explode(' ', $header);
+            [$bearer, $jwt] = explode(' ', $header);
             if (strcasecmp($bearer, 'Bearer') == 0) {
-                $apiToken = JWT::decode($jwt, Config::getVar('security', 'api_key_secret', ''), array('HS256'));
+                $apiToken = JWT::decode($jwt, Config::getVar('security', 'api_key_secret', ''), ['HS256']);
                 $this->setApiToken($apiToken);
             }
         }
@@ -64,7 +65,7 @@ class JatsTemplateDownloadHandler extends Handler
         if (!$user || !$context) {
             return false;
         }
-        $roleDao = DAORegistry::getDAO('RoleDAO'); /** @var $roleDao RoleDAO */
+        $roleDao = DAORegistry::getDAO('RoleDAO'); /** @var RoleDAO $roleDao */
         $roles = $roleDao->getByUserId($user->getId(), $context->getId());
         foreach ($roles as $role) {
             if (in_array($role->getRoleId(), [Role::ROLE_ID_MANAGER, Role::ROLE_ID_SUBSCRIPTION_MANAGER])) {
@@ -76,6 +77,7 @@ class JatsTemplateDownloadHandler extends Handler
 
     /**
      * Handle a download request
+     *
      * @param $args array Arguments array.
      * @param $request PKPRequest Request object.
      */
