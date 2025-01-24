@@ -12,6 +12,7 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
+use APP\author\Author;
 use APP\issue\Issue;
 use APP\facades\Repo;
 use PKP\core\PKPString;
@@ -349,7 +350,7 @@ class ArticleFront extends \DOMDocument
 
         // Include authors
         $affiliations = [];
-        foreach ($publication->getData('authors') as $author) {
+        foreach ($publication->getData('authors') as $author) { /** @var Author $author */
             $affiliation = $author->getLocalizedAffiliation();
             $affiliationToken = array_search($affiliation, $affiliations);
             if ($affiliation && !$affiliationToken) {
@@ -381,7 +382,7 @@ class ArticleFront extends \DOMDocument
             if ($author->getOrcid()) {
                 $contribElement->appendChild($this->createElement('contrib-id'))
                     ->setAttribute('contrib-id-type', 'orcid')->parentNode
-                    ->setAttribute('authenticated', $author->getData('orcidAccessToken') ? 'true' : 'false')->parentNode
+                    ->setAttribute('authenticated', $author->hasVerifiedOrcid() ? 'true' : 'false')->parentNode
                     ->appendChild($this->createTextNode($author->getOrcid()));
             }
 
