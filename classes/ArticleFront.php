@@ -369,12 +369,11 @@ class ArticleFront extends \DOMDocument
                 $contributorRoles = $author->getData('creditRoles') ?? [];
                 $creditRoles = $creditPlugin->getCreditRoles($submission->getData('locale'));
                 foreach ($contributorRoles as $role) {
-                    $roleName = $creditRoles[$role];
-                    $roleElement = $contribElement->appendChild($this->createElement('role'))
-                        ->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
+                    $roleName = $creditRoles[$role]['name'];
+                    $roleElement = $contribElement->appendChild($this->createElement('role'));
+		    $roleElement->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
                         ->setAttribute('vocab-term', $roleName)->parentNode
                         ->setAttribute('vocab-term-identifier', $role);
-
                     $roleElement->appendChild($this->createTextNode($roleName));
                 }
             }
