@@ -27,6 +27,7 @@ use PKP\plugins\PluginRegistry;
 use PKP\search\SearchFileParser;
 use PKP\submissionFile\SubmissionFile;
 use PKP\config\Config;
+use PKP\facades\Locale;
 
 class JatsTemplatePlugin extends GenericPlugin {
 	/**
@@ -189,15 +190,16 @@ class JatsTemplatePlugin extends GenericPlugin {
 			$surname = method_exists($author, 'getLastName')?$author->getLastName():$author->getLocalizedFamilyName();
 
 			// If using the CRediT plugin, credit roles may be available.
+			$creditData = '';
 			$creditPlugin = PluginRegistry::getPlugin('generic', 'creditplugin');
 			if ($creditPlugin && $creditPlugin->getEnabled()) {
-			    $contributorRoles = $author->getData('creditRoles') ?? [];
-			    $creditRoles = $creditPlugin->getCreditRoles();
-			    foreach ($contributorRoles as $role) {
-				$roleName = $creditRoles[$role];
+				$contributorRoles = $author->getData('creditRoles') ?? [];
+				$creditRoles = $creditPlugin->getCreditRoles(Locale::getLocale());
+				foreach ($contributorRoles as $role) {
+				$roleName = $creditRoles[$role]['name'];
 				$creditData .= '<role vocab="credit" vocab-identifier="https://credit.niso.org/" vocab-term="' . htmlspecialchars($roleName) . '" vocab-term-identifier="' . htmlspecialchars($role) . '">' . htmlspecialchars($roleName) . "</role>\n";
-			    }
-			} else $creditData = '';
+				}
+			}
 
 			$response .=
 				"\t\t\t\t<contrib " . ($author->getPrimaryContact()?'corresp="yes" ':'') . ">\n" .
@@ -227,7 +229,7 @@ class JatsTemplatePlugin extends GenericPlugin {
 				$purifier = new HTMLPurifier($config);
 			}
 
-			foreach ($author->getData('biography') as $locale => $bio) {
+			foreach ((array) $author->getData('biography') as $locale => $bio) {
 				if (!empty($bio)) {
 					$response .= "\t\t\t\t\t<bio xml:lang=\"" . substr($locale, 0, 2) . "\">" . $purifier->purify($bio) . "</bio>\n";
 				}
@@ -438,5 +440,5 @@ class JatsTemplatePlugin extends GenericPlugin {
 }
 
 if (!PKP_STRICT_MODE) {
-    class_alias('\APP\plugins\generic\jatsTemplate\JatsTemplatePlugin', '\JatsTemplatePlugin');
+	class_alias('\APP\plugins\generic\jatsTemplate\JatsTemplatePlugin', '\JatsTemplatePlugin');
 }
