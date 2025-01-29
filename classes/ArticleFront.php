@@ -178,18 +178,26 @@ class ArticleFront extends \DOMDocument
         $contribGroup = $this->createArticleContribGroup($submission, $publication);
 
         // Include authors
-        $affiliations = $contribGroup['affiliations'];
+        $institutions = $contribGroup['institutions'];
 
         // append element contrib-group to article-meta
         $articleMetaElement->appendChild($contribGroup['contribGroupElement']);
-
-        foreach ($affiliations as $affiliationToken => $affiliation) {
+        foreach ($institutions as $affiliationToken => $institution) {
             $affNode = $articleMetaElement->appendChild($this->createElement('aff'))
                 ->setAttribute('id', $affiliationToken)->parentNode;
-
-            $affNode->appendChild($this->createElement('institution'))
-                ->appendChild($this->createTextNode($affiliation))->parentNode
+            if (isset($institution['id'])) {
+                $institutionWrapNode = $affNode->appendChild($this->createElement('institution-wrap'));
+                $institutionWrapNode->appendChild($this->createElement('institution'))
+                    ->appendChild($this->createTextNode($institution['name']))->parentNode
+                    ->setAttribute('content-type', 'orgname');
+                $institutionWrapNode->appendChild($this->createElement('institution-id'))
+                    ->appendChild($this->createTextNode($institution['id']))->parentNode
+                    ->setAttribute('institution-id-type', 'ROR');
+            } else {
+                $affNode->appendChild($this->createElement('institution'))
+                ->appendChild($this->createTextNode($institution['name']))->parentNode
                 ->setAttribute('content-type', 'orgname');
+            }
         }
 
         if ($datePublished = $publication->getData('datePublished')) {
@@ -349,15 +357,21 @@ class ArticleFront extends \DOMDocument
             ->setAttribute('content-type', 'author')->parentNode;
 
         // Include authors
-        $affiliations = [];
+        $affiliations = $institutions = [];
         foreach ($publication->getData('authors') as $author) { /** @var Author $author */
-            $affiliationNames = $author->getLocalizedAffiliationNames();
-            foreach ($affiliationNames as $affiliationName) {
+            $authorTokenList = [];
+            $authorAffiliations = $author->getAffiliations();
+            foreach ($authorAffiliations as $authorAffiliation) {
+                $affiliationName = $authorAffiliation->getLocalizedName($publication->getData('locale'));
                 $affiliationToken = array_search($affiliationName, $affiliations);
                 if ($affiliationName && !$affiliationToken) {
                     $affiliationToken = 'aff-' . (count($affiliations) + 1);
+                    $authorTokenList[] = $affiliationToken;
                     $affiliations[$affiliationToken] = $affiliationName;
+                    $institutions[$affiliationToken]['name'] = $affiliationName;
+                    $institutions[$affiliationToken]['id'] = $authorAffiliation->getRor();
                 }
+
             }
 
             $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
@@ -373,7 +387,7 @@ class ArticleFront extends \DOMDocument
                 foreach ($contributorRoles as $role) {
                     $roleName = $creditRoles[$role]['name'];
                     $roleElement = $contribElement->appendChild($this->createElement('role'));
-		    $roleElement->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
+                    $roleElement->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
                         ->setAttribute('vocab-term', $roleName)->parentNode
                         ->setAttribute('vocab-term-identifier', $role);
                     $roleElement->appendChild($this->createTextNode($roleName));
@@ -410,10 +424,10 @@ class ArticleFront extends \DOMDocument
             $contribElement->appendChild($this->createElement('email'))
                 ->appendChild($this->createTextNode($author->getEmail()));
 
-            if ($affiliationToken) {
+            foreach ($authorTokenList as $token) {
                 $contribElement->appendChild($this->createElement('xref'))
                     ->setAttribute('ref-type', 'aff')->parentNode
-                    ->setAttribute('rid', $affiliationToken);
+                    ->setAttribute('rid', $token);
             }
             if (($s = $author->getUrl()) != '') {
                 $contribElement->appendChild($this->createElement('uri'))
@@ -440,6 +454,6 @@ class ArticleFront extends \DOMDocument
                 $contribElement->appendChild($bioElement);
             }
         }
-        return ['contribGroupElement' => $contribGroupElement, 'affiliations' => $affiliations];
+        return ['contribGroupElement' => $contribGroupElement, 'institutions' => $institutions];
     }
 }
