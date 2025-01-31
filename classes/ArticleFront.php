@@ -405,9 +405,6 @@ class ArticleFront extends \DOMDocument
             $nameElement->appendChild($this->createElement('given-names'))
                 ->appendChild($this->createTextNode($author->getLocalizedGivenName()));
 
-            $contribElement->appendChild($this->createElement('email'))
-                ->appendChild($this->createTextNode($author->getEmail()));
-
             if ($affiliationToken) {
                 $contribElement->appendChild($this->createElement('xref'))
                     ->setAttribute('ref-type', 'aff')->parentNode

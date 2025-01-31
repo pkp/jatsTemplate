@@ -47,7 +47,6 @@
                             <given-names>author-firstname</given-names>
                         </name>
                     </name-alternatives>
-                    <email>someone@example.com</email>
                     <xref ref-type="aff" rid="aff-1"/>
                 </contrib>
             </contrib-group>
