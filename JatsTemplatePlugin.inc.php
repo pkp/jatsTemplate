@@ -173,7 +173,6 @@ class JatsTemplatePlugin extends GenericPlugin {
 				"\t\t\t\t\t\t</name>\n" .
 				"\t\t\t\t\t</name-alternatives>\n" .
 				($affiliationToken?"\t\t\t\t\t<xref ref-type=\"aff\" rid=\"$affiliationToken\" />\n":'') .
-				"\t\t\t\t\t<email>" . htmlspecialchars($author->getEmail()) . "</email>\n" .
 				(($s = $author->getUrl()) != ''?"\t\t\t\t\t<uri>" . htmlspecialchars($s) . "</uri>\n":'');
 
 			if (!$purifier) {
