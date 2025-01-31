@@ -351,11 +351,13 @@ class ArticleFront extends \DOMDocument
         // Include authors
         $affiliations = [];
         foreach ($publication->getData('authors') as $author) { /** @var Author $author */
-            $affiliation = $author->getLocalizedAffiliation();
-            $affiliationToken = array_search($affiliation, $affiliations);
-            if ($affiliation && !$affiliationToken) {
-                $affiliationToken = 'aff-' . (count($affiliations) + 1);
-                $affiliations[$affiliationToken] = $affiliation;
+            $affiliationNames = $author->getLocalizedAffiliationNames();
+            foreach ($affiliationNames as $affiliationName) {
+                $affiliationToken = array_search($affiliationName, $affiliations);
+                if ($affiliationName && !$affiliationToken) {
+                    $affiliationToken = 'aff-' . (count($affiliations) + 1);
+                    $affiliations[$affiliationToken] = $affiliationName;
+                }
             }
 
             $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
