@@ -25,6 +25,7 @@ use APP\submission\Submission;
 use PKP\plugins\PluginRegistry;
 use APP\publication\Publication;
 use PKP\controlledVocab\ControlledVocab;
+use PKP\i18n\LocaleConversion;
 use PKP\submissionFile\SubmissionFile;
 
 class ArticleFront extends \DOMDocument
@@ -105,7 +106,7 @@ class ArticleFront extends \DOMDocument
         $journalTitleGroupElement = $this->appendChild($this->createElement('journal-title-group'));
 
         $journalTitleGroupElement->appendChild($this->createElement('journal-title'))
-            ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $journal->getPrimaryLocale()))->parentNode
+            ->setAttribute('xml:lang', LocaleConversion::toBcp47($journal->getPrimaryLocale()))->parentNode
             ->appendChild($this->createTextNode($journal->getName($journal->getPrimaryLocale())));
 
         foreach ($journal->getName(null) as $locale => $title) {
@@ -113,13 +114,13 @@ class ArticleFront extends \DOMDocument
                 continue;
             }
             $journalTitleGroupElement->appendChild($this->createElement('trans-title-group'))
-                ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale))->parentNode
+                ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
                 ->appendChild($this->createElement('trans-title'))->appendChild($this->createTextNode($title));
         }
         //Include journal abbreviation titles
         foreach ($journal->getData('abbreviation') as $locale => $abbrevTitle) {
             $journalTitleGroupElement->appendChild($this->createElement('abbrev-journal-title'))
-                ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale))->parentNode
+                ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
                 ->appendChild($this->createTextNode($abbrevTitle));
         }
         return $journalTitleGroupElement;
@@ -143,7 +144,7 @@ class ArticleFront extends \DOMDocument
 
         $articleMetaElement->appendChild($this->createElement('article-categories'))
             ->appendChild($this->createElement('subj-group'))
-            ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $journal->getPrimaryLocale()))->parentNode
+            ->setAttribute('xml:lang', LocaleConversion::toBcp47($journal->getPrimaryLocale()))->parentNode
             ->setAttribute('subj-group-type', 'heading')->parentNode
             ->appendChild($this->createElement('subject'))
             ->appendChild($this->createTextNode($section->getLocalizedTitle()));
@@ -151,11 +152,11 @@ class ArticleFront extends \DOMDocument
         $titleGroupElement = $articleMetaElement->appendChild($this->createElement('title-group'));
 
         $titleGroupElement->appendChild($this->createElement('article-title', $article->mapHtmlTagsForTitle($publication->getLocalizedTitle(null, 'html'))))
-            ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $submission->getData('locale')));
+            ->setAttribute('xml:lang', LocaleConversion::toBcp47($submission->getData('locale')));
 
         if (!empty($subtitle = $article->mapHtmlTagsForTitle($publication->getLocalizedSubTitle(null, 'html')))) {
             $titleGroupElement->appendChild($this->createElement('subtitle', $subtitle))
-                ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $submission->getData('locale')));
+                ->setAttribute('xml:lang', LocaleConversion::toBcp47($submission->getData('locale')));
         }
 
         // Include translated submission titles
@@ -168,7 +169,7 @@ class ArticleFront extends \DOMDocument
                 continue;
             }
             $titleGroupElement->appendChild($this->createElement('trans-title-group'))
-                ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale))->parentNode
+                ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
                 ->appendChild($this->createElement('trans-title', $translatedTitle));
 
             if (!empty($translatedSubTitle = $article->mapHtmlTagsForTitle($publication->getLocalizedSubTitle($locale, 'html')))) {
@@ -304,7 +305,7 @@ class ArticleFront extends \DOMDocument
 
             $kwdGroupElement = $articleMetaElement
                 ->appendChild($this->createElement('kwd-group'))
-                ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale))->parentNode;
+                ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode;
             foreach ($keywords as $keyword) {
                 $kwdGroupElement
                     ->appendChild($this->createElement('kwd'))
@@ -442,7 +443,7 @@ class ArticleFront extends \DOMDocument
                 }
 
                 $bioElement = $this->createElement('bio');
-                $bioElement->setAttribute('xml:lang', str_replace(['_', '@'], '-', $locale));
+                $bioElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
 
                 $strippedBio = PKPString::stripUnsafeHtml($bio);
                 $bioDocument = new \DOMDocument();

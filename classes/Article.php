@@ -19,6 +19,7 @@ use APP\section\Section;
 use APP\submission\Submission;
 use PKP\context\Context;
 use PKP\core\PKPRequest;
+use PKP\i18n\LocaleConversion;
 use PKP\oai\OAIRecord;
 
 class Article extends \DOMDocument
@@ -49,7 +50,7 @@ class Article extends \DOMDocument
     {
         $articleElement = $this->appendChild($this->createElement('article'))
             ->setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')->parentNode
-            ->setAttribute('xml:lang', str_replace(['_', '@'], '-', $submission->getData('locale')))->parentNode
+            ->setAttribute('xml:lang', LocaleConversion::toBcp47($submission->getData('locale')))->parentNode
             ->setAttribute('xmlns:mml', 'http://www.w3.org/1998/Math/MathML')->parentNode
             ->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')->parentNode;
 
