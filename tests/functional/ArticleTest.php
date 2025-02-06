@@ -3,8 +3,8 @@
 /**
  * @file ArticleTest.php
  *
- * Copyright (c) 2003-2022 Simon Fraser University
- * Copyright (c) 2003-2022 John Willinsky
+ * Copyright (c) 2003-2025 Simon Fraser University
+ * Copyright (c) 2003-2025 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article unit tests
@@ -14,7 +14,6 @@ namespace APP\plugins\generic\jatsTemplate\functional;
 
 use PKP\doi\Doi;
 use APP\issue\Issue;
-use APP\facades\Repo;
 use APP\author\Author;
 use PKP\galley\Galley;
 use PKP\oai\OAIRecord;
@@ -28,6 +27,7 @@ use PKP\galley\Collector as GalleyCollector;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PKP\author\Repository as AuthorRepository;
 use APP\plugins\generic\jatsTemplate\classes\Article;
+use PKP\affiliation\Affiliation;
 
 #[CoversClass(Article::class)]
 class ArticleTest extends PKPTestCase
@@ -72,7 +72,10 @@ class ArticleTest extends PKPTestCase
         $author = new Author();
         $author->setGivenName('author-firstname', 'en');
         $author->setFamilyName('author-lastname', 'en');
-        $author->setAffiliation('author-affiliation', 'en');
+        $affiliation = new Affiliation();
+        $affiliation->setName('author-affiliation', 'en');
+        $affiliation->setAuthorId(1);
+        $author->setAffiliations([$affiliation]);
         $author->setEmail('someone@example.com');
 
         // Publication
