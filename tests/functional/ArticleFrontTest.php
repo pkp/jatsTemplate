@@ -87,6 +87,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             ->getMock();
         $publication->setData('id', 1);
         $publication->setData('issueId', 96);
+        $publication->setData('locale', 'en');
         $publication->setData('pages', 15);
         $publication->setData('type', 'art-type', 'en');
         $publication->setData('title', 'article-title-en', 'en');
@@ -110,6 +111,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             ->willReturn(9);
         $article->setId(9);
         $article->setData('contextId', $journalId);
+        $article->setData('locale', 'en');
         $author->setSubmissionId($article->getId());
         $article->expects($this->any())
             ->method('getCurrentPublication')
