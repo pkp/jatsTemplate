@@ -380,21 +380,6 @@ class ArticleFront extends \DOMDocument
                 $contribElement->setAttribute('corresp', 'yes');
             }
 
-            // If using the CRediT plugin, credit roles may be available.
-            $creditPlugin = PluginRegistry::getPlugin('generic', 'creditplugin');
-            if ($creditPlugin && $creditPlugin->getEnabled()) {
-                $contributorRoles = $author->getData('creditRoles') ?? [];
-                $creditRoles = $creditPlugin->getCreditRoles($submission->getData('locale'));
-                foreach ($contributorRoles as $role) {
-                    $roleName = $creditRoles[$role]['name'];
-                    $roleElement = $contribElement->appendChild($this->createElement('role'));
-                    $roleElement->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
-                        ->setAttribute('vocab-term', $roleName)->parentNode
-                        ->setAttribute('vocab-term-identifier', $role);
-                    $roleElement->appendChild($this->createTextNode($roleName));
-                }
-            }
-
             if ($author->getOrcid()) {
                 $contribElement->appendChild($this->createElement('contrib-id'))
                     ->setAttribute('contrib-id-type', 'orcid')->parentNode

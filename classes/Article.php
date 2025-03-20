@@ -21,6 +21,7 @@ use PKP\context\Context;
 use PKP\core\PKPRequest;
 use PKP\i18n\LocaleConversion;
 use PKP\oai\OAIRecord;
+use PKP\plugins\Hook;
 
 class Article extends \DOMDocument
 {
@@ -41,6 +42,7 @@ class Article extends \DOMDocument
         $publication = $submission->getCurrentPublication();
 
         $this->convertSubmission($submission, $journal, $section, $issue, $publication, $request);
+        Hook::run('JatsTemplatePlugin::jats', [$record, $this]);
     }
 
     /**
