@@ -3,8 +3,8 @@
 /**
  * @file ArticleBack.php
  *
- * Copyright (c) 2003-2022 Simon Fraser University
- * Copyright (c) 2003-2022 John Willinsky
+ * Copyright (c) 2003-2025 Simon Fraser University
+ * Copyright (c) 2003-2025 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article back element
@@ -12,22 +12,21 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
-use PKP\db\DAORegistry;
+use APP\publication\Publication;
+use DOMDocument;
+use DOMNode;
 
-class ArticleBack extends \DOMDocument
+class ArticleBack extends DOMDocument
 {
     /**
      * create xml back DOMNode
-     * @param $publication
-     * @return \DOMNode
      */
-    public function create($publication): \DOMNode
+    public function create(Publication $publication): DOMNode
     {
         // create element back
         $backElement = $this->appendChild($this->createElement('back'));
 
-        $citationDao = DAORegistry::getDAO('CitationDAO');
-        $citations = $citationDao->getByPublicationId($publication->getId())->toArray();
+        $citations = $publication->getData('citations');
         if (count($citations)) {
             // create element ref-list
             $refListElement = $backElement->appendChild($this->createElement('ref-list'));
