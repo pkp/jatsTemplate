@@ -28,6 +28,8 @@ use PKP\controlledVocab\ControlledVocab;
 use PKP\i18n\LocaleConversion;
 use PKP\submissionFile\SubmissionFile;
 
+use Carbon\Carbon;
+
 class ArticleFront extends \DOMDocument
 {
     /**
@@ -254,6 +256,24 @@ class ArticleFront extends \DOMDocument
                 ->appendChild($this->createTextNode($matchedPageTo));
             $pageCount = $matchedPageTo - $matchedPageFrom + 1;
         }
+
+        if (($date = $submission->getData('dateSubmitted')) !== null) {
+            $date = Carbon::createFromTimestamp(strtotime($date));
+            $eventElement = $articleMetaElement->appendChild($this->createElement('pub-history'))
+		->appendChild($this->createElement('event'));
+            $eventElement->setAttribute('event-type', 'received');
+            $eventDescElement = $eventElement->appendChild($this->createElement('event-desc'));
+            $eventDescElement->appendChild($this->createTextNode('Received: '));
+            $dateElement = $eventDescElement->appendChild($this->createElement('date'));
+            $dateElement->setAttribute('date-type', 'received');
+            $dateElement->setAttribute('iso-8601-date', $date->toIso8601String());
+            $dateElement->appendChild($this->createElement('day'))
+                ->appendChild($this->createTextNode($date->day));
+            $dateElement->appendChild($this->createElement('month'))
+                ->appendChild($this->createTextNode($date->month));
+            $dateElement->appendChild($this->createElement('year'))
+                ->appendChild($this->createTextNode($date->year));
+	}
 
         $copyrightYear = $publication->getData('copyrightYear');
         $copyrightHolder = $publication->getLocalizedData('copyrightHolder');
