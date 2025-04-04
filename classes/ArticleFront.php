@@ -15,6 +15,7 @@ namespace APP\plugins\generic\jatsTemplate\classes;
 use APP\author\Author;
 use APP\issue\Issue;
 use APP\facades\Repo;
+use Dispatcher;
 use PKP\core\PKPString;
 use APP\journal\Journal;
 use APP\section\Section;
@@ -92,7 +93,7 @@ class ArticleFront extends \DOMDocument
         $router = $request->getRouter();
         $dispatcher = $router->getDispatcher();
 
-        $journalUrl = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath());
+        $journalUrl = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath(), urlLocaleForPage: '');
         $journalMetaElement
             ->appendChild($this->createElement('self-uri'))
             ->setAttribute('xlink:href', $journalUrl);
@@ -260,7 +261,7 @@ class ArticleFront extends \DOMDocument
         if (($date = $submission->getData('dateSubmitted')) !== null) {
             $date = Carbon::createFromTimestamp(strtotime($date));
             $eventElement = $articleMetaElement->appendChild($this->createElement('pub-history'))
-		->appendChild($this->createElement('event'));
+                ->appendChild($this->createElement('event'));
             $eventElement->setAttribute('event-type', 'received');
             $eventDescElement = $eventElement->appendChild($this->createElement('event-desc'));
             $eventDescElement->appendChild($this->createTextNode('Received: '));
@@ -273,7 +274,7 @@ class ArticleFront extends \DOMDocument
                 ->appendChild($this->createTextNode($date->month));
             $dateElement->appendChild($this->createElement('year'))
                 ->appendChild($this->createTextNode($date->year));
-	}
+        }
 
         $copyrightYear = $publication->getData('copyrightYear');
         $copyrightHolder = $publication->getLocalizedData('copyrightHolder');
@@ -304,9 +305,9 @@ class ArticleFront extends \DOMDocument
         }
 
         $router = $request->getRouter();
-        $dispatcher = $router->getDispatcher();
+        $dispatcher = $router->getDispatcher(); /* @var $dispatcher Dispatcher */
 
-        $url = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath(), 'article', 'view', [$publication->getData('urlPath') ?? $submission->getId()], null, null, true);
+        $url = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath(), 'article', 'view', [$publication->getData('urlPath') ?? $submission->getId()], null, null, true, '');
 
         $articleMetaElement
             ->appendChild($this->createElement('self-uri'))
@@ -347,7 +348,9 @@ class ArticleFront extends \DOMDocument
             ->getMany();
 
         foreach ($layoutFiles as $layoutFile) {
-            $sourceFileUrl = $request->url(
+            $sourceFileUrl = $request->getDispatcher()->url(
+                $request,
+                PKPApplication::ROUTE_PAGE,
                 null,
                 'jatsTemplate',
                 'download',
@@ -357,7 +360,8 @@ class ArticleFront extends \DOMDocument
                     'fileId' => $layoutFile->getData('fileId'),
                     'submissionId' => $submission->getId(),
                     'stageId' => WORKFLOW_STAGE_ID_PRODUCTION,
-                ]
+                ],
+                urlLocaleForPage: ''
             );
             $customMetaGroupElement->appendChild($this->createElement('custom-meta'))
                 ->appendChild($this->createElement('meta-name', 'production-ready-file-url'))->parentNode
@@ -392,7 +396,6 @@ class ArticleFront extends \DOMDocument
                     $institutions[$affiliationToken]['name'] = $affiliationName;
                     $institutions[$affiliationToken]['id'] = $authorAffiliation->getRor();
                 }
-
             }
 
             $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
