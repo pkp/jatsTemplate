@@ -52,6 +52,14 @@ class JatsTemplatePlugin extends GenericPlugin
     }
 
     /**
+     * @copydoc Plugin::getContextSpecificPluginSettingsFile()
+     */
+    public function getContextSpecificPluginSettingsFile(): string
+    {
+        return $this->getPluginPath() . '/settings.xml';
+    }
+
+    /**
      * Prepare JATS template document
      * @param $hookName string
      * @param $args array
