@@ -26,9 +26,8 @@ class ArticleBack extends \DOMDocument
         // create element back
         $backElement = $this->appendChild($this->createElement('back'));
 
-        $citationDao = DAORegistry::getDAO('CitationDAO');
-        $citations = $citationDao->getByPublicationId($publication->getId())->toArray();
-        if (count($citations)) {
+        $citations = $publication->getData('citations');
+        if (!empty($citations)) {
             // create element ref-list
             $refListElement = $backElement->appendChild($this->createElement('ref-list'));
             $i = 1;
