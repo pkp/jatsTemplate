@@ -12,25 +12,24 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
-use APP\author\Author;
 use APP\issue\Issue;
 use APP\facades\Repo;
-use Dispatcher;
-use PKP\core\PKPString;
+use APP\author\Author;
 use APP\journal\Journal;
 use APP\section\Section;
 use PKP\author\creditRole\CreditRoleDegree;
-use PKP\core\PKPRequest;
 use APP\core\Application;
-use PKP\core\PKPApplication;
 use APP\submission\Submission;
-use PKP\plugins\PluginRegistry;
 use APP\publication\Publication;
-use PKP\controlledVocab\ControlledVocab;
-use PKP\i18n\LocaleConversion;
-use PKP\submissionFile\SubmissionFile;
-
+use DOMDocument;
 use Carbon\Carbon;
+use PKP\core\PKPString;
+use PKP\core\PKPRequest;
+use PKP\core\PKPApplication;
+use PKP\i18n\LocaleConversion;
+use PKP\plugins\PluginRegistry;
+use PKP\submissionFile\SubmissionFile;
+use PKP\controlledVocab\ControlledVocab;
 
 class ArticleFront extends \DOMDocument
 {
@@ -202,6 +201,70 @@ class ArticleFront extends \DOMDocument
                 $affNode->appendChild($this->createElement('institution'))
                 ->appendChild($this->createTextNode($institution['name']))->parentNode
                 ->setAttribute('content-type', 'orgname');
+            }
+        }
+
+        // Add plain-language summary
+        $plainLanguageSummaries = $publication->getData('plainLanguageSummary');
+        if (!empty($plainLanguageSummaries)) {
+            foreach ($plainLanguageSummaries as $locale => $plainLanguageSummary) {
+                if (empty($plainLanguageSummary)) {
+                    continue;
+                }
+
+                $strippedSummary = PKPString::stripUnsafeHtml($plainLanguageSummary);
+
+                if (trim($strippedSummary) === '') {
+                    continue;
+                }
+
+                // Parse HTML to handle <p> tags
+                $summaryDocument = new DOMDocument();
+                @$summaryDocument->loadHTML('<?xml encoding="UTF-8">' . $strippedSummary); // Suppress warnings for malformed HTML
+                $paragraphs = $summaryDocument->getElementsByTagName('p');
+                
+                if ($locale == $submission->getData('locale')) {
+                    $abstractElement = $articleMetaElement->appendChild($this->createElement('abstract'));
+                    $abstractElement->setAttribute('abstract-type', 'plain-language-summary');
+                    $abstractElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
+
+                    // Need to add `title` element, not sure ?
+                    $abstractElement
+                        ->appendChild($this->createElement('title'))
+                        ->appendChild($this->createTextNode('Plain Language Summary'));
+                    
+                    if ($paragraphs->length > 0) {
+                        foreach ($paragraphs as $paragraph) {
+                            $text = trim($paragraph->textContent);
+                            if ($text !== '') {
+                                $abstractElement->appendChild($this->createElement('p'))->appendChild($this->createTextNode($text));
+                            }
+                        }
+                    } else {
+                        // Treat as plain text if no <p> tags
+                        $abstractElement->appendChild($this->createElement('p'))->appendChild($this->createTextNode($strippedSummary));
+                    }
+                } else {
+                    $transAbstractElement = $articleMetaElement->appendChild($this->createElement('trans-abstract'));
+                    $transAbstractElement->setAttribute('abstract-type', 'plain-language-summary');
+                    $transAbstractElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
+                    
+                    // Need to add `title` element, not sure ?
+                    $transAbstractElement
+                        ->appendChild($this->createElement('title'))
+                        ->appendChild($this->createTextNode('Plain Language Summary'));
+                    
+                    if ($paragraphs->length > 0) {
+                        foreach ($paragraphs as $paragraph) {
+                            $text = trim($paragraph->textContent);
+                            if ($text !== '') {
+                                $transAbstractElement->appendChild($this->createElement('p'))->appendChild($this->createTextNode($text));
+                            }
+                        }
+                    } else {
+                        $transAbstractElement->appendChild($this->createElement('p'))->appendChild($this->createTextNode($strippedSummary));
+                    }
+                }
             }
         }
 
