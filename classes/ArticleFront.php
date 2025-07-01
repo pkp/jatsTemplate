@@ -12,22 +12,24 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
+use DOMNode;
+use DOMElement;
+use DOMDocument;
+use Carbon\Carbon;
 use APP\issue\Issue;
 use APP\facades\Repo;
 use APP\author\Author;
+use PKP\core\PKPString;
 use APP\journal\Journal;
 use APP\section\Section;
 use PKP\author\creditRole\CreditRoleDegree;
-use APP\core\Application;
-use APP\submission\Submission;
-use APP\publication\Publication;
-use DOMDocument;
-use Carbon\Carbon;
-use PKP\core\PKPString;
 use PKP\core\PKPRequest;
+use APP\core\Application;
 use PKP\core\PKPApplication;
+use APP\submission\Submission;
 use PKP\i18n\LocaleConversion;
 use PKP\plugins\PluginRegistry;
+use APP\publication\Publication;
 use PKP\submissionFile\SubmissionFile;
 use PKP\controlledVocab\ControlledVocab;
 
@@ -207,64 +209,26 @@ class ArticleFront extends \DOMDocument
         // Add plain-language summary
         $plainLanguageSummaries = $publication->getData('plainLanguageSummary');
         if (!empty($plainLanguageSummaries)) {
-            foreach ($plainLanguageSummaries as $locale => $plainLanguageSummary) {
+            foreach ((array) $plainLanguageSummaries as $locale => $plainLanguageSummary) {
                 if (empty($plainLanguageSummary)) {
                     continue;
                 }
-
                 $strippedSummary = PKPString::stripUnsafeHtml($plainLanguageSummary);
-
                 if (trim($strippedSummary) === '') {
                     continue;
                 }
-
-                // Parse HTML to handle <p> tags
-                $summaryDocument = new DOMDocument();
-                @$summaryDocument->loadHTML('<?xml encoding="UTF-8">' . $strippedSummary); // Suppress warnings for malformed HTML
-                $paragraphs = $summaryDocument->getElementsByTagName('p');
-                
-                if ($locale == $submission->getData('locale')) {
-                    $abstractElement = $articleMetaElement->appendChild($this->createElement('abstract'));
-                    $abstractElement->setAttribute('abstract-type', 'plain-language-summary');
-                    $abstractElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
-
-                    // Need to add `title` element, not sure ?
-                    $abstractElement
-                        ->appendChild($this->createElement('title'))
-                        ->appendChild($this->createTextNode('Plain Language Summary'));
-                    
-                    if ($paragraphs->length > 0) {
-                        foreach ($paragraphs as $paragraph) {
-                            $text = trim($paragraph->textContent);
-                            if ($text !== '') {
-                                $abstractElement->appendChild($this->createElement('p'))->appendChild($this->createTextNode($text));
-                            }
-                        }
-                    } else {
-                        // Treat as plain text if no <p> tags
-                        $abstractElement->appendChild($this->createElement('p'))->appendChild($this->createTextNode($strippedSummary));
-                    }
-                } else {
-                    $transAbstractElement = $articleMetaElement->appendChild($this->createElement('trans-abstract'));
-                    $transAbstractElement->setAttribute('abstract-type', 'plain-language-summary');
-                    $transAbstractElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
-                    
-                    // Need to add `title` element, not sure ?
-                    $transAbstractElement
-                        ->appendChild($this->createElement('title'))
-                        ->appendChild($this->createTextNode('Plain Language Summary'));
-                    
-                    if ($paragraphs->length > 0) {
-                        foreach ($paragraphs as $paragraph) {
-                            $text = trim($paragraph->textContent);
-                            if ($text !== '') {
-                                $transAbstractElement->appendChild($this->createElement('p'))->appendChild($this->createTextNode($text));
-                            }
-                        }
-                    } else {
-                        $transAbstractElement->appendChild($this->createElement('p'))->appendChild($this->createTextNode($strippedSummary));
-                    }
-                }
+                $elementType = ($locale == $submission->getData('locale')) ? 'abstract' : 'trans-abstract';
+                // $title = __('submission.plainLanguageSummary', [], $locale); // Need this ?
+                $abstractElement = $this->createAbstractElement(
+                    $elementType,
+                    $locale,
+                    $strippedSummary,
+                    $articleMetaElement,
+                    $article,
+                    'plain-language-summary',
+                    // $title
+                );
+                $articleMetaElement->appendChild($abstractElement);
             }
         }
 
@@ -541,5 +505,131 @@ class ArticleFront extends \DOMDocument
             }
         }
         return ['contribGroupElement' => $contribGroupElement, 'institutions' => $institutions];
+    }
+
+    /**
+     * Create an abstract or trans-abstract element with parsed content, supporting inline tags and lists
+     *
+     * @param string $elementType 'abstract' or 'trans-abstract'
+     * @param string $locale The locale of the content
+     * @param string $content The HTML or plain text content
+     * @param DOMElement $parentElement The parent element to append to
+     * @param Article $article The Article object for accessing mapHtmlTagsForTitle
+     * @param string|null $abstractType The abstract type (e.g., 'plain-language-summary')
+     * @param string|null $title The title for the abstract (e.g., "Abstract" or "Plain Language Summary")
+     * 
+     * @return DOMElement The created abstract element
+     */
+    protected function createAbstractElement(
+        string $elementType,
+        string $locale,
+        string $content,
+        DOMElement $parentElement,
+        Article $article,
+        ?string $abstractType = null,
+        ?string $title = null
+    ): DOMElement
+    {
+        // Create the abstract or trans-abstract element
+        $abstractElement = $parentElement->ownerDocument->createElement($elementType);
+        if ($abstractType) {
+            $abstractElement->setAttribute('abstract-type', $abstractType);
+        }
+        $abstractElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
+
+        // Add title
+        if ($title) {
+            $abstractElement->appendChild($parentElement->ownerDocument->createElement('title'))
+                ->appendChild($parentElement->ownerDocument->createTextNode($title));
+        }
+
+        // Parse HTML content
+        $summaryDocument = new DOMDocument();
+        @$summaryDocument->loadHTML('<?xml encoding="UTF-8">' . $content); // Suppress warnings for malformed HTML
+        $body = $summaryDocument->getElementsByTagName('body')->item(0);
+
+        if (!$body) {
+            // Fallback for plain text or malformed HTML
+            $pElement = $parentElement->ownerDocument->createElement('p');
+            $pElement->appendChild($parentElement->ownerDocument->createTextNode($article->mapHtmlTagsForTitle($content)));
+            $abstractElement->appendChild($pElement);
+            return $abstractElement;
+        }
+
+        foreach ($body->childNodes as $node) {
+            if ($node->nodeName === 'p') {
+                $pElement = $parentElement->ownerDocument->createElement('p');
+                $this->processNodeContent($node, $pElement, $parentElement->ownerDocument, $article);
+                if ($pElement->hasChildNodes()) {
+                    $abstractElement->appendChild($pElement);
+                }
+            } elseif ($node->nodeName === 'ul' || $node->nodeName === 'ol') {
+                $listElement = $parentElement->ownerDocument->createElement('list');
+                $listElement->setAttribute('list-type', $node->nodeName === 'ul' ? 'bullet' : 'order');
+                foreach ($node->childNodes as $liNode) {
+                    if ($liNode->nodeName === 'li') {
+                        $listItemElement = $parentElement->ownerDocument->createElement('list-item');
+                        $liPElement = $parentElement->ownerDocument->createElement('p');
+                        $this->processNodeContent($liNode, $liPElement, $parentElement->ownerDocument, $article);
+                        if ($liPElement->hasChildNodes()) {
+                            $listItemElement->appendChild($liPElement);
+                            $listElement->appendChild($listItemElement);
+                        }
+                    }
+                }
+                if ($listElement->hasChildNodes()) {
+                    $pWrapper = $parentElement->ownerDocument->createElement('p');
+                    $pWrapper->appendChild($listElement);
+                    $abstractElement->appendChild($pWrapper);
+                }
+            }
+        }
+
+        // If no valid content was added, append a single paragraph with the mapped content
+        if (!$abstractElement->hasChildNodes() || ($abstractElement->childNodes->length === 1 && $abstractElement->childNodes->item(0)->nodeName === 'title')) {
+            $pElement = $parentElement->ownerDocument->createElement('p');
+            $pElement->appendChild($parentElement->ownerDocument->createTextNode($article->mapHtmlTagsForTitle($content)));
+            $abstractElement->appendChild($pElement);
+        }
+
+        return $abstractElement;
+    }
+
+    /**
+     * Process node content, mapping inline tags and appending to a JATS element
+     *
+     * @param DOMNode $node The source HTML node
+     * @param DOMElement $jatsElement The target JATS element (e.g., <p>)
+     * @param DOMDocument $jatsDocument The JATS document
+     * @param Article $article The Article object for accessing mapHtmlTagsForTitle
+     */
+    protected function processNodeContent(
+        DOMNode $node,
+        DOMElement $jatsElement,
+        DOMDocument $jatsDocument,
+        Article $article
+    ): void
+    {
+        foreach ($node->childNodes as $childNode) {
+            if ($childNode->nodeType === XML_TEXT_NODE) {
+                $text = trim($childNode->textContent);
+                if ($text !== '') {
+                    $jatsElement->appendChild($jatsDocument->createTextNode($article->mapHtmlTagsForTitle($text)));
+                }
+            } elseif (in_array($childNode->nodeName, ['b', 'strong', 'i', 'em', 'u'])) {
+                $tagMap = [
+                    'b' => 'bold',
+                    'strong' => 'bold',
+                    'i' => 'italic',
+                    'em' => 'italic',
+                    'u' => 'underline'
+                ];
+                $jatsChildElement = $jatsDocument->createElement($tagMap[$childNode->nodeName]);
+                $this->processNodeContent($childNode, $jatsChildElement, $jatsDocument, $article);
+                if ($jatsChildElement->hasChildNodes()) {
+                    $jatsElement->appendChild($jatsChildElement);
+                }
+            }
+        }
     }
 }
