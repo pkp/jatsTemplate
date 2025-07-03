@@ -19,6 +19,7 @@ use Dispatcher;
 use PKP\core\PKPString;
 use APP\journal\Journal;
 use APP\section\Section;
+use PKP\author\creditRole\CreditRoleDegree;
 use PKP\core\PKPRequest;
 use APP\core\Application;
 use PKP\core\PKPApplication;
@@ -382,6 +383,7 @@ class ArticleFront extends \DOMDocument
             ->setAttribute('content-type', 'author')->parentNode;
 
         // Include authors
+        $creditRoleTerms = Repo::creditRoles()->getTerms($submission->getData('locale'));
         $affiliations = $institutions = [];
         foreach ($publication->getData('authors') as $author) { /** @var Author $author */
             $authorTokenList = [];
@@ -401,6 +403,18 @@ class ArticleFront extends \DOMDocument
             $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
             if ($publication->getData('primaryContactId') == $author->getId()) {
                 $contribElement->setAttribute('corresp', 'yes');
+            }
+
+            foreach ($author->getData('creditRoles') as ['role' => $role, 'degree' => $degree]) {
+                $roleTerm = $creditRoleTerms['roles'][$role];
+                $roleElement = $contribElement->appendChild($this->createElement('role'));
+                $roleElement
+                    ->setAttribute('vocab', 'CRediT')->parentNode
+                    ->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
+                    ->setAttribute('vocab-term', $roleTerm)->parentNode
+                    ->setAttribute('vocab-term-identifier', $role)->parentNode
+                    ->setAttribute('degree-contribution', $creditRoleTerms['degrees'][CreditRoleDegree::toLabel($degree)]);
+                $roleElement->appendChild($this->createTextNode($roleTerm));
             }
 
             if ($author->getOrcid()) {
