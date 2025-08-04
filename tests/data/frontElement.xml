@@ -1,6 +1,7 @@
 <front>
   <journal-meta>
     <journal-id journal-id-type="ojs">journal-path</journal-id>
+    <journal-id journal-id-type="publisher">journal-path</journal-id>
     <journal-title-group>
       <journal-title xml:lang="en">journal-title</journal-title>
       <trans-title-group xml:lang="gr">
@@ -8,6 +9,44 @@
       </trans-title-group>
       <abbrev-journal-title xml:lang="en">publicknowledgeJ Pub Know</abbrev-journal-title>
     </journal-title-group>
+    <contrib-group>
+      <contrib contrib-type="jmanager">
+        <name>
+          <surname>admin</surname>
+          <given-names>admin</given-names>
+        </name>
+      </contrib>
+      <contrib contrib-type="jmanager">
+        <name>
+          <surname>Vaca</surname>
+          <given-names>Ramiro</given-names>
+        </name>
+      </contrib>
+      <contrib contrib-type="editor">
+        <name>
+          <surname>Barnes</surname>
+          <given-names>Daniel</given-names>
+        </name>
+      </contrib>
+      <contrib contrib-type="secteditor">
+        <name>
+          <surname>Buskins</surname>
+          <given-names>David</given-names>
+        </name>
+      </contrib>
+      <contrib contrib-type="secteditor">
+        <name>
+          <surname>Berardo</surname>
+          <given-names>Stephanie</given-names>
+        </name>
+      </contrib>
+      <contrib contrib-type="secteditor">
+        <name>
+          <surname>Inoue</surname>
+          <given-names>Minoti</given-names>
+        </name>
+      </contrib>
+    </contrib-group>
     <publisher>
       <publisher-name>journal-publisher</publisher-name>
     </publisher>
@@ -17,6 +56,7 @@
   </journal-meta>
   <article-meta>
     <article-id pub-id-type="publisher-id">9</article-id>
+    <article-id pub-id-type="doi">article-doi</article-id>
     <article-categories>
       <subj-group xml:lang="en" subj-group-type="heading">
         <subject>section-identify-type</subject>
@@ -43,6 +83,9 @@
     <aff id="aff-1">
       <institution content-type="orgname">author-affiliation</institution>
     </aff>
+    <abstract>
+      <p>article-abstract</p>
+    </abstract>
     <pub-date date-type="pub" publication-format="epub">
       <day>01</day>
       <month>01</month>
@@ -57,6 +100,7 @@
     </permissions>
     <self-uri xlink:href="journal-path-article-view"/>
     <kwd-group xml:lang="en">
+      <title>Keywords</title>
       <kwd>Professional Development</kwd>
       <kwd>Social Transformation</kwd>
     </kwd-group>

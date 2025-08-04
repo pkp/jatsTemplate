@@ -209,10 +209,10 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
-        $submission =& $record->getData('article');
-        $journal =& $record->getData('journal');
-        $section =& $record->getData('section');
-        $issue =& $record->getData('issue');
+        $submission =& $record->getData('article'); /** @var Submission $submission */
+        $journal =& $record->getData('journal'); /** @var Journal $journal */
+        $section =& $record->getData('section'); /** @var Section $section */
+        $issue =& $record->getData('issue'); /** @var Issue $issue */
         $article = $this->createArticleMockInstance($record);
 
         $articleFrontElement = new ArticleFront();
@@ -239,7 +239,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
-        $journal =& $record->getData('journal');
+        $journal =& $record->getData('journal'); /** @var Journal $journal */
 
         $articleFrontElement = new ArticleFront();
         $xml = $articleFrontElement->createJournalMeta(
@@ -261,10 +261,10 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
-        $submission =& $record->getData('article');
-        $journal =& $record->getData('journal');
-        $section =& $record->getData('section');
-        $issue =& $record->getData('issue');
+        $submission =& $record->getData('article'); /** @var Submission $submission */
+        $journal =& $record->getData('journal'); /** @var Journal $journal */
+        $section =& $record->getData('section'); /** @var Section $section */
+        $issue =& $record->getData('issue'); /** @var Issue $issue */
         $article = $this->createArticleMockInstance($record);
 
         $articleFrontElement = new ArticleFront();
@@ -291,7 +291,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
-        $journal =& $record->getData('journal');
+        $journal =& $record->getData('journal'); /** @var Journal $journal */
 
         $articleFrontElement = new ArticleFront();
         $xml = $articleFrontElement->createJournalMetaJournalTitleGroup(
@@ -311,7 +311,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record =& $OAIRecord;
-        $submission =& $record->getData('article');
+        $submission =& $record->getData('article'); /** @var Submission $submission */
 
         $this->createRequestMockInstance();
 
