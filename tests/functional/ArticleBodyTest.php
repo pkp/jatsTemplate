@@ -10,7 +10,7 @@
  * @brief JATS xml article body element unit tests
  */
 
-namespace APP\plugins\generic\jatsTemplate\functional;
+namespace APP\plugins\generic\jatsTemplate\tests\functional;
 
 use PKP\doi\Doi;
 use APP\issue\Issue;
