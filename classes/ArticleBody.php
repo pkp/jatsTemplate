@@ -16,7 +16,7 @@ use APP\facades\Repo;
 use APP\submission\Submission;
 use PKP\config\Config;
 use PKP\galley\Galley;
-use PKP\search\SearchFileParser;
+use PKP\search\parsers\SearchFileParser;
 
 class ArticleBody extends \DOMDocument
 {
