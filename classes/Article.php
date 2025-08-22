@@ -35,10 +35,10 @@ class Article extends \DOMDocument
      */
     public function convertOAIToXml(OAIRecord $record, PKPRequest $request): void
     {
-        $submission = $record->getData('article');
-        $journal = $record->getData('journal');
-        $section = $record->getData('section');
-        $issue = $record->getData('issue');
+        $submission = $record->getData('article'); /** @var Submission $submission */
+        $journal = $record->getData('journal'); /** @var Context $journal */
+        $section = $record->getData('section'); /** @var Section $section */
+        $issue = $record->getData('issue'); /** @var Issue $issue */
         $publication = $submission->getCurrentPublication();
 
         $this->convertSubmission($submission, $journal, $section, $issue, $publication, $request);
@@ -48,7 +48,7 @@ class Article extends \DOMDocument
     /**
      * Convert submission metadata to JATS XML
      */
-    public function convertSubmission(Submission $submission, Context $context, Section $section, ?Issue $issue = null, ?Publication $publication = null, PKPRequest $request = null): void
+    public function convertSubmission(Submission $submission, Context $context, Section $section, ?Issue $issue = null, ?Publication $publication = null, ?PKPRequest $request = null): void
     {
         $articleElement = $this->appendChild($this->createElement('article'))
             ->setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')->parentNode

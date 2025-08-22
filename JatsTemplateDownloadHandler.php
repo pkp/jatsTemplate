@@ -64,7 +64,7 @@ class JatsTemplateDownloadHandler extends Handler
         if (!$user || !$context) {
             return false;
         }
-        $roleDao = DAORegistry::getDAO('RoleDAO'); /** @var $roleDao RoleDAO */
+        $roleDao = DAORegistry::getDAO('RoleDAO'); /** @var RoleDAO $roleDao */
         $roles = $roleDao->getByUserId($user->getId(), $context->getId());
         foreach ($roles as $role) {
             if (in_array($role->getRoleId(), [Role::ROLE_ID_MANAGER, Role::ROLE_ID_SUBSCRIPTION_MANAGER])) {

@@ -12,52 +12,81 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
-use APP\author\Author;
+use DOMNode;
+use Exception;
+use DOMElement;
+use DOMDocument;
+use Carbon\Carbon;
+use XSLTProcessor;
 use APP\issue\Issue;
 use APP\facades\Repo;
-use Dispatcher;
+use APP\author\Author;
 use PKP\core\PKPString;
 use APP\journal\Journal;
 use APP\section\Section;
-use PKP\author\creditRole\CreditRoleDegree;
 use PKP\core\PKPRequest;
 use APP\core\Application;
 use PKP\core\PKPApplication;
+use PKP\userGroup\UserGroup;
 use APP\submission\Submission;
+use PKP\i18n\LocaleConversion;
 use PKP\plugins\PluginRegistry;
 use APP\publication\Publication;
-use PKP\controlledVocab\ControlledVocab;
-use PKP\i18n\LocaleConversion;
 use PKP\submissionFile\SubmissionFile;
+use PKP\controlledVocab\ControlledVocab;
+use PKP\author\creditRole\CreditRoleDegree;
 
-use Carbon\Carbon;
-
-class ArticleFront extends \DOMDocument
+class ArticleFront extends DOMDocument
 {
     /**
      * Create article front element
      */
-    public function create(Journal $journal, Submission $submission, Section $section, ?Issue $issue, PKPRequest $request, Article $article, ?Publication $workingPublication = null): \DOMNode
+    public function create(
+        Journal $journal,
+        Submission $submission,
+        Section $section,
+        ?Issue $issue,
+        PKPRequest $request,
+        Article $article,
+        ?Publication $workingPublication = null
+    ): DOMNode
     {
         return $this->appendChild($this->createElement('front'))
             ->appendChild($this->createJournalMeta($journal, $request))
             ->parentNode
-            ->appendChild($this->createArticleMeta($submission, $journal, $section, $issue, $request, $article, $workingPublication))
+            ->appendChild(
+                $this->createArticleMeta(
+                    $submission,
+                    $journal,
+                    $section,
+                    $issue,
+                    $request,
+                    $article,
+                    $workingPublication
+                )
+            )
             ->parentNode;
     }
 
     /**
      * Create xml journal-meta DOMNode
      */
-    public function createJournalMeta(Journal $journal, PKPRequest $request): \DOMNode
+    public function createJournalMeta(Journal $journal, PKPRequest $request): DOMNode
     {
         $journalMetaElement = $this->appendChild($this->createElement('journal-meta'));
 
         $journalMetaElement->appendChild($this->createElement('journal-id'))
             ->setAttribute('journal-id-type', 'ojs')->parentNode
             ->appendChild($this->createTextNode($journal->getPath()))->parentNode;
+        
+        $journalMetaElement->appendChild($this->createElement('journal-id'))
+            ->setAttribute('journal-id-type', 'publisher')->parentNode
+            ->appendChild($this->createTextNode($journal->getPath()))->parentNode;
 
         $journalMetaElement->appendChild($this->createJournalMetaJournalTitleGroup($journal));
+
+        // Editorial team (contrib-group)
+        $journalMetaElement->appendChild($this->createJournalMetaJournalContribGroup($journal, $request));
 
         $publisherElement = $journalMetaElement->appendChild($this->createElement('publisher'));
         $publisherElement->appendChild($this->createElement('publisher-name'))
@@ -105,7 +134,7 @@ class ArticleFront extends \DOMDocument
     /**
      * Create Journal title group element
      */
-    public function createJournalMetaJournalTitleGroup(Journal $journal): \DOMNode
+    public function createJournalMetaJournalTitleGroup(Journal $journal): DOMNode
     {
         $journalTitleGroupElement = $this->appendChild($this->createElement('journal-title-group'));
 
@@ -131,6 +160,59 @@ class ArticleFront extends \DOMDocument
     }
 
     /**
+     * Create journal-meta contrib-group element
+     *
+     * @param Journal $journal
+     * @param PKPRequest $request
+     * @return \DOMNode
+     */
+    public function createJournalMetaJournalContribGroup(Journal $journal, PKPRequest $request): DOMNode
+    {
+        $contribGroupElement = $this->createElement('contrib-group');
+
+        // Map user group roles to contrib-type
+        $keyContribTypeMapping = [
+            'default.groups.name.manager' => 'jmanager',
+            'default.groups.name.editor' => 'editor',
+            'default.groups.name.sectionEditor' => 'secteditor',
+        ];
+
+        $sitePrimaryLocale = $request->getSite()->getPrimaryLocale();
+        $userGroups = UserGroup::query()->withContextIds([$journal->getId()])->get();
+
+        foreach ($userGroups as $userGroup) {
+            // Skip if the user group role is not mapped
+            if (!isset($keyContribTypeMapping[$userGroup->nameLocaleKey])) {
+                continue;
+            }
+
+            // Get users in the user group
+            $users = Repo::user()->getCollector()
+                ->filterByUserGroupIds([$userGroup->id])
+                ->getMany();
+
+            foreach ($users as $user) {
+                $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
+                $contribElement->setAttribute('contrib-type', $keyContribTypeMapping[$userGroup->nameLocaleKey]);
+
+                $nameElement = $contribElement->appendChild($this->createElement('name'));
+
+                // Add surname if available
+                if ($user->getFamilyName($sitePrimaryLocale)) {
+                    $nameElement->appendChild($this->createElement('surname'))
+                        ->appendChild($this->createTextNode($user->getFamilyName($sitePrimaryLocale)));
+                }
+
+                // Add given names
+                $nameElement->appendChild($this->createElement('given-names'))
+                    ->appendChild($this->createTextNode($user->getGivenName($sitePrimaryLocale)));
+            }
+        }
+
+        return $contribGroupElement;
+    }
+
+    /**
      * Create xml article-meta DOMNode
      */
     function createArticleMeta(Submission $submission, Journal $journal, Section $section, ?Issue $issue, $request, Article $article, ?Publication $workingPublication = null)
@@ -142,10 +224,54 @@ class ArticleFront extends \DOMDocument
 
         $articleMetaElement = $this->appendChild($this->createElement('article-meta'));
 
+        // Store the publisher-id
         $articleMetaElement->appendChild($this->createElement('article-id'))
             ->setAttribute('pub-id-type', 'publisher-id')->parentNode
             ->appendChild($this->createTextNode($submission->getId()));
+        
+        // Store the DOI
+        if ($doi = trim($publication->getStoredPubId('doi'))) {
+            $articleMetaElement->appendChild($this->createElement('article-id'))
+                ->setAttribute('pub-id-type', 'doi')->parentNode
+                ->appendChild($this->createTextNode($doi));
+        }
 
+        // Store the issue-id, volume, number, and title
+        if ($issue) {
+            // Store the volume
+            if ($issue->getShowVolume()) {
+                $volumeElement = $this->createElement('volume');
+                $volumeElement->appendChild($this->createTextNode($issue->getVolume()));
+                $volumeElement->setAttribute('seq', ((int) $publication->getData('seq')) + 1);
+                $articleMetaElement->appendChild($volumeElement);
+            }
+
+            // Store the issue number
+            if ($issue->getShowNumber()) {
+                $articleMetaElement->appendChild($this->createElement('issue'))
+                    ->appendChild($this->createTextNode($issue->getNumber()));
+            }
+
+            // Store the issue id
+            if ($issue->getShowNumber()) {
+                $articleMetaElement->appendChild($this->createElement('issue-id'))
+                    ->appendChild($this->createTextNode($issue->getId()));
+            }
+
+            // Store the issue title
+            if ($issue->getShowTitle()) {
+                foreach ($issue->getTitle(null) as $locale => $title) {
+                    if (empty($title)) {
+                        continue;
+                    }
+                    $articleMetaElement->appendChild($this->createElement('issue-title'))
+                        ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
+                        ->appendChild($this->createTextNode($title));
+                }
+            }
+        }
+
+        // Store the article-categories
         $articleMetaElement->appendChild($this->createElement('article-categories'))
             ->appendChild($this->createElement('subj-group'))
             ->setAttribute('xml:lang', LocaleConversion::toBcp47($journal->getPrimaryLocale()))->parentNode
@@ -205,6 +331,64 @@ class ArticleFront extends \DOMDocument
             }
         }
 
+        // Add abstract
+        $abstracts = $publication->getData('abstract');
+        if (!empty($abstracts)) {
+            foreach ($abstracts as $locale => $abstract) {
+                if (empty($abstract)) {
+                    continue;
+                }
+                $abstract = PKPString::stripUnsafeHtml($abstract);
+                if (trim($abstract) === '') {
+                    continue;
+                }
+
+                $elementType = ($locale == $submission->getData('locale'))
+                    ? 'abstract'
+                    : 'trans-abstract';
+
+                // genrate form XSL
+                $abstractElement = $this->generateAbstractContentFromXSL(
+                    $submission,
+                    $elementType,
+                    $locale,
+                    $abstract,
+                    $articleMetaElement,
+                );
+                
+                $articleMetaElement->appendChild($abstractElement);
+            }
+        }
+
+        // Add plain-language summary
+        $plainLanguageSummaries = $publication->getData('plainLanguageSummary');
+        if (!empty($plainLanguageSummaries)) {
+            foreach ($plainLanguageSummaries as $locale => $plainLanguageSummary) {
+                if (empty($plainLanguageSummary)) {
+                    continue;
+                }
+                $strippedSummary = PKPString::stripUnsafeHtml($plainLanguageSummary);
+                if (trim($strippedSummary) === '') {
+                    continue;
+                }
+                $elementType = ($locale == $submission->getData('locale'))
+                    ? 'abstract'
+                    : 'trans-abstract';
+
+                // genrate form XSL
+                $plainlanguageSummaryElement = $this->generateAbstractContentFromXSL(
+                    $submission,
+                    $elementType,
+                    $locale,
+                    $strippedSummary,
+                    $articleMetaElement,
+                    'plain-language-summary',
+                );
+
+                $articleMetaElement->appendChild($plainlanguageSummaryElement);
+            }
+        }
+
         if ($datePublished = $publication->getData('datePublished')) {
             $datePublished = strtotime($datePublished);
         } elseif ($issue) {
@@ -228,36 +412,40 @@ class ArticleFront extends \DOMDocument
         }
 
         // Include page info, if available and parseable.
-        $matches = $pageCount = null;
-        if (preg_match('/^(\d+)$/u', $publication->getData('pages'), $matches)) {
-            $articleMetaElement->appendChild($this->createElement('fpage'))
-                ->appendChild($this->createTextNode($matches[1]));
-            $articleMetaElement->appendChild($this->createElement('lpage'))
-                ->appendChild($this->createTextNode($matches[1]));
-            $pageCount = 1;
-        } elseif (preg_match('/^[Pp]?[Pp]?[.]?[ ]?(\d+)$/u', $publication->getData('pages'), $matches)) {
-            $articleMetaElement->appendChild($this->createElement('fpage'))
-                ->appendChild($this->createTextNode($matches[1]));
-            $articleMetaElement->appendChild($this->createElement('lpage'))
-                ->appendChild($this->createTextNode($matches[1]));
-            $pageCount = 1;
-        } elseif (preg_match('/^[Pp]?[Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/u', $publication->getData('pages'), $matches)) {
-            $matchedPageFrom = $matches[1];
-            $matchedPageTo = $matches[3];
-            $articleMetaElement->appendChild($this->createElement('fpage'))
-                ->appendChild($this->createTextNode($matchedPageFrom));
-            $articleMetaElement->appendChild($this->createElement('lpage'))
-                ->appendChild($this->createTextNode($matchedPageTo));
-            $pageCount = $matchedPageTo - $matchedPageFrom + 1;
-        } elseif (preg_match('/^(\d+)[ ]?-[ ]?(\d+)$/u', $publication->getData('pages'), $matches)) {
-            $matchedPageFrom = $matches[1];
-            $matchedPageTo = $matches[2];
-            $articleMetaElement->appendChild($this->createElement('fpage'))
-                ->appendChild($this->createTextNode($matchedPageFrom));
-            $articleMetaElement->appendChild($this->createElement('lpage'))
-                ->appendChild($this->createTextNode($matchedPageTo));
-            $pageCount = $matchedPageTo - $matchedPageFrom + 1;
+        $pageCount = null;
+        if ($publication->getData('pages')) {
+            $matches = $pageCount = null;
+            if (preg_match('/^(\d+)$/u', $publication->getData('pages'), $matches)) {
+                $articleMetaElement->appendChild($this->createElement('fpage'))
+                    ->appendChild($this->createTextNode($matches[1]));
+                $articleMetaElement->appendChild($this->createElement('lpage'))
+                    ->appendChild($this->createTextNode($matches[1]));
+                $pageCount = 1;
+            } elseif (preg_match('/^[Pp]?[Pp]?[.]?[ ]?(\d+)$/u', $publication->getData('pages'), $matches)) {
+                $articleMetaElement->appendChild($this->createElement('fpage'))
+                    ->appendChild($this->createTextNode($matches[1]));
+                $articleMetaElement->appendChild($this->createElement('lpage'))
+                    ->appendChild($this->createTextNode($matches[1]));
+                $pageCount = 1;
+            } elseif (preg_match('/^[Pp]?[Pp]?[.]?[ ]?(\d+)[ ]?-[ ]?([Pp][Pp]?[.]?[ ]?)?(\d+)$/u', $publication->getData('pages'), $matches)) {
+                $matchedPageFrom = $matches[1];
+                $matchedPageTo = $matches[3];
+                $articleMetaElement->appendChild($this->createElement('fpage'))
+                    ->appendChild($this->createTextNode($matchedPageFrom));
+                $articleMetaElement->appendChild($this->createElement('lpage'))
+                    ->appendChild($this->createTextNode($matchedPageTo));
+                $pageCount = $matchedPageTo - $matchedPageFrom + 1;
+            } elseif (preg_match('/^(\d+)[ ]?-[ ]?(\d+)$/u', $publication->getData('pages'), $matches)) {
+                $matchedPageFrom = $matches[1];
+                $matchedPageTo = $matches[2];
+                $articleMetaElement->appendChild($this->createElement('fpage'))
+                    ->appendChild($this->createTextNode($matchedPageFrom));
+                $articleMetaElement->appendChild($this->createElement('lpage'))
+                    ->appendChild($this->createTextNode($matchedPageTo));
+                $pageCount = $matchedPageTo - $matchedPageFrom + 1;
+            }
         }
+        
 
         if (($date = $submission->getData('dateSubmitted')) !== null) {
             $date = Carbon::createFromTimestamp(strtotime($date));
@@ -313,6 +501,27 @@ class ArticleFront extends \DOMDocument
         $articleMetaElement
             ->appendChild($this->createElement('self-uri'))
             ->setAttribute('xlink:href', $url);
+        
+        $galleys = $publication->getData('galleys');
+        if (!empty($galleys)) {
+            $router = $request->getRouter();
+            $dispatcher = $router->getDispatcher();
+            foreach ($galleys as $galley) {
+                $uriNode = $articleMetaElement->appendChild($this->createElement('self-uri'));
+                $uriNode->setAttribute('xlink:href', $dispatcher->url(
+                    $request,
+                    PKPApplication::ROUTE_PAGE,
+                    null,
+                    'article',
+                    'download',
+                    [$submission->getBestId(), $galley->getId(), $galley->getData('submissionFileId')],
+                    urlLocaleForPage: ''
+                ));
+                if (!$galley->getData('urlRemote')) {
+                    $uriNode->setAttribute('content-type', $galley->getFileType());
+                }    
+            }
+        }
 
         $keywordVocabs = Repo::controlledVocab()->getBySymbolic(
             ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_KEYWORD,
@@ -328,6 +537,10 @@ class ArticleFront extends \DOMDocument
             $kwdGroupElement = $articleMetaElement
                 ->appendChild($this->createElement('kwd-group'))
                 ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode;
+
+            $kwdGroupElement->appendChild($this->createElement('title'))
+                ->appendChild($this->createTextNode('Keywords'));
+                
             foreach ($keywords as $keyword) {
                 $kwdGroupElement
                     ->appendChild($this->createElement('kwd'))
@@ -343,6 +556,17 @@ class ArticleFront extends \DOMDocument
         }
 
         $customMetaGroupElement = $articleMetaElement->appendChild($this->createElement('custom-meta-group'));
+        
+        // Issue cover page
+        if ($coverUrl = $issue?->getLocalizedCoverImageUrl()) {
+            $customMetaElement = $customMetaGroupElement->appendChild($this->createElement('custom-meta'));
+            $metaNameElement = $customMetaElement->appendChild($this->createElement('meta-name'));
+            $metaNameElement->appendChild($this->createTextNode('issue-cover'));
+            $metaValueElement = $customMetaElement->appendChild($this->createElement('meta-value'));
+            $inlineGraphicElement = $metaValueElement->appendChild($this->createElement('inline-graphic'));
+            $inlineGraphicElement->setAttribute('xlink:href', $coverUrl);
+        }
+
         $layoutFiles = Repo::submissionFile()->getCollector()
             ->filterBySubmissionIds([$submission->getId()])
             ->filterByFileStages([SubmissionFile::SUBMISSION_FILE_PRODUCTION_READY])
@@ -364,13 +588,15 @@ class ArticleFront extends \DOMDocument
                 ],
                 urlLocaleForPage: ''
             );
-            $customMetaGroupElement->appendChild($this->createElement('custom-meta'))
-                ->appendChild($this->createElement('meta-name', 'production-ready-file-url'))->parentNode
-                ->appendChild($this->createElement('meta-value'))
-                ->appendChild($this->createElement('ext-link'))
-                ->setAttribute('ext-link-type', 'uri')->parentNode
-                ->setAttribute('xlink:href', $sourceFileUrl);
+            $customMetaElement = $customMetaGroupElement->appendChild($this->createElement('custom-meta'));
+            $metaNameElement = $customMetaElement->appendChild($this->createElement('meta-name'));
+            $metaNameElement->appendChild($this->createTextNode('production-ready-file-url'));
+            $metaValueElement = $customMetaElement->appendChild($this->createElement('meta-value'));
+            $extLinkElement = $metaValueElement->appendChild($this->createElement('ext-link'));
+            $extLinkElement->setAttribute('ext-link-type', 'uri');
+            $extLinkElement->setAttribute('xlink:href', $sourceFileUrl);
         }
+
         return $articleMetaElement;
     }
 
@@ -478,5 +704,103 @@ class ArticleFront extends \DOMDocument
             }
         }
         return ['contribGroupElement' => $contribGroupElement, 'institutions' => $institutions];
+    }
+
+    /**
+     * Generate JATS abstract or trans-abstract element from HTML using XSLT
+     *
+     * @param Submission $article The submission object
+     * @param string $elementType 'abstract' or 'trans-abstract'
+     * @param string $locale The locale of the abstract
+     * @param string $abstract The HTML abstract content
+     * @param \DOMElement $parentElement The article-meta DOM element
+     * @param ?string $abstractType Optional abstract type (e.g., 'plain-language-summary')
+     * @return \DOMElement|null The created abstract element or null if transformation fails
+     */
+    public function generateAbstractContentFromXSL(
+        Submission $article,
+        string $elementType,
+        string $locale,
+        string $abstract,
+        DOMElement $parentElement,
+        ?string $abstractType = null
+    ): ?DOMElement
+    {
+        $xslPath = dirname(__FILE__, 2) . '/xsl/htmlAbstractToJats.xsl';
+        if (!file_exists($xslPath)) {
+            throw new Exception('unable to find the XSL file');
+        }
+
+        $xslDoc = new DOMDocument();
+        if (!$xslDoc->load($xslPath)) {
+            throw new Exception('JatsTemplate: Failed to load XSLT file ' . $xslPath);
+        }
+
+        $htmlDoc = new DOMDocument();
+
+        $htmlContent = $abstract;
+        
+        if (strpos($htmlContent, '<p>') === false) { // Wrap plain text in <p> if no <p> tags are present
+            $htmlContent = "<p>{$htmlContent}</p>";
+        }
+
+        libxml_use_internal_errors(true);
+        if (!$htmlDoc->loadHTML('<?xml encoding="UTF-8"?>' . $htmlContent)) {
+            error_log('JatsTemplate: Failed to load HTML abstract for article ' . $article->getId() . ': ' . print_r(libxml_get_errors(), true));
+            libxml_clear_errors();
+            return null;
+        }
+        libxml_use_internal_errors(false);
+
+        $processor = new XSLTProcessor();
+        if (!$processor->importStylesheet($xslDoc)) {
+            error_log('JatsTemplate: Failed to import XSLT stylesheet for article ' . $article->getId());
+            return null;
+        }
+
+        $jatsFragment = $processor->transformToDoc($htmlDoc);
+        if (!$jatsFragment) {
+            error_log('JatsTemplate: XSLT transformation failed for article ' . $article->getId() . ': No output');
+            return null;
+        }
+
+        $abstractElement = $parentElement->appendChild($this->createElement($elementType));
+
+        // Set abstract-type if provided
+        // useful case such as PSL which has same `abstract/trans-abstract` tag but with
+        // abstract-type="plain-language-summary" attribute
+        if ($abstractType) {
+            $abstractElement->setAttribute('abstract-type', $abstractType);
+        }
+
+        // Set xml:lang only for non primary e.g. <trans-abstract> tag
+        if ($elementType === 'trans-abstract') {
+            $abstractElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
+        }
+
+        // Handle XSLT output: expect <abstract> root
+        $rootNodes = $jatsFragment->childNodes;
+        $hasAbstract = false;
+        foreach ($rootNodes as $node) {
+            if ($node instanceof DOMElement && $node->tagName === 'abstract') {
+                // Proper <abstract> root
+                foreach ($node->childNodes as $child) {
+                    $abstractElement->appendChild($this->importNode($child, true));
+                }
+                $hasAbstract = true;
+                break;
+            }
+        }
+
+        // Fallback: handle multiple <p> nodes or fragment
+        if (!$hasAbstract) {
+            foreach ($rootNodes as $node) {
+                if ($node instanceof DOMElement && $node->tagName === 'p') {
+                    $abstractElement->appendChild($this->importNode($node, true));
+                }
+            }
+        }
+
+        return $abstractElement;
     }
 }
