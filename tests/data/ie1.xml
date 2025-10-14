@@ -107,7 +107,7 @@
                 <copyright-holder>article-copyright</copyright-holder>
             </permissions>
             <self-uri xlink:href="journal-path-article-view"/>
-            <self-uri content-type="galley-filetype" xlink:href="-article-download"/>
+            <self-uri content-type="galley-filetype" xlink:href="journal-path-article-download"/>
             <kwd-group xml:lang="en">
                 <title>Keywords</title>
                 <kwd>Professional Development</kwd>
