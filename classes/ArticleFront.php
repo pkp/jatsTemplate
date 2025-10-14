@@ -78,7 +78,7 @@ class ArticleFront extends DOMDocument
         $journalMetaElement->appendChild($this->createElement('journal-id'))
             ->setAttribute('journal-id-type', 'ojs')->parentNode
             ->appendChild($this->createTextNode($journal->getPath()))->parentNode;
-        
+
         $journalMetaElement->appendChild($this->createElement('journal-id'))
             ->setAttribute('journal-id-type', 'publisher')->parentNode
             ->appendChild($this->createTextNode($journal->getPath()))->parentNode;
@@ -161,10 +161,6 @@ class ArticleFront extends DOMDocument
 
     /**
      * Create journal-meta contrib-group element
-     *
-     * @param Journal $journal
-     * @param PKPRequest $request
-     * @return \DOMNode
      */
     public function createJournalMetaJournalContribGroup(Journal $journal, PKPRequest $request): DOMNode
     {
@@ -215,7 +211,15 @@ class ArticleFront extends DOMDocument
     /**
      * Create xml article-meta DOMNode
      */
-    function createArticleMeta(Submission $submission, Journal $journal, Section $section, ?Issue $issue, $request, Article $article, ?Publication $workingPublication = null)
+    function createArticleMeta(
+        Submission $submission,
+        Journal $journal,
+        Section $section,
+        ?Issue $issue,
+        PKPRequest $request,
+        Article $article,
+        ?Publication $workingPublication = null
+    ): DOMNode|DOMDocument
     {
         $publication = $submission->getCurrentPublication();
         if ($workingPublication) {
@@ -230,7 +234,8 @@ class ArticleFront extends DOMDocument
             ->appendChild($this->createTextNode($submission->getId()));
         
         // Store the DOI
-        if ($doi = trim($publication->getStoredPubId('doi'))) {
+        if ($publication->getDoi()) {
+            $doi = trim($publication->getDoi());
             $articleMetaElement->appendChild($this->createElement('article-id'))
                 ->setAttribute('pub-id-type', 'doi')->parentNode
                 ->appendChild($this->createTextNode($doi));
@@ -246,15 +251,13 @@ class ArticleFront extends DOMDocument
                 $articleMetaElement->appendChild($volumeElement);
             }
 
-            // Store the issue number
+            // Store the issue number and issue id
             if ($issue->getShowNumber()) {
-                $articleMetaElement->appendChild($this->createElement('issue'))
+                $articleMetaElement
+                    ->appendChild($this->createElement('issue'))
                     ->appendChild($this->createTextNode($issue->getNumber()));
-            }
-
-            // Store the issue id
-            if ($issue->getShowNumber()) {
-                $articleMetaElement->appendChild($this->createElement('issue-id'))
+                $articleMetaElement
+                    ->appendChild($this->createElement('issue-id'))
                     ->appendChild($this->createTextNode($issue->getId()));
             }
 
@@ -347,7 +350,7 @@ class ArticleFront extends DOMDocument
                     ? 'abstract'
                     : 'trans-abstract';
 
-                // genrate form XSL
+                // generate form XSL
                 $abstractElement = $this->generateAbstractContentFromXSL(
                     $submission,
                     $elementType,
@@ -414,7 +417,7 @@ class ArticleFront extends DOMDocument
         // Include page info, if available and parseable.
         $pageCount = null;
         if ($publication->getData('pages')) {
-            $matches = $pageCount = null;
+            $matches = null;
             if (preg_match('/^(\d+)$/u', $publication->getData('pages'), $matches)) {
                 $articleMetaElement->appendChild($this->createElement('fpage'))
                     ->appendChild($this->createTextNode($matches[1]));
@@ -494,24 +497,35 @@ class ArticleFront extends DOMDocument
         }
 
         $router = $request->getRouter();
-        $dispatcher = $router->getDispatcher(); /* @var $dispatcher Dispatcher */
+        $dispatcher = $router->getDispatcher();
 
-        $url = $dispatcher->url($request, PKPApplication::ROUTE_PAGE, $journal->getPath(), 'article', 'view', [$publication->getData('urlPath') ?? $submission->getId()], null, null, true, '');
+        $url = $dispatcher->url(
+            $request,
+            PKPApplication::ROUTE_PAGE,
+            $journal->getPath(),
+            'article',
+            'view', 
+            [$publication->getData('urlPath') ?? $submission->getId()],
+            null,
+            null,
+            true,
+            ''
+        );
 
         $articleMetaElement
             ->appendChild($this->createElement('self-uri'))
             ->setAttribute('xlink:href', $url);
-        
-        $galleys = $publication->getData('galleys');
+
+        $galleys = $publication->getData('galleys'); /** @var iterable|\PKP\galley\Galley[] $galleys */
         if (!empty($galleys)) {
             $router = $request->getRouter();
             $dispatcher = $router->getDispatcher();
-            foreach ($galleys as $galley) {
+            foreach ($galleys as $galley) { /** @var \PKP\galley\Galley $galley */
                 $uriNode = $articleMetaElement->appendChild($this->createElement('self-uri'));
                 $uriNode->setAttribute('xlink:href', $dispatcher->url(
                     $request,
                     PKPApplication::ROUTE_PAGE,
-                    null,
+                    $journal->getData('urlPath'),
                     'article',
                     'download',
                     [$submission->getBestId(), $galley->getId(), $galley->getData('submissionFileId')],
@@ -556,7 +570,7 @@ class ArticleFront extends DOMDocument
         }
 
         $customMetaGroupElement = $articleMetaElement->appendChild($this->createElement('custom-meta-group'));
-        
+
         // Issue cover page
         if ($coverUrl = $issue?->getLocalizedCoverImageUrl()) {
             $customMetaElement = $customMetaGroupElement->appendChild($this->createElement('custom-meta'));
@@ -631,7 +645,7 @@ class ArticleFront extends DOMDocument
                 $contribElement->setAttribute('corresp', 'yes');
             }
 
-            foreach ($author->getData('creditRoles') as ['role' => $role, 'degree' => $degree]) {
+            foreach ($author->getData('creditRoles') ?? [] as ['role' => $role, 'degree' => $degree]) {
                 $roleTerm = $creditRoleTerms['roles'][$role];
                 $roleElement = $contribElement->appendChild($this->createElement('role'));
                 $roleElement
@@ -713,9 +727,9 @@ class ArticleFront extends DOMDocument
      * @param string $elementType 'abstract' or 'trans-abstract'
      * @param string $locale The locale of the abstract
      * @param string $abstract The HTML abstract content
-     * @param \DOMElement $parentElement The article-meta DOM element
+     * @param DOMElement $parentElement The article-meta DOM element
      * @param ?string $abstractType Optional abstract type (e.g., 'plain-language-summary')
-     * @return \DOMElement|null The created abstract element or null if transformation fails
+     * @return DOMElement|null The created abstract element or null if transformation fails
      */
     public function generateAbstractContentFromXSL(
         Submission $article,
