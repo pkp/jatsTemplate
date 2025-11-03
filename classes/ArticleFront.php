@@ -553,7 +553,7 @@ class ArticleFront extends DOMDocument
                 ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode;
 
             $kwdGroupElement->appendChild($this->createElement('title'))
-                ->appendChild($this->createTextNode('Keywords'));
+                ->appendChild($this->createTextNode(__('common.keywords', [], $locale)));
                 
             foreach ($keywords as $keyword) {
                 $kwdGroupElement
