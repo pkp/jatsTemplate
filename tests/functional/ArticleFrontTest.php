@@ -93,6 +93,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $publication->setData('title', 'article-title-en', 'en');
         $publication->setData('title', 'article-title-de', 'de');
         $publication->setData('coverage', ['en' => ['article-coverage-geo', 'article-coverage-chron', 'article-coverage-sample']]);
+        $publication->setData('keywords', ['en' => [['name' => 'Professional Development'],['name' => 'Social Transformation']]]);
         $publication->setData('abstract', 'article-abstract', 'en');
         $publication->setData('sponsor', 'article-sponsor', 'en');
         $publication->setData('doiObject', $publicationDoiObject);
