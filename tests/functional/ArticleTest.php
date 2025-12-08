@@ -12,6 +12,7 @@
 
 namespace APP\plugins\generic\jatsTemplate\tests\functional;
 
+use Mockery;
 use PKP\doi\Doi;
 use APP\issue\Issue;
 use APP\author\Author;
@@ -22,12 +23,13 @@ use APP\section\Section;
 use PKP\tests\PKPTestCase;
 use APP\submission\Submission;
 use APP\publication\Publication;
+use PKP\affiliation\Affiliation;
 use PHPUnit\Framework\MockObject\MockObject;
 use PKP\galley\Collector as GalleyCollector;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PKP\author\Repository as AuthorRepository;
 use APP\plugins\generic\jatsTemplate\classes\Article;
-use PKP\affiliation\Affiliation;
+use APP\submissionFile\Repository as SubmissionFileRepository;
 
 #[CoversClass(Article::class)]
 class ArticleTest extends PKPTestCase
@@ -113,11 +115,9 @@ class ArticleTest extends PKPTestCase
         // Galleys
         /** @var Galley|MockObject */
         $galley = $this->getMockBuilder(Galley::class)
-            ->onlyMethods(['getFileType', 'getBestGalleyId'])
+            ->onlyMethods(['getBestGalleyId'])
             ->getMock();
-        $galley->expects(self::any())
-            ->method('getFileType')
-            ->willReturn('galley-filetype');
+
         $galley->expects(self::any())
             ->method('getBestGalleyId')
             ->willReturn(98);
@@ -133,6 +133,43 @@ class ArticleTest extends PKPTestCase
             ->onlyMethods([])
             ->getMock();
         $galleyDoiObject->setData('doi', 'galley-doi');
+
+        // Mock SubmissionFile to provide mimetype
+        $submissionFileMock = Mockery::mock(\PKP\submissionFile\SubmissionFile::class);
+        $submissionFileMock->shouldReceive('getData')
+            ->andReturnUsing(function ($key) {
+                return match($key) {
+                    'mimetype' => 'galley-filetype',
+                    'fileId' => 1, // Return a valid fileId
+                    default => null
+                };
+            });
+
+        // Mock file service to prevent ArticleBody from crashing
+        $fileObjectMock = Mockery::mock();
+        $fileObjectMock->path = null; // This will cause mimeType to skip or handle gracefully
+
+        $fileServiceMock = Mockery::mock();
+        $fileServiceMock->shouldReceive('get')->andReturn($fileObjectMock);
+        $fileServiceMock->fs = Mockery::mock();
+        $fileServiceMock->fs->shouldReceive('mimeType')->andReturn(null); // Return null instead of crashing
+
+        app()->instance('file', $fileServiceMock);
+
+        // Mock Collector for method chaining
+        $collectorMock = Mockery::mock(\PKP\submissionFile\Collector::class);
+        $collectorMock->shouldReceive('filterBySubmissionIds')->andReturnSelf();
+        $collectorMock->shouldReceive('filterByFileStages')->andReturnSelf();
+        $collectorMock->shouldReceive('getMany')->andReturn(\Illuminate\Support\LazyCollection::make([])); // Return empty LazyCollection
+
+        $submissionFileRepoMock = Mockery::mock(\APP\submissionFile\Repository::class);
+        $submissionFileRepoMock->shouldReceive('get')
+            ->with(98)
+            ->andReturn($submissionFileMock);
+        $submissionFileRepoMock->shouldReceive('getCollector')
+            ->andReturn($collectorMock);
+
+        app()->instance(\APP\submissionFile\Repository::class, $submissionFileRepoMock);
 
         // Article
         /** @var Submission|MockObject */

@@ -126,18 +126,42 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         // Galleys
         /** @var Galley|MockObject */
         $galley = $this->getMockBuilder(Galley::class)
-            ->onlyMethods(['getFileType', 'getBestGalleyId'])
+            ->onlyMethods(['getBestGalleyId'])
             ->getMock();
-        $galley->expects(self::any())
-            ->method('getFileType')
-            ->willReturn('galley-filetype');
         $galley->expects(self::any())
             ->method('getBestGalleyId')
             ->willReturn(98);
         $galley->setId(98);
+        $galley->setData('submissionFileId', 98);
         $galley->setData('doiObject', $galleyDoiObject);
 
         $galleys = collect([$galley]);
+
+        // Mock SubmissionFile Repository to provide mimetype
+        $submissionFileMock = \Mockery::mock(\PKP\submissionFile\SubmissionFile::class);
+        $submissionFileMock->shouldReceive('getData')
+            ->andReturnUsing(function ($key) {
+                return match($key) {
+                    'mimetype' => 'galley-filetype',
+                    'fileId' => 1,
+                    default => null
+                };
+            });
+
+        // Mock Collector for method chaining
+        $collectorMock = \Mockery::mock(\PKP\submissionFile\Collector::class);
+        $collectorMock->shouldReceive('filterBySubmissionIds')->andReturnSelf();
+        $collectorMock->shouldReceive('filterByFileStages')->andReturnSelf();
+        $collectorMock->shouldReceive('getMany')->andReturn(\Illuminate\Support\LazyCollection::make([]));
+
+        $submissionFileRepoMock = \Mockery::mock(\APP\submissionFile\Repository::class);
+        $submissionFileRepoMock->shouldReceive('get')
+            ->with(98)
+            ->andReturn($submissionFileMock);
+        $submissionFileRepoMock->shouldReceive('getCollector')
+            ->andReturn($collectorMock);
+
+        app()->instance(\APP\submissionFile\Repository::class, $submissionFileRepoMock);
 
         // Journal
         /** @var Journal|MockObject */
