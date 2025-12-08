@@ -378,8 +378,8 @@ class ArticleFront extends DOMDocument
                     ? 'abstract'
                     : 'trans-abstract';
 
-                // genrate form XSL
-                $plainlanguageSummaryElement = $this->generateAbstractContentFromXSL(
+                // genrate from XSL
+                $plainLanguageSummaryElement = $this->generateAbstractContentFromXSL(
                     $submission,
                     $elementType,
                     $locale,
@@ -388,7 +388,7 @@ class ArticleFront extends DOMDocument
                     'plain-language-summary',
                 );
 
-                $articleMetaElement->appendChild($plainlanguageSummaryElement);
+                $articleMetaElement->appendChild($plainLanguageSummaryElement);
             }
         }
 
@@ -522,17 +522,25 @@ class ArticleFront extends DOMDocument
             $dispatcher = $router->getDispatcher();
             foreach ($galleys as $galley) { /** @var \PKP\galley\Galley $galley */
                 $uriNode = $articleMetaElement->appendChild($this->createElement('self-uri'));
-                $uriNode->setAttribute('xlink:href', $dispatcher->url(
-                    $request,
-                    PKPApplication::ROUTE_PAGE,
-                    $journal->getData('urlPath'),
-                    'article',
-                    'download',
-                    [$submission->getBestId(), $galley->getId(), $galley->getData('submissionFileId')],
-                    urlLocaleForPage: ''
-                ));
+                $uriNode->setAttribute(
+                    'xlink:href',
+                    $dispatcher->url(
+                        $request,
+                        PKPApplication::ROUTE_PAGE,
+                        $journal->getData('urlPath'),
+                        'article',
+                        'download',
+                        [$submission->getBestId(), $galley->getId(), $galley->getData('submissionFileId')],
+                        urlLocaleForPage: ''
+                    )
+                );
                 if (!$galley->getData('urlRemote')) {
-                    $uriNode->setAttribute('content-type', $galley->getFileType());
+                    $fileType = $galley->getData('submissionFileId')
+                        ? Repo::submissionFile()->get((int) $galley->getData('submissionFileId'))->getData('mimetype')
+                        : null;
+                    if ($fileType) {
+                        $uriNode->setAttribute('content-type', $fileType);
+                    }
                 }    
             }
         }
@@ -781,7 +789,7 @@ class ArticleFront extends DOMDocument
         $abstractElement = $parentElement->appendChild($this->createElement($elementType));
 
         // Set abstract-type if provided
-        // useful case such as PSL which has same `abstract/trans-abstract` tag but with
+        // useful case such as plain language summary which has same `abstract/trans-abstract` tag but with
         // abstract-type="plain-language-summary" attribute
         if ($abstractType) {
             $abstractElement->setAttribute('abstract-type', $abstractType);

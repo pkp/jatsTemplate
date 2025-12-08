@@ -35,7 +35,9 @@ class ArticleBody extends \DOMDocument
         // Get HTML galleys for top of list, as they're quickest to parse
         // PDFs have second-highest priority over other file types
         $items = $galleys->reduce(function (array $carry, Galley $galley) {
-            $fileType = $galley->getFileType();
+            $fileType = $galley->getData('submissionFileId')
+                ? Repo::submissionFile()->get((int) $galley->getData('submissionFileId'))->getData('mimetype')
+                : null;
 
             switch ($fileType) {
                 case 'text/html':
