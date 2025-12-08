@@ -1,10 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-Original XSLT derived from Janeway project (https://github.com/openlibhums/janeway), licensed under GNU Affero General Public License v3.0 (AGPL-3.0).
-Modifications for OJS jatsTemplate plugin: Fixed tag mismatches, added namespace handling (e.g., xmlns:html), prevented duplicate <p> nesting, ensured JATS compliance (no prefixes, no <title>).
-Combined work licensed under GNU General Public License v3.0 (GPLv3) as per jatsTemplate plugin.
-Original AGPL-3.0 notice: This file is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-See https://www.gnu.org/licenses/agpl-3.0.html for full AGPL text.
+    HTML to JATS Abstract Converter
+
+    Based on work from the Janeway project (https://github.com/openlibhums/janeway)
+    Copyright (c) Janeway Contributors
+    Original work licensed under GNU Affero General Public License v3.0 (AGPL-3.0)
+
+    Modifications for OJS jatsTemplate plugin:
+    Copyright (c) 2014-2025 Simon Fraser University
+    Copyright (c) 2003-2025 John Willinsky
+
+    Changes from original:
+    - Fixed tag mismatches for JATS compliance
+    - Added namespace handling (xmlns:html)
+    - Prevented duplicate <p> nesting
+    - Removed prefixes from JATS elements
+    - Removed <title> elements for JATS spec compliance
+
+    This file is part of the jatsTemplate plugin for Open Journal Systems.
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program. If not, see <https://www.gnu.org/licenses/agpl-3.0.html>.
 -->
 <xsl:stylesheet 
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
