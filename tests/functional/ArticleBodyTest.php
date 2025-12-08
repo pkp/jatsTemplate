@@ -101,11 +101,8 @@ class ArticleBodyTest extends PKPTestCase
         // Galleys
         /** @var Galley|MockObject */
         $galley = $this->getMockBuilder(Galley::class)
-            ->onlyMethods(['getFileType', 'getBestGalleyId'])
+            ->onlyMethods(['getBestGalleyId'])
             ->getMock();
-        $galley->expects(self::any())
-            ->method('getFileType')
-            ->willReturn('galley-filetype');
         $galley->expects(self::any())
             ->method('getBestGalleyId')
             ->willReturn(98);

@@ -350,7 +350,7 @@ class ArticleFront extends DOMDocument
                     ? 'abstract'
                     : 'trans-abstract';
 
-                // generate form XSL
+                // generate from XSL
                 $abstractElement = $this->generateAbstractContentFromXSL(
                     $submission,
                     $elementType,
@@ -536,8 +536,9 @@ class ArticleFront extends DOMDocument
                 );
                 if (!$galley->getData('urlRemote')) {
                     $fileType = $galley->getData('submissionFileId')
-                        ? Repo::submissionFile()->get((int) $galley->getData('submissionFileId'))->getData('mimetype')
+                        ? Repo::submissionFile()->get((int) $galley->getData('submissionFileId'))?->getData('mimetype')
                         : null;
+                        
                     if ($fileType) {
                         $uriNode->setAttribute('content-type', $fileType);
                     }
