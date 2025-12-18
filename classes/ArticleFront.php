@@ -12,29 +12,29 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
-use DOMNode;
-use Exception;
-use DOMElement;
-use DOMDocument;
-use Carbon\Carbon;
-use XSLTProcessor;
-use APP\issue\Issue;
-use APP\facades\Repo;
 use APP\author\Author;
-use PKP\core\PKPString;
-use APP\journal\Journal;
-use APP\section\Section;
-use PKP\core\PKPRequest;
 use APP\core\Application;
-use PKP\core\PKPApplication;
-use PKP\userGroup\UserGroup;
+use APP\facades\Repo;
+use APP\issue\Issue;
+use APP\journal\Journal;
+use APP\publication\Publication;
+use APP\section\Section;
 use APP\submission\Submission;
+use Carbon\Carbon;
+use DOMDocument;
+use DOMNode;
+use DOMElement;
+use Exception;
+use PKP\author\creditRole\CreditRoleDegree;
+use PKP\controlledVocab\ControlledVocab;
+use PKP\core\PKPApplication;
+use PKP\core\PKPRequest;
+use PKP\core\PKPString;
 use PKP\i18n\LocaleConversion;
 use PKP\plugins\PluginRegistry;
-use APP\publication\Publication;
 use PKP\submissionFile\SubmissionFile;
-use PKP\controlledVocab\ControlledVocab;
-use PKP\author\creditRole\CreditRoleDegree;
+use PKP\userGroup\UserGroup;
+use XSLTProcessor;
 
 class ArticleFront extends DOMDocument
 {
@@ -49,8 +49,7 @@ class ArticleFront extends DOMDocument
         PKPRequest $request,
         Article $article,
         ?Publication $workingPublication = null
-    ): DOMNode
-    {
+    ): DOMNode {
         return $this->appendChild($this->createElement('front'))
             ->appendChild($this->createJournalMeta($journal, $request))
             ->parentNode
@@ -88,6 +87,17 @@ class ArticleFront extends DOMDocument
         // Editorial team (contrib-group)
         $journalMetaElement->appendChild($this->createJournalMetaJournalContribGroup($journal, $request));
 
+        if (!empty($journal->getData('onlineIssn'))) {
+            $journalMetaElement->appendChild($this->createElement('issn'))
+                ->appendChild($this->createTextNode($journal->getData('onlineIssn')))->parentNode
+                ->setAttribute('pub-type', 'epub');
+        }
+        if (!empty($journal->getData('printIssn'))) {
+            $journalMetaElement->appendChild($this->createElement('issn'))
+                ->appendChild($this->createTextNode($journal->getData('printIssn')))->parentNode
+                ->setAttribute('pub-type', 'ppub');
+        }
+
         $publisherElement = $journalMetaElement->appendChild($this->createElement('publisher'));
         $publisherElement->appendChild($this->createElement('publisher-name'))
             ->appendChild($this->createTextNode($journal->getData('publisherInstitution')));
@@ -102,22 +112,13 @@ class ArticleFront extends DOMDocument
                 $publisherLocElement->appendChild($this->createTextNode($publisherLocation));
             }
             if ($publisherCountry) {
-                $publisherLocElement->appendChild($this->createElement('country'))->appendChild($this->createTextNode($publisherCountry));
+                $publisherLocElement->appendChild($this->createElement('country'))
+                    ->appendChild($this->createTextNode($publisherCountry));
             }
             if ($publisherUrl) {
-                $publisherLocElement->appendChild($this->createElement('uri'))->appendChild($this->createTextNode($publisherUrl));
+                $publisherLocElement->appendChild($this->createElement('uri'))
+                    ->appendChild($this->createTextNode($publisherUrl));
             }
-        }
-
-        if (!empty($journal->getData('onlineIssn'))) {
-            $journalMetaElement->appendChild($this->createElement('issn'))
-                ->appendChild($this->createTextNode($journal->getData('onlineIssn')))->parentNode
-                ->setAttribute('pub-type', 'epub');
-        }
-        if (!empty($journal->getData('printIssn'))) {
-            $journalMetaElement->appendChild($this->createElement('issn'))
-                ->appendChild($this->createTextNode($journal->getData('printIssn')))->parentNode
-                ->setAttribute('pub-type', 'ppub');
         }
 
         $router = $request->getRouter();
@@ -150,11 +151,14 @@ class ArticleFront extends DOMDocument
                 ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
                 ->appendChild($this->createElement('trans-title'))->appendChild($this->createTextNode($title));
         }
-        //Include journal abbreviation titles
-        foreach ($journal->getData('abbreviation') as $locale => $abbrevTitle) {
-            $journalTitleGroupElement->appendChild($this->createElement('abbrev-journal-title'))
-                ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
-                ->appendChild($this->createTextNode($abbrevTitle));
+
+        // Include journal abbreviation titles
+        if (!empty($journal->getData('abbreviation'))) {
+            foreach ($journal->getData('abbreviation') as $locale => $abbrevTitle) {
+                $journalTitleGroupElement->appendChild($this->createElement('abbrev-journal-title'))
+                    ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
+                    ->appendChild($this->createTextNode($abbrevTitle));
+            }
         }
         return $journalTitleGroupElement;
     }
@@ -211,7 +215,7 @@ class ArticleFront extends DOMDocument
     /**
      * Create xml article-meta DOMNode
      */
-    function createArticleMeta(
+    public function createArticleMeta(
         Submission $submission,
         Journal $journal,
         Section $section,
@@ -219,8 +223,7 @@ class ArticleFront extends DOMDocument
         PKPRequest $request,
         Article $article,
         ?Publication $workingPublication = null
-    ): DOMNode|DOMDocument
-    {
+    ): DOMNode|DOMDocument {
         $publication = $submission->getCurrentPublication();
         if ($workingPublication) {
             $publication = $workingPublication;
@@ -232,46 +235,13 @@ class ArticleFront extends DOMDocument
         $articleMetaElement->appendChild($this->createElement('article-id'))
             ->setAttribute('pub-id-type', 'publisher-id')->parentNode
             ->appendChild($this->createTextNode($submission->getId()));
-        
+
         // Store the DOI
         if ($publication->getDoi()) {
             $doi = trim($publication->getDoi());
             $articleMetaElement->appendChild($this->createElement('article-id'))
                 ->setAttribute('pub-id-type', 'doi')->parentNode
                 ->appendChild($this->createTextNode($doi));
-        }
-
-        // Store the issue-id, volume, number, and title
-        if ($issue) {
-            // Store the volume
-            if ($issue->getShowVolume()) {
-                $volumeElement = $this->createElement('volume');
-                $volumeElement->appendChild($this->createTextNode($issue->getVolume()));
-                $volumeElement->setAttribute('seq', ((int) $publication->getData('seq')) + 1);
-                $articleMetaElement->appendChild($volumeElement);
-            }
-
-            // Store the issue number and issue id
-            if ($issue->getShowNumber()) {
-                $articleMetaElement
-                    ->appendChild($this->createElement('issue'))
-                    ->appendChild($this->createTextNode($issue->getNumber()));
-                $articleMetaElement
-                    ->appendChild($this->createElement('issue-id'))
-                    ->appendChild($this->createTextNode($issue->getId()));
-            }
-
-            // Store the issue title
-            if ($issue->getShowTitle()) {
-                foreach ($issue->getTitle(null) as $locale => $title) {
-                    if (empty($title)) {
-                        continue;
-                    }
-                    $articleMetaElement->appendChild($this->createElement('issue-title'))
-                        ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
-                        ->appendChild($this->createTextNode($title));
-                }
-            }
         }
 
         // Store the article-categories
@@ -334,64 +304,6 @@ class ArticleFront extends DOMDocument
             }
         }
 
-        // Add abstract
-        $abstracts = $publication->getData('abstract');
-        if (!empty($abstracts)) {
-            foreach ($abstracts as $locale => $abstract) {
-                if (empty($abstract)) {
-                    continue;
-                }
-                $abstract = PKPString::stripUnsafeHtml($abstract);
-                if (trim($abstract) === '') {
-                    continue;
-                }
-
-                $elementType = ($locale == $submission->getData('locale'))
-                    ? 'abstract'
-                    : 'trans-abstract';
-
-                // generate from XSL
-                $abstractElement = $this->generateAbstractContentFromXSL(
-                    $submission,
-                    $elementType,
-                    $locale,
-                    $abstract,
-                    $articleMetaElement,
-                );
-                
-                $articleMetaElement->appendChild($abstractElement);
-            }
-        }
-
-        // Add plain-language summary
-        $plainLanguageSummaries = $publication->getData('plainLanguageSummary');
-        if (!empty($plainLanguageSummaries)) {
-            foreach ($plainLanguageSummaries as $locale => $plainLanguageSummary) {
-                if (empty($plainLanguageSummary)) {
-                    continue;
-                }
-                $strippedSummary = PKPString::stripUnsafeHtml($plainLanguageSummary);
-                if (trim($strippedSummary) === '') {
-                    continue;
-                }
-                $elementType = ($locale == $submission->getData('locale'))
-                    ? 'abstract'
-                    : 'trans-abstract';
-
-                // genrate from XSL
-                $plainLanguageSummaryElement = $this->generateAbstractContentFromXSL(
-                    $submission,
-                    $elementType,
-                    $locale,
-                    $strippedSummary,
-                    $articleMetaElement,
-                    'plain-language-summary',
-                );
-
-                $articleMetaElement->appendChild($plainLanguageSummaryElement);
-            }
-        }
-
         if ($datePublished = $publication->getData('datePublished')) {
             $datePublished = strtotime($datePublished);
         } elseif ($issue) {
@@ -412,6 +324,39 @@ class ArticleFront extends DOMDocument
 
             $pubDateElement->appendChild($this->createElement('year'))
                 ->appendChild($this->createTextNode(date('Y', (int)$datePublished)));
+        }
+
+        // Store the issue-id, volume, number, and title
+        if ($issue) {
+            // Store the volume
+            if ($issue->getShowVolume()) {
+                $volumeElement = $this->createElement('volume');
+                $volumeElement->appendChild($this->createTextNode($issue->getVolume()));
+                $volumeElement->setAttribute('seq', ((int) $publication->getData('seq')) + 1);
+                $articleMetaElement->appendChild($volumeElement);
+            }
+
+            // Store the issue number and issue id
+            if ($issue->getShowNumber()) {
+                $articleMetaElement
+                    ->appendChild($this->createElement('issue'))
+                    ->appendChild($this->createTextNode($issue->getNumber()));
+                $articleMetaElement
+                    ->appendChild($this->createElement('issue-id'))
+                    ->appendChild($this->createTextNode($issue->getId()));
+            }
+
+            // Store the issue title
+            if ($issue->getShowTitle()) {
+                foreach ($issue->getTitle(null) as $locale => $title) {
+                    if (empty($title)) {
+                        continue;
+                    }
+                    $articleMetaElement->appendChild($this->createElement('issue-title'))
+                        ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
+                        ->appendChild($this->createTextNode($title));
+                }
+            }
         }
 
         // Include page info, if available and parseable.
@@ -448,7 +393,6 @@ class ArticleFront extends DOMDocument
                 $pageCount = $matchedPageTo - $matchedPageFrom + 1;
             }
         }
-        
 
         if (($date = $submission->getData('dateSubmitted')) !== null) {
             $date = Carbon::createFromTimestamp(strtotime($date));
@@ -491,7 +435,7 @@ class ArticleFront extends DOMDocument
                     ->setAttribute('xlink:href', $licenseUrl)->parentNode;
                 if ($ccBadge) {
                     $licenseElement->appendChild($this->createElement('license-p'))
-                                   ->appendChild($this->createTextNode($ccBadge));
+                        ->appendChild($this->createTextNode($ccBadge));
                 }
             }
         }
@@ -504,7 +448,7 @@ class ArticleFront extends DOMDocument
             PKPApplication::ROUTE_PAGE,
             $journal->getPath(),
             'article',
-            'view', 
+            'view',
             [$publication->getData('urlPath') ?? $submission->getId()],
             null,
             null,
@@ -538,11 +482,69 @@ class ArticleFront extends DOMDocument
                     $fileType = $galley->getData('submissionFileId')
                         ? Repo::submissionFile()->get((int) $galley->getData('submissionFileId'))?->getData('mimetype')
                         : null;
-                        
+
                     if ($fileType) {
                         $uriNode->setAttribute('content-type', $fileType);
                     }
-                }    
+                }
+            }
+        }
+
+        // Add abstract
+        $abstracts = $publication->getData('abstract');
+        if (!empty($abstracts)) {
+            foreach ($abstracts as $locale => $abstract) {
+                if (empty($abstract)) {
+                    continue;
+                }
+                $abstract = PKPString::stripUnsafeHtml($abstract);
+                if (trim($abstract) === '') {
+                    continue;
+                }
+
+                $elementType = ($locale == $submission->getData('locale'))
+                    ? 'abstract'
+                    : 'trans-abstract';
+
+                // generate from XSL
+                $abstractElement = $this->generateAbstractContentFromXSL(
+                    $submission,
+                    $elementType,
+                    $locale,
+                    $abstract,
+                    $articleMetaElement,
+                );
+
+                $articleMetaElement->appendChild($abstractElement);
+            }
+        }
+
+        // Add plain-language summary
+        $plainLanguageSummaries = $publication->getData('plainLanguageSummary');
+        if (!empty($plainLanguageSummaries)) {
+            foreach ($plainLanguageSummaries as $locale => $plainLanguageSummary) {
+                if (empty($plainLanguageSummary)) {
+                    continue;
+                }
+                $strippedSummary = PKPString::stripUnsafeHtml($plainLanguageSummary);
+                if (trim($strippedSummary) === '') {
+                    continue;
+                }
+                $elementType = ($locale == $submission->getData('locale'))
+                    ? 'abstract'
+                    : 'trans-abstract';
+
+                // Generate from XSL
+                $plainLanguageSummaryElement = $this->generateAbstractContentFromXSL(
+                    $submission,
+                    $elementType,
+                    $locale,
+                    $strippedSummary,
+                    $articleMetaElement,
+                    'plain-language-summary',
+                );
+
+                $articleMetaElement->appendChild($plainLanguageSummaryElement);
             }
         }
 
@@ -563,7 +565,7 @@ class ArticleFront extends DOMDocument
 
             $kwdGroupElement->appendChild($this->createElement('title'))
                 ->appendChild($this->createTextNode(__('common.keywords', [], $locale)));
-                
+
             foreach ($keywords as $keyword) {
                 $kwdGroupElement
                     ->appendChild($this->createElement('kwd'))
@@ -578,46 +580,49 @@ class ArticleFront extends DOMDocument
                 ->setAttribute('count', $pageCount);
         }
 
-        $customMetaGroupElement = $articleMetaElement->appendChild($this->createElement('custom-meta-group'));
-
-        // Issue cover page
-        if ($coverUrl = $issue?->getLocalizedCoverImageUrl()) {
-            $customMetaElement = $customMetaGroupElement->appendChild($this->createElement('custom-meta'));
-            $metaNameElement = $customMetaElement->appendChild($this->createElement('meta-name'));
-            $metaNameElement->appendChild($this->createTextNode('issue-cover'));
-            $metaValueElement = $customMetaElement->appendChild($this->createElement('meta-value'));
-            $inlineGraphicElement = $metaValueElement->appendChild($this->createElement('inline-graphic'));
-            $inlineGraphicElement->setAttribute('xlink:href', $coverUrl);
-        }
-
+        $coverUrl = $issue?->getLocalizedCoverImageUrl();
         $layoutFiles = Repo::submissionFile()->getCollector()
             ->filterBySubmissionIds([$submission->getId()])
             ->filterByFileStages([SubmissionFile::SUBMISSION_FILE_PRODUCTION_READY])
             ->getMany();
 
-        foreach ($layoutFiles as $layoutFile) {
-            $sourceFileUrl = $request->getDispatcher()->url(
-                $request,
-                PKPApplication::ROUTE_PAGE,
-                null,
-                'jatsTemplate',
-                'download',
-                null,
-                [
-                    'submissionFileId' => $layoutFile->getId(),
-                    'fileId' => $layoutFile->getData('fileId'),
-                    'submissionId' => $submission->getId(),
-                    'stageId' => WORKFLOW_STAGE_ID_PRODUCTION,
-                ],
-                urlLocaleForPage: ''
-            );
-            $customMetaElement = $customMetaGroupElement->appendChild($this->createElement('custom-meta'));
-            $metaNameElement = $customMetaElement->appendChild($this->createElement('meta-name'));
-            $metaNameElement->appendChild($this->createTextNode('production-ready-file-url'));
-            $metaValueElement = $customMetaElement->appendChild($this->createElement('meta-value'));
-            $extLinkElement = $metaValueElement->appendChild($this->createElement('ext-link'));
-            $extLinkElement->setAttribute('ext-link-type', 'uri');
-            $extLinkElement->setAttribute('xlink:href', $sourceFileUrl);
+        if (!empty($coverUrl) || $layoutFiles->isNotEmpty()) {
+            $customMetaGroupElement = $articleMetaElement->appendChild($this->createElement('custom-meta-group'));
+
+            // Issue cover page
+            if ($coverUrl) {
+                $customMetaElement = $customMetaGroupElement->appendChild($this->createElement('custom-meta'));
+                $metaNameElement = $customMetaElement->appendChild($this->createElement('meta-name'));
+                $metaNameElement->appendChild($this->createTextNode('issue-cover'));
+                $metaValueElement = $customMetaElement->appendChild($this->createElement('meta-value'));
+                $inlineGraphicElement = $metaValueElement->appendChild($this->createElement('inline-graphic'));
+                $inlineGraphicElement->setAttribute('xlink:href', $coverUrl);
+            }
+
+            foreach ($layoutFiles as $layoutFile) {
+                $sourceFileUrl = $request->getDispatcher()->url(
+                    $request,
+                    PKPApplication::ROUTE_PAGE,
+                    null,
+                    'jatsTemplate',
+                    'download',
+                    null,
+                    [
+                        'submissionFileId' => $layoutFile->getId(),
+                        'fileId' => $layoutFile->getData('fileId'),
+                        'submissionId' => $submission->getId(),
+                        'stageId' => WORKFLOW_STAGE_ID_PRODUCTION,
+                    ],
+                    urlLocaleForPage: ''
+                );
+                $customMetaElement = $customMetaGroupElement->appendChild($this->createElement('custom-meta'));
+                $metaNameElement = $customMetaElement->appendChild($this->createElement('meta-name'));
+                $metaNameElement->appendChild($this->createTextNode('production-ready-file-url'));
+                $metaValueElement = $customMetaElement->appendChild($this->createElement('meta-value'));
+                $extLinkElement = $metaValueElement->appendChild($this->createElement('ext-link'));
+                $extLinkElement->setAttribute('ext-link-type', 'uri');
+                $extLinkElement->setAttribute('xlink:href', $sourceFileUrl);
+            }
         }
 
         return $articleMetaElement;
@@ -652,18 +657,6 @@ class ArticleFront extends DOMDocument
             $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
             if ($publication->getData('primaryContactId') == $author->getId()) {
                 $contribElement->setAttribute('corresp', 'yes');
-            }
-
-            foreach ($author->getData('creditRoles') ?? [] as ['role' => $role, 'degree' => $degree]) {
-                $roleTerm = $creditRoleTerms['roles'][$role];
-                $roleElement = $contribElement->appendChild($this->createElement('role'));
-                $roleElement
-                    ->setAttribute('vocab', 'CRediT')->parentNode
-                    ->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
-                    ->setAttribute('vocab-term', $roleTerm)->parentNode
-                    ->setAttribute('vocab-term-identifier', $role)->parentNode
-                    ->setAttribute('degree-contribution', $creditRoleTerms['degrees'][CreditRoleDegree::toLabel($degree)]);
-                $roleElement->appendChild($this->createTextNode($roleTerm));
             }
 
             if ($author->getOrcid()) {
@@ -702,9 +695,8 @@ class ArticleFront extends DOMDocument
                     ->setAttribute('rid', $token);
             }
             if (($s = $author->getUrl()) != '') {
-                $contribElement->appendChild($this->createElement('uri'))
-                    ->setAttribute('ref-type', 'aff')->parentNode
-                    ->setAttribute('rid', $affiliationToken)->parentNode
+                $contribElement
+                    ->appendChild($this->createElement('uri'))
                     ->appendChild($this->createTextNode($s));
             }
 
@@ -717,13 +709,25 @@ class ArticleFront extends DOMDocument
                 $bioElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
 
                 $strippedBio = PKPString::stripUnsafeHtml($bio);
-                $bioDocument = new \DOMDocument();
+                $bioDocument = new DOMDocument();
                 $bioDocument->createDocumentFragment();
                 $bioDocument->loadHTML($strippedBio);
                 foreach ($bioDocument->getElementsByTagName('body')->item(0)->childNodes->getIterator() as $bioChildNode) {
                     $bioElement->appendChild($this->importNode($bioChildNode, true));
                 }
                 $contribElement->appendChild($bioElement);
+            }
+
+            foreach ($author->getData('creditRoles') ?? [] as ['role' => $role, 'degree' => $degree]) {
+                $roleTerm = $creditRoleTerms['roles'][$role];
+                $roleElement = $contribElement->appendChild($this->createElement('role'));
+                $roleElement
+                    ->setAttribute('vocab', 'CRediT')->parentNode
+                    ->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
+                    ->setAttribute('vocab-term', $roleTerm)->parentNode
+                    ->setAttribute('vocab-term-identifier', $role)->parentNode
+                    ->setAttribute('degree-contribution', $creditRoleTerms['degrees'][CreditRoleDegree::toLabel($degree)]);
+                $roleElement->appendChild($this->createTextNode($roleTerm));
             }
         }
         return ['contribGroupElement' => $contribGroupElement, 'institutions' => $institutions];
@@ -739,6 +743,7 @@ class ArticleFront extends DOMDocument
      * @param DOMElement $parentElement The article-meta DOM element
      * @param ?string $abstractType Optional abstract type (e.g., 'plain-language-summary')
      * @return DOMElement|null The created abstract element or null if transformation fails
+     * @throws Exception
      */
     public function generateAbstractContentFromXSL(
         Submission $article,
@@ -747,8 +752,7 @@ class ArticleFront extends DOMDocument
         string $abstract,
         DOMElement $parentElement,
         ?string $abstractType = null
-    ): ?DOMElement
-    {
+    ): ?DOMElement {
         $xslPath = dirname(__FILE__, 2) . '/xsl/htmlAbstractToJats.xsl';
         if (!file_exists($xslPath)) {
             throw new Exception('unable to find the XSL file');
@@ -762,9 +766,9 @@ class ArticleFront extends DOMDocument
         $htmlDoc = new DOMDocument();
 
         $htmlContent = $abstract;
-        
-        if (strpos($htmlContent, '<p>') === false) { // Wrap plain text in <p> if no <p> tags are present
-            $htmlContent = "<p>{$htmlContent}</p>";
+
+        if (!str_contains($htmlContent, '<p>')) { // Wrap plain text in <p> if no <p> tags are present
+            $htmlContent = "<p>$htmlContent</p>";
         }
 
         libxml_use_internal_errors(true);

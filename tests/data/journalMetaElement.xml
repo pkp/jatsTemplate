@@ -46,10 +46,10 @@
       </name>
     </contrib>
   </contrib-group>
+  <issn pub-type="epub">onlineIssn</issn>
+  <issn pub-type="ppub">printIssn</issn>
   <publisher>
     <publisher-name>journal-publisher</publisher-name>
   </publisher>
-  <issn pub-type="epub">onlineIssn</issn>
-  <issn pub-type="ppub">printIssn</issn>
   <self-uri xlink:href="journal-path--"/>
 </journal-meta>

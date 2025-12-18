@@ -54,8 +54,7 @@ class Article extends \DOMDocument
         ?Issue $issue = null,
         ?Publication $publication = null,
         ?PKPRequest $request = null
-    ): void
-    {
+    ): void {
         $articleElement = $this->appendChild($this->createElement('article'))
             ->setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')->parentNode
             ->setAttribute('xml:lang', LocaleConversion::toBcp47($submission->getData('locale')))->parentNode
