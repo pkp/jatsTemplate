@@ -12,8 +12,6 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
-use PKP\db\DAORegistry;
-
 class ArticleBack extends \DOMDocument
 {
     /**
