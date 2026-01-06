@@ -27,9 +27,6 @@
   <aff id="aff-1">
     <institution content-type="orgname">author-affiliation</institution>
   </aff>
-  <abstract>
-    <p>article-abstract</p>
-  </abstract>
   <pub-date date-type="pub" publication-format="epub">
     <day>01</day>
     <month>01</month>
@@ -43,6 +40,9 @@
     <copyright-holder>article-copyright</copyright-holder>
   </permissions>
   <self-uri xlink:href="journal-path-article-view"/>
+  <abstract>
+    <p>article-abstract</p>
+  </abstract>
   <kwd-group xml:lang="en">
     <title>Keywords</title>
     <kwd>Professional Development</kwd>
@@ -51,5 +51,4 @@
   <counts>
     <page-count count="1"/>
   </counts>
-  <custom-meta-group/>
 </article-meta>
