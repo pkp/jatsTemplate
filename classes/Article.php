@@ -12,7 +12,6 @@
 
 namespace APP\plugins\generic\jatsTemplate\classes;
 
-use APP\core\Application;
 use APP\issue\Issue;
 use APP\publication\Publication;
 use APP\section\Section;

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @file JatsTemplatePlugin.inc.php
+ * @file JatsTemplatePlugin.php
  *
  * Copyright (c) 2003-2022 Simon Fraser University
  * Copyright (c) 2003-2022 John Willinsky

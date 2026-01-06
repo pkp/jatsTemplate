@@ -28,7 +28,6 @@ use APP\publication\Publication;
 use PKP\controlledVocab\ControlledVocab;
 use PKP\i18n\LocaleConversion;
 use PKP\submissionFile\SubmissionFile;
-
 use Carbon\Carbon;
 
 class ArticleFront extends \DOMDocument
@@ -121,10 +120,12 @@ class ArticleFront extends \DOMDocument
                 ->appendChild($this->createElement('trans-title'))->appendChild($this->createTextNode($title));
         }
         //Include journal abbreviation titles
-        foreach ($journal->getData('abbreviation') as $locale => $abbrevTitle) {
-            $journalTitleGroupElement->appendChild($this->createElement('abbrev-journal-title'))
-                ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
-                ->appendChild($this->createTextNode($abbrevTitle));
+        if (!empty($journal->getData('abbreviation'))) {
+            foreach ($journal->getData('abbreviation') as $locale => $abbrevTitle) {
+                $journalTitleGroupElement->appendChild($this->createElement('abbrev-journal-title'))
+                    ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
+                    ->appendChild($this->createTextNode($abbrevTitle));
+            }
         }
         return $journalTitleGroupElement;
     }
