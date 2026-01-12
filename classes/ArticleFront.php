@@ -548,11 +548,14 @@ class ArticleFront extends DOMDocument
             }
         }
 
-        $keywordVocabs = Repo::controlledVocab()->getBySymbolic(
-            ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_KEYWORD,
-            Application::ASSOC_TYPE_PUBLICATION,
-            $publication->getId()
-        );
+        // Fetch keyword data from the publication object, this will only include the name attribute.
+        $keywordVocabs = collect($publication->getData('keywords'))
+                            ->map(
+                                fn(array $items): array => collect($items)
+                                    ->pluck("name")
+                                ->all()
+                                )
+                            ->all();
 
         foreach ($keywordVocabs as $locale => $keywords) {
             if (empty($keywords)) {
