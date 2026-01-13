@@ -12,29 +12,28 @@
 
 namespace APP\plugins\generic\jatsTemplate\tests\functional;
 
-use Mockery;
-use PKP\doi\Doi;
-use APP\issue\Issue;
 use APP\author\Author;
+use APP\issue\Issue;
+use APP\journal\Journal;
+use APP\plugins\generic\jatsTemplate\classes\Article;
+use APP\publication\Publication;
+use APP\section\Section;
+use APP\submission\Submission;
+use Mockery;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\MockObject\MockObject;
+use PKP\affiliation\Affiliation;
+use PKP\author\Repository as AuthorRepository;
+use PKP\doi\Doi;
+use PKP\galley\Collector as GalleyCollector;
 use PKP\galley\Galley;
 use PKP\oai\OAIRecord;
-use APP\journal\Journal;
-use APP\section\Section;
 use PKP\tests\PKPTestCase;
-use APP\submission\Submission;
-use APP\publication\Publication;
-use PKP\affiliation\Affiliation;
-use PHPUnit\Framework\MockObject\MockObject;
-use PKP\galley\Collector as GalleyCollector;
-use PHPUnit\Framework\Attributes\CoversClass;
-use PKP\author\Repository as AuthorRepository;
-use APP\plugins\generic\jatsTemplate\classes\Article;
-use APP\submissionFile\Repository as SubmissionFileRepository;
 
 #[CoversClass(Article::class)]
 class ArticleTest extends PKPTestCase
 {
-    use \APP\plugins\generic\jatsTemplate\tests\functional\UsesRequestMock;
+    use UsesRequestMock;
 
     private string $xmlFilePath = 'plugins/generic/jatsTemplate/tests/data/';
     /**
@@ -81,13 +80,13 @@ class ArticleTest extends PKPTestCase
         $author->setEmail('someone@example.com');
 
         // Publication
-        /** @var Doi|MockObject */
+        /** @var Doi|MockObject $publicationDoiObject */
         $publicationDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
         $publicationDoiObject->setData('doi', 'article-doi');
 
-        /** @var Publication|MockObject */
+        /** @var Publication|MockObject $publication */
         $publication = $this->getMockBuilder(Publication::class)
             ->onlyMethods([])
             ->getMock();
@@ -107,13 +106,13 @@ class ArticleTest extends PKPTestCase
         $publication->setData('copyrightYear', 'year');
         $publication->setData('authors', collect([$author]));
 
-        /** @var Doi|MockObject */
+        /** @var Doi|MockObject $galleyDoiObject */
         $galleyDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
         $galleyDoiObject->setData('doi', 'galley-doi');
         // Galleys
-        /** @var Galley|MockObject */
+        /** @var Galley|MockObject $galley */
         $galley = $this->getMockBuilder(Galley::class)
             ->onlyMethods(['getBestGalleyId'])
             ->getMock();
@@ -128,7 +127,7 @@ class ArticleTest extends PKPTestCase
         $galleys = collect([$galley]);
         $publication->setData('galleys', $galleys);
 
-        /** @var Doi|MockObject */
+        /** @var Doi|MockObject $galleyDoiObject */
         $galleyDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
@@ -138,7 +137,7 @@ class ArticleTest extends PKPTestCase
         $submissionFileMock = Mockery::mock(\PKP\submissionFile\SubmissionFile::class);
         $submissionFileMock->shouldReceive('getData')
             ->andReturnUsing(function ($key) {
-                return match($key) {
+                return match ($key) {
                     'mimetype' => 'galley-filetype',
                     'fileId' => 1, // Return a valid fileId
                     default => null
@@ -172,7 +171,7 @@ class ArticleTest extends PKPTestCase
         app()->instance(\APP\submissionFile\Repository::class, $submissionFileRepoMock);
 
         // Article
-        /** @var Submission|MockObject */
+        /** @var Submission|MockObject $article */
         $article = $this->getMockBuilder(Submission::class)
             ->onlyMethods(['getBestId', 'getCurrentPublication','getGalleys'])
             ->getMock();
@@ -191,7 +190,7 @@ class ArticleTest extends PKPTestCase
             ->willReturn($publication);
 
         // Journal
-        /** @var Journal|MockObject */
+        /** @var Journal|MockObject $journal */
         $journal = $this->getMockBuilder(Journal::class)
             ->onlyMethods(['getSetting'])
             ->getMock();
@@ -217,14 +216,14 @@ class ArticleTest extends PKPTestCase
         $section->setIdentifyType('section-identify-type', 'en');
         $section->setTitle('section-identify-type', 'en');
 
-        /** @var Doi|MockObject */
+        /** @var Doi|MockObject $issueDoiObject */
         $issueDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
         $issueDoiObject->setData('doi', 'issue-doi');
 
         // Issue
-        /** @var Issue|MockObject */
+        /** @var Issue|MockObject $issue */
         $issue = $this->getMockBuilder(Issue::class)
             ->onlyMethods(['getIssueIdentification'])
             ->getMock();
@@ -269,5 +268,52 @@ class ArticleTest extends PKPTestCase
         $article->convertOAIToXml($record, $request);
         $actual = $article->mapHtmlTagsForTitle($htmlString);
         self::assertEquals($expected, $actual);
+    }
+
+    /**
+     * Test that the generated XML is valid against the JATS 1.2 DTD
+     */
+    public function testValidateJats()
+    {
+        $request = $this->createRequestMockInstance();
+        $record = $this->createOAIRecordMockObject();
+        $article = new Article();
+        $article->convertOAIToXml($record, $request);
+
+        // Validate against JATS 1.2 DTD
+        $this->assertXmlValidatesAgainstJats12($article);
+    }
+
+    /**
+     * Helper to validate a DOMDocument against the JATS 1.2 DTD
+     */
+    private function assertXmlValidatesAgainstJats12(\DOMDocument $dom)
+    {
+        // Create a new document with the JATS 1.2 DOCTYPE
+        $impl = new \DOMImplementation();
+        $dtd = $impl->createDocumentType(
+            'article',
+            '-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.2 20190208//EN',
+            'http://jats.nlm.nih.gov/publishing/1.2/JATS-journalpublishing1.dtd'
+        );
+
+        $validationDoc = $impl->createDocument(null, '', $dtd);
+        $validationDoc->encoding = 'UTF-8';
+
+        // Import the generated article
+        $root = $validationDoc->importNode($dom->documentElement, true);
+        $validationDoc->appendChild($root);
+
+        libxml_use_internal_errors(true);
+        $isValid = $validationDoc->validate();
+        $errors = libxml_get_errors();
+        libxml_clear_errors();
+
+        $errorMessage = '';
+        foreach ($errors as $error) {
+            $errorMessage .= sprintf("\nLine %d: %s", $error->line, trim($error->message));
+        }
+
+        $this->assertTrue($isValid, 'JATS 1.2 DTD Validation failed:' . $errorMessage);
     }
 }
