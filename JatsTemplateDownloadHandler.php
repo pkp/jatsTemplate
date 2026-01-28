@@ -1,14 +1,13 @@
 <?php
 
 /**
- * @file JatsTemplateDownloadHandler.inc.php
+ * @file JatsTemplateDownloadHandler.php
  *
- * Copyright (c) 2014-2022 Simon Fraser University
- * Copyright (c) 2003-2022 John Willinsky
+ * Copyright (c) 2014-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
  *
- * @package plugins.generic.jatsTemplate
- * @class JatsTemplateDownloadHandler
+ * @brief JATS download handler
  */
 
 namespace APP\plugins\generic\jatsTemplate;
@@ -21,7 +20,9 @@ use PKP\db\DAORegistry;
 use PKP\config\Config;
 use APP\facades\Repo;
 use APP\handler\Handler;
-use Firebase\JWT\JWT;
+use PKP\core\PKPJwt as JWT;
+use Firebase\JWT\Key;
+use stdClass;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class JatsTemplateDownloadHandler extends Handler
@@ -46,7 +47,9 @@ class JatsTemplateDownloadHandler extends Handler
         if ($header = array_search('Authorization', array_flip(getallheaders()))) {
             list($bearer, $jwt) = explode(' ', $header);
             if (strcasecmp($bearer, 'Bearer') == 0) {
-                $apiToken = JWT::decode($jwt, Config::getVar('security', 'api_key_secret', ''), array('HS256'));
+                $secret = Config::getVar('security', 'api_key_secret', '');
+                $headers = new stdClass();
+                $apiToken = ((array)JWT::decode($jwt, new Key($secret, 'HS256'), $headers))[0]; /** @var string $apiToken */
                 $this->setApiToken($apiToken);
             }
         }
@@ -57,7 +60,7 @@ class JatsTemplateDownloadHandler extends Handler
         return parent::authorize($request, $args, $roleAssignments);
     }
 
-    protected function _isUserAllowedAccess($request)
+    protected function isUserAllowedAccess(PKPRequest $request): bool
     {
         $user = $request->getUser();
         $context = $request->getContext();
@@ -76,12 +79,10 @@ class JatsTemplateDownloadHandler extends Handler
 
     /**
      * Handle a download request
-     * @param $args array Arguments array.
-     * @param $request PKPRequest Request object.
      */
-    public function download($args, $request)
+    public function download(array $args, PKPRequest $request): void
     {
-        if (!$this->_isUserAllowedAccess($request)) {
+        if (!$this->isUserAllowedAccess($request)) {
             throw new NotFoundHttpException();
         }
 
