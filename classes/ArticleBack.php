@@ -28,13 +28,13 @@ class ArticleBack extends \DOMDocument
     /**
      * create xml back DOMNode
      */
-    public function create(?Publication $publication): DOMNode
+    public function create(Publication $publication): DOMNode
     {
         // create element back
         $backElement = $this->appendChild($this->createElement('back'));
 
         // consider citations
-        $citations = $publication?->getData('citations');
+        $citations = $publication->getData('citations');
         if (!empty($citations)) {
             $refListElement = $backElement->appendChild($this->createElement('ref-list'));
             $i = 1;

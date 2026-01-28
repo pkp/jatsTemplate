@@ -50,10 +50,11 @@ class ArticleFront extends DOMDocument
         Article $article,
         ?Publication $workingPublication = null
     ): DOMNode {
-        return $this->appendChild($this->createElement('front'))
-            ->appendChild($this->createJournalMeta($journal, $request))
-            ->parentNode
-            ->appendChild(
+        $frontNode = $this->appendChild($this->createElement('front'));
+        $frontNode->appendChild($this->createJournalMeta($journal, $request));
+
+        if ($workingPublication) {
+            $frontNode->appendChild(
                 $this->createArticleMeta(
                     $submission,
                     $journal,
@@ -63,8 +64,10 @@ class ArticleFront extends DOMDocument
                     $article,
                     $workingPublication
                 )
-            )
-            ->parentNode;
+            );
+        }
+
+        return $frontNode;
     }
 
     /**
@@ -222,13 +225,8 @@ class ArticleFront extends DOMDocument
         ?Issue $issue,
         PKPRequest $request,
         Article $article,
-        ?Publication $workingPublication = null
+        Publication $publication
     ): DOMNode|DOMDocument {
-        $publication = $submission->getCurrentPublication();
-        if ($workingPublication) {
-            $publication = $workingPublication;
-        }
-
         $articleMetaElement = $this->appendChild($this->createElement('article-meta'));
 
         // Store the publisher-id
