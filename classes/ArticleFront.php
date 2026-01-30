@@ -3,8 +3,8 @@
 /**
  * @file ArticleFront.php
  *
- * Copyright (c) 2003-2025 Simon Fraser University
- * Copyright (c) 2003-2025 John Willinsky
+ * Copyright (c) 2003-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article front element
@@ -25,8 +25,10 @@ use DOMDocument;
 use DOMNode;
 use DOMElement;
 use Exception;
+use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use PKP\author\creditRole\CreditRoleDegree;
-use PKP\controlledVocab\ControlledVocab;
 use PKP\core\PKPApplication;
 use PKP\core\PKPRequest;
 use PKP\core\PKPString;
@@ -574,6 +576,63 @@ class ArticleFront extends DOMDocument
             }
         }
 
+        // Funding data
+        $fundingData = $this->getFundingData($journal->getId(), $submission->getId());
+        $fundingStatement = $publication->getData('fundingStatement');
+        if (($fundingData && !$fundingData->isEmpty()) || !empty($fundingStatement)) {
+            $fundingGroupNode = $this->createElement('funding-group');
+            foreach ($fundingData as $i => $funder) {
+                $awardGroupNode = $this->createElement('award-group');
+                $awardGroupNode->setAttribute('id', 'ag' . $i);
+
+                $fundingSourceNode = $this->createElement('funding-source');
+                $institutionWrapNode = $this->createElement('institution-wrap');
+                $institutionIdNode = $this->createElement('institution-id', $funder[0]->funder_identification);
+                $institutionIdNode->setAttribute('institution-id-type', 'doi');
+
+                $institutionWrapNode->appendChild($institutionIdNode);
+                $institutionWrapNode->appendChild($this->createElement('institution', $funder[0]->funder_name));
+                $fundingSourceNode->appendChild($institutionWrapNode);
+                $awardGroupNode->appendChild($fundingSourceNode);
+
+                foreach ($funder as $awards) {
+                    if (isset($awards->funder_award_number)) {
+                        $awardIdNode = $this->createElement('award-id', $awards->funder_award_number);
+                        $awardGroupNode->appendChild($awardIdNode);
+                    }
+                }
+                $fundingGroupNode->appendChild($awardGroupNode);
+            }
+            if (!empty($fundingStatement)) {
+                foreach ($fundingStatement as $locale => $statement) {
+                    $lang = LocaleConversion::toBcp47($locale);
+
+                    // Keep only safe formatting tags supported by JATS
+                    $allowedTags = '<i><em><b><strong><u><a><sup><sub>';
+                    $cleaned = strip_tags($statement, $allowedTags);
+
+                    // Escape special characters
+                    $escaped = htmlspecialchars($cleaned, ENT_COMPAT, 'UTF-8');
+
+                    $fundingText = JatsHelper::htmlToJats($escaped);
+                    $fundingStatementXml = "<funding-statement xml:lang=\"$lang\">$fundingText</funding-statement>";
+
+                    // Use document fragment to preserve JATS markup
+                    $fragment = $this->createDocumentFragment();
+                    // Suppress warnings from malformed user-provided citations
+                    if (@$fragment->appendXML($fundingStatementXml)) {
+                        $fundingGroupNode->appendChild($fragment);
+                    } else {
+                        // Fallback if XML parsing fails - createElement handles escaping automatically
+                        $fundingStatementNode = $this->createElement('funding-statement', htmlspecialchars(strip_tags($fundingStatement), ENT_COMPAT, 'UTF-8'));
+                        $fundingStatementNode->setAttribute('xml:lang', $lang);
+                        $fundingGroupNode->appendChild($fundingStatementNode);
+                    }
+                }
+            }
+            $articleMetaElement->appendChild($fundingGroupNode);
+        }
+
         if ($pageCount) {
             $articleMetaElement
                 ->appendChild($this->createElement('counts'))
@@ -830,5 +889,36 @@ class ArticleFront extends DOMDocument
         }
 
         return $abstractElement;
+    }
+
+    /**
+     * Helper function to retrieve funding data when available.
+     */
+    public function getFundingData(int $contextId, int $submissionId): Collection|false
+    {
+        if (!PluginRegistry::getPlugin('generic', 'FundingPlugin')) {
+            return false;
+        }
+
+        $fundingData = DB::table('funders AS f')
+            ->select(
+                'f.funder_id',
+                'f.funder_identification',
+                'fs.setting_value as funder_name',
+                'fa.funder_award_id',
+                'fa.funder_award_number'
+            )
+            ->where('f.submission_id', $submissionId)
+            ->where('f.context_id', $contextId)
+            ->leftJoin(
+                'funder_settings AS fs',
+                fn (JoinClause $j) => $j->on('f.funder_id', '=', 'fs.funder_id')
+                    ->where('fs.setting_name', '=', 'funderName')
+            )
+            ->leftjoin('funder_awards AS fa', 'f.funder_id', '=', 'fa.funder_id')
+            ->get()
+            ->groupBy('funder_id');
+
+        return $fundingData ?? false;
     }
 }
