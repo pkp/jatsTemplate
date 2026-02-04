@@ -359,6 +359,12 @@ class ArticleTest extends PKPTestCase
         $citation7->setRawCitation('Thompson, E. P. (1963). The Making of the English Working Class. Victor Gollancz Ltd.');
         $citations[] = $citation7;
 
+        // Unstructured citation with HTML formatting
+        $citation8 = new Citation();
+        $citation8->setData('isStructured', false);
+        $citation8->setRawCitation('Smith, J. & Jones, M. (2024). The <i>effects</i> of H<sub>2</sub>O on x<sup>2</sup>. <b>Nature</b>, 14(3). <a href="https://doi.org/10.1234/test">https://doi.org/10.1234/test</a>');
+        $citations[] = $citation8;
+
         return $citations;
     }
 

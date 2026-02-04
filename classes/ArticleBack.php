@@ -46,7 +46,7 @@ class ArticleBack extends \DOMDocument
                     $this->appendStructuredCitations($elementCitation, $citation);
                     $refElement->appendChild($elementCitation);
                 } else {
-                    $refElement->appendChild($this->createElement('mixed-citation', htmlspecialchars($citation->getRawCitation())));
+                    $this->appendMixedCitation($refElement, $citation->getRawCitation());
                 }
                 $refListElement->appendChild($refElement);
                 $i++;
@@ -238,5 +238,68 @@ class ArticleBack extends \DOMDocument
         $citationType = $citation->getData('type');
         $sourceType = $citation->getData('sourceType');
         return $typeMapping[$citationType] ?? $sourceTypeMapping[$sourceType] ?? $specialCases[$citationType] ?? $citationType;
+    }
+
+    /**
+     * Append mixed-citation element with HTML converted to JATS
+     */
+    protected function appendMixedCitation(DOMElement $refElement, string $rawCitation): void
+    {
+        // Keep only safe formatting tags supported by JATS
+        $allowedTags = '<i><em><b><strong><u><a><sup><sub>';
+        $cleaned = strip_tags($rawCitation, $allowedTags);
+
+        // Escape special characters
+        $escaped = htmlspecialchars($cleaned, ENT_COMPAT, 'UTF-8');
+
+        // Convert known safe tags to JATS
+        $jatsCitation = $this->htmlToJats($escaped);
+
+        $mixedCitationXml = '<mixed-citation>' . $jatsCitation . '</mixed-citation>';
+
+        // Use document fragment to preserve JATS markup
+        $fragment = $this->createDocumentFragment();
+        // Suppress warnings from malformed user-provided citations
+        if (@$fragment->appendXML($mixedCitationXml)) {
+            $refElement->appendChild($fragment);
+        } else {
+            // Fallback if XML parsing fails - createElement handles escaping automatically
+            $refElement->appendChild($this->createElement('mixed-citation', htmlspecialchars(strip_tags($rawCitation), ENT_COMPAT, 'UTF-8')));
+        }
+    }
+
+    /**
+     * Convert escaped HTML formatting tags to JATS equivalents
+     */
+    protected function htmlToJats(string $escapedText): string
+    {
+        $mapping = [
+            '&lt;i&gt;' => '<italic>',
+            '&lt;/i&gt;' => '</italic>',
+            '&lt;em&gt;' => '<italic>',
+            '&lt;/em&gt;' => '</italic>',
+            '&lt;b&gt;' => '<bold>',
+            '&lt;/b&gt;' => '</bold>',
+            '&lt;strong&gt;' => '<bold>',
+            '&lt;/strong&gt;' => '</bold>',
+            '&lt;u&gt;' => '<underline>',
+            '&lt;/u&gt;' => '</underline>',
+            '&lt;sup&gt;' => '<sup>',
+            '&lt;/sup&gt;' => '</sup>',
+            '&lt;sub&gt;' => '<sub>',
+            '&lt;/sub&gt;' => '</sub>',
+            '&lt;/a&gt;' => '</ext-link>',
+        ];
+
+        $jatsText = str_replace(array_keys($mapping), array_values($mapping), $escapedText);
+
+        // Convert links: &lt;a href=&quot;URL&quot;&gt; or &lt;a href='URL'&gt; → <ext-link>
+        $jatsText = preg_replace(
+            '/&lt;a\s+href=(?:&quot;|\')(.*?)(?:&quot;|\').*?&gt;/i',
+            '<ext-link ext-link-type="uri" xlink:href="$1">',
+            $jatsText
+        );
+
+        return $jatsText;
     }
 }
