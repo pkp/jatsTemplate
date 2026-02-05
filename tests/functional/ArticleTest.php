@@ -24,6 +24,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PKP\affiliation\Affiliation;
 use PKP\author\Repository as AuthorRepository;
+use PKP\citation\Citation;
+use PKP\citation\enum\CitationType;
 use PKP\doi\Doi;
 use PKP\galley\Collector as GalleyCollector;
 use PKP\galley\Galley;
@@ -106,6 +108,10 @@ class ArticleTest extends PKPTestCase
         $publication->setData('copyrightHolder', 'article-copyright');
         $publication->setData('copyrightYear', 'year');
         $publication->setData('authors', collect([$author]));
+
+        // Citations
+        $citations = $this->createCitationMocks();
+        $publication->setData('citations', $citations);
 
         /** @var Doi|MockObject $galleyDoiObject */
         $galleyDoiObject = $this->getMockBuilder(Doi::class)
@@ -248,6 +254,118 @@ class ArticleTest extends PKPTestCase
         $record->setData('issue', $issue);
 
         return $record;
+    }
+
+    /**
+     * Create mock Citation objects for testing
+     * (citations do not exist)
+     * @return array<Citation>
+     */
+    private function createCitationMocks(): array
+    {
+        $citations = [];
+        // Structured citation 1: Journal article with DOI
+        $citation1 = new Citation();
+        $citation1->setData('isStructured', true);
+        $citation1->setData('type', CitationType::JOURNAL_ARTICLE->value);
+        $citation1->setData('title', 'The Effects of Climate Change on Biodiversity');
+        $citation1->setData('sourceName', 'Nature Climate Change');
+        $citation1->setData('authors', [
+            ['familyName' => 'Smith', 'givenName' => 'John'],
+            ['familyName' => 'Johnson', 'givenName' => 'Mary'],
+        ]);
+        $citation1->setData('date', '2023-05-15');
+        $citation1->setData('doi', '10.1038/s41558-023-01234-5');
+        $citation1->setData('volume', '13');
+        $citation1->setData('issue', '5');
+        $citation1->setData('firstPage', '423');
+        $citation1->setData('lastPage', '435');
+        $citation1->setRawCitation('Smith J, Johnson M. The Effects of Climate Change on Biodiversity. Nature Climate Change. 2023;13(5):423-435. doi:10.1038/s41558-023-01234-5');
+        $citations[] = $citation1;
+
+        // Structured citation 2: Book
+        $citation2 = new Citation();
+        $citation2->setData('isStructured', true);
+        $citation2->setData('type', CitationType::BOOK->value);
+        $citation2->setData('title', 'Introduction to Machine Learning');
+        $citation2->setData('authors', [
+            ['familyName' => 'Williams', 'givenName' => 'Robert'],
+        ]);
+        $citation2->setData('date', '2022-01-01');
+        $citation2->setRawCitation('Williams R. Introduction to Machine Learning. Cambridge University Press; 2022.');
+        $citations[] = $citation2;
+
+        // Structured citation 3: Book chapter
+        $citation3 = new Citation();
+        $citation3->setData('isStructured', true);
+        $citation3->setData('type', CitationType::BOOK_CHAPTER->value);
+        $citation3->setData('title', 'Deep Learning Fundamentals');
+        $citation3->setData('sourceName', 'Handbook of Artificial Intelligence');
+        $citation3->setData('authors', [
+            ['familyName' => 'Chen', 'givenName' => 'Wei'],
+        ]);
+        $citation3->setData('date', '2021-01-01');
+        $citation3->setData('firstPage', '145');
+        $citation3->setData('lastPage', '198');
+        $citation3->setRawCitation('Chen W. Deep Learning Fundamentals. In: Handbook of Artificial Intelligence. 2021:145-198.');
+        $citations[] = $citation3;
+
+        // Structured citation 4: Preprint with arXiv
+        $citation4 = new Citation();
+        $citation4->setData('isStructured', true);
+        $citation4->setData('type', CitationType::PREPRINT->value);
+        $citation4->setData('title', 'Novel Approaches to Natural Language Processing');
+        $citation4->setData('sourceName', 'arXiv');
+        $citation4->setData('authors', [
+            ['familyName' => 'Garcia', 'givenName' => 'Maria'],
+            ['familyName' => 'Lee', 'givenName' => 'David'],
+        ]);
+        $citation4->setData('date', '2024-01-10');
+        $citation4->setData('arxiv', '2401.12345');
+        $citation4->setRawCitation('Garcia M, Lee D. Novel Approaches to Natural Language Processing. arXiv:2401.12345. 2024.');
+        $citations[] = $citation4;
+
+        // Structured citation 5: Dataset
+        $citation5 = new Citation();
+        $citation5->setData('isStructured', true);
+        $citation5->setData('type', CitationType::DATASET->value);
+        $citation5->setData('title', 'Global Temperature Records 1900-2023');
+        $citation5->setData('sourceName', 'Zenodo');
+        $citation5->setData('authors', [
+            ['familyName' => 'Brown', 'givenName' => 'Alice'],
+        ]);
+        $citation5->setData('date', '2023-06-15');
+        $citation5->setData('doi', '10.5281/zenodo.1234567');
+        $citation5->setRawCitation('Brown A. Global Temperature Records 1900-2023. Zenodo. 2023. doi:10.5281/zenodo.1234567');
+        $citations[] = $citation5;
+
+        // Structured citation 6: Without type
+        $citation6 = new Citation();
+        $citation6->setData('isStructured', true);
+        // No type set - tests the fallback in getJATSPublicationType()
+        $citation6->setData('title', 'An Article Without Explicit Type');
+        $citation6->setData('sourceName', 'Unknown Journal');
+        $citation6->setData('authors', [
+            ['familyName' => 'Doe', 'givenName' => 'Jane'],
+        ]);
+        $citation6->setData('date', '2020-03-15');
+        $citation6->setData('url', 'https://example.com/article');
+        $citation6->setRawCitation('Doe J. An Article Without Explicit Type. Unknown Journal. 2020. https://example.com/article');
+        $citations[] = $citation6;
+
+        // Unstructured citation
+        $citation7 = new Citation();
+        $citation7->setData('isStructured', false);
+        $citation7->setRawCitation('Thompson, E. P. (1963). The Making of the English Working Class. Victor Gollancz Ltd.');
+        $citations[] = $citation7;
+
+        // Unstructured citation with HTML formatting
+        $citation8 = new Citation();
+        $citation8->setData('isStructured', false);
+        $citation8->setRawCitation('Smith, J. & Jones, M. (2024). The <i>effects</i> of H<sub>2</sub>O on x<sup>2</sup>. <b>Nature</b>, 14(3). <a href="https://doi.org/10.1234/test">https://doi.org/10.1234/test</a>');
+        $citations[] = $citation8;
+
+        return $citations;
     }
 
     public function testConvertToXml()

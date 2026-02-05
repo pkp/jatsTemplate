@@ -239,6 +239,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $section =& $record->getData('section'); /** @var Section $section */
         $issue =& $record->getData('issue'); /** @var Issue $issue */
         $article = $this->createArticleMockInstance($record);
+        $publication = $submission->getCurrentPublication(); /** @var Publication $publication */
 
         $articleFrontElement = new ArticleFront();
         $xml = $articleFrontElement->create(
@@ -248,6 +249,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             $issue,
             $this->createRequestMockInstance(),
             $article,
+            $publication
         );
         $xml->ownerDocument->formatOutput = true;
         self::assertEquals(
@@ -291,6 +293,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $section =& $record->getData('section'); /** @var Section $section */
         $issue =& $record->getData('issue'); /** @var Issue $issue */
         $article = $this->createArticleMockInstance($record);
+        $publication = $submission->getCurrentPublication(); /** @var Publication $publication */
 
         $articleFrontElement = new ArticleFront();
         $xml = $articleFrontElement->createArticleMeta(
@@ -300,6 +303,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             $issue,
             $this->createRequestMockInstance(),
             $article,
+            $publication
         );
         $xml->ownerDocument->formatOutput = true;
         self::assertEquals(

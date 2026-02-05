@@ -2,8 +2,8 @@
 <!--
   * ie1.xml
   *
-  * Copyright (c) 2013-2020 Simon Fraser University
-  * Copyright (c) 2003-2020 John Willinsky
+  * Copyright (c) 2013-2026 Simon Fraser University
+  * Copyright (c) 2003-2026 John Willinsky
   * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
   *
   * JATS Article Test XML file.
@@ -119,5 +119,108 @@
         </article-meta>
     </front>
     <body/>
-    <back/>
+    <back>
+        <ref-list>
+            <ref id="R1">
+                <element-citation publication-type="journal">
+                    <person-group person-group-type="author">
+                        <name>
+                            <surname>Smith</surname>
+                            <given-names>John</given-names>
+                        </name>
+                        <name>
+                            <surname>Johnson</surname>
+                            <given-names>Mary</given-names>
+                        </name>
+                    </person-group>
+                    <year>2023</year>
+                    <article-title>The Effects of Climate Change on Biodiversity</article-title>
+                    <source>Nature Climate Change</source>
+                    <pub-id pub-id-type="doi">10.1038/s41558-023-01234-5</pub-id>
+                    <fpage>423</fpage>
+                    <lpage>435</lpage>
+                    <issue>5</issue>
+                    <volume>13</volume>
+                </element-citation>
+            </ref>
+            <ref id="R2">
+                <element-citation publication-type="book">
+                    <person-group person-group-type="author">
+                        <name>
+                            <surname>Williams</surname>
+                            <given-names>Robert</given-names>
+                        </name>
+                    </person-group>
+                    <year>2022</year>
+                    <source>Introduction to Machine Learning</source>
+                </element-citation>
+            </ref>
+            <ref id="R3">
+                <element-citation publication-type="book">
+                    <person-group person-group-type="author">
+                        <name>
+                            <surname>Chen</surname>
+                            <given-names>Wei</given-names>
+                        </name>
+                    </person-group>
+                    <year>2021</year>
+                    <part-title>Deep Learning Fundamentals</part-title>
+                    <source>Handbook of Artificial Intelligence</source>
+                    <fpage>145</fpage>
+                    <lpage>198</lpage>
+                </element-citation>
+            </ref>
+            <ref id="R4">
+                <element-citation publication-type="preprint">
+                    <person-group person-group-type="author">
+                        <name>
+                            <surname>Garcia</surname>
+                            <given-names>Maria</given-names>
+                        </name>
+                        <name>
+                            <surname>Lee</surname>
+                            <given-names>David</given-names>
+                        </name>
+                    </person-group>
+                    <year>2024</year>
+                    <article-title>Novel Approaches to Natural Language Processing</article-title>
+                    <source>arXiv</source>
+                    <pub-id pub-id-type="arxiv">2401.12345</pub-id>
+                </element-citation>
+            </ref>
+            <ref id="R5">
+                <element-citation publication-type="data">
+                    <person-group person-group-type="author">
+                        <name>
+                            <surname>Brown</surname>
+                            <given-names>Alice</given-names>
+                        </name>
+                    </person-group>
+                    <year>2023</year>
+                    <data-title>Global Temperature Records 1900-2023</data-title>
+                    <source>Zenodo</source>
+                    <pub-id pub-id-type="doi">10.5281/zenodo.1234567</pub-id>
+                </element-citation>
+            </ref>
+            <ref id="R6">
+                <element-citation>
+                    <person-group person-group-type="author">
+                        <name>
+                            <surname>Doe</surname>
+                            <given-names>Jane</given-names>
+                        </name>
+                    </person-group>
+                    <year>2020</year>
+                    <source>An Article Without Explicit Type</source>
+                    <ext-link ext-link-type="uri" xlink:href="https://example.com/article">https://example.com/article</ext-link>
+                </element-citation>
+            </ref>
+            <ref id="R7">
+                <mixed-citation>Thompson, E. P. (1963). The Making of the English Working Class. Victor Gollancz Ltd.</mixed-citation>
+            </ref>
+            <ref id="R8">
+                <mixed-citation>Smith, J. &amp; Jones, M. (2024). The <italic>effects</italic> of H<sub>2</sub>O on x<sup>2</sup>. <bold>Nature</bold>, 14(3). <ext-link ext-link-type="uri" xlink:href="https://doi.org/10.1234/test">https://doi.org/10.1234/test</ext-link></mixed-citation>
+            </ref>
+        </ref-list>
+    </back>
 </article>
