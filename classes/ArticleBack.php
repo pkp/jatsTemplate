@@ -19,9 +19,6 @@ use Illuminate\Support\Carbon;
 use PKP\citation\Citation;
 use PKP\citation\enum\CitationSourceType;
 use PKP\citation\enum\CitationType;
-use PKP\citation\pid\Arxiv;
-use PKP\citation\pid\Doi;
-use PKP\citation\pid\Handle;
 
 class ArticleBack extends \DOMDocument
 {
@@ -253,7 +250,7 @@ class ArticleBack extends \DOMDocument
         $escaped = htmlspecialchars($cleaned, ENT_COMPAT, 'UTF-8');
 
         // Convert known safe tags to JATS
-        $jatsCitation = $this->htmlToJats($escaped);
+        $jatsCitation = JatsHelper::htmlToJats($escaped);
 
         $mixedCitationXml = '<mixed-citation>' . $jatsCitation . '</mixed-citation>';
 
@@ -266,40 +263,5 @@ class ArticleBack extends \DOMDocument
             // Fallback if XML parsing fails - createElement handles escaping automatically
             $refElement->appendChild($this->createElement('mixed-citation', htmlspecialchars(strip_tags($rawCitation), ENT_COMPAT, 'UTF-8')));
         }
-    }
-
-    /**
-     * Convert escaped HTML formatting tags to JATS equivalents
-     */
-    protected function htmlToJats(string $escapedText): string
-    {
-        $mapping = [
-            '&lt;i&gt;' => '<italic>',
-            '&lt;/i&gt;' => '</italic>',
-            '&lt;em&gt;' => '<italic>',
-            '&lt;/em&gt;' => '</italic>',
-            '&lt;b&gt;' => '<bold>',
-            '&lt;/b&gt;' => '</bold>',
-            '&lt;strong&gt;' => '<bold>',
-            '&lt;/strong&gt;' => '</bold>',
-            '&lt;u&gt;' => '<underline>',
-            '&lt;/u&gt;' => '</underline>',
-            '&lt;sup&gt;' => '<sup>',
-            '&lt;/sup&gt;' => '</sup>',
-            '&lt;sub&gt;' => '<sub>',
-            '&lt;/sub&gt;' => '</sub>',
-            '&lt;/a&gt;' => '</ext-link>',
-        ];
-
-        $jatsText = str_replace(array_keys($mapping), array_values($mapping), $escapedText);
-
-        // Convert links: &lt;a href=&quot;URL&quot;&gt; or &lt;a href='URL'&gt; → <ext-link>
-        $jatsText = preg_replace(
-            '/&lt;a\s+href=(?:&quot;|\')(.*?)(?:&quot;|\').*?&gt;/i',
-            '<ext-link ext-link-type="uri" xlink:href="$1">',
-            $jatsText
-        );
-
-        return $jatsText;
     }
 }
