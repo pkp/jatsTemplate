@@ -28,6 +28,8 @@ use Exception;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use PKP\author\contributorRole\ContributorRoleIdentifier;
+use PKP\author\contributorRole\ContributorType;
 use PKP\author\creditRole\CreditRoleDegree;
 use PKP\core\PKPApplication;
 use PKP\core\PKPRequest;
@@ -551,10 +553,10 @@ class ArticleFront extends DOMDocument
         // Fetch keyword data from the publication object, this will only include the name attribute.
         $keywordVocabs = collect($publication->getData('keywords'))
                             ->map(
-                                fn(array $items): array => collect($items)
+                                fn (array $items): array => collect($items)
                                     ->pluck("name")
                                 ->all()
-                                )
+                            )
                             ->all();
 
         foreach ($keywordVocabs as $locale => $keywords) {
@@ -581,27 +583,29 @@ class ArticleFront extends DOMDocument
         $fundingStatement = $publication->getData('fundingStatement');
         if (($fundingData && !$fundingData->isEmpty()) || !empty($fundingStatement)) {
             $fundingGroupNode = $this->createElement('funding-group');
-            foreach ($fundingData as $i => $funder) {
-                $awardGroupNode = $this->createElement('award-group');
-                $awardGroupNode->setAttribute('id', 'ag' . $i);
+            if ($fundingData) {
+                foreach ($fundingData as $i => $funder) {
+                    $awardGroupNode = $this->createElement('award-group');
+                    $awardGroupNode->setAttribute('id', 'ag' . $i);
 
-                $fundingSourceNode = $this->createElement('funding-source');
-                $institutionWrapNode = $this->createElement('institution-wrap');
-                $institutionIdNode = $this->createElement('institution-id', $funder[0]->funder_identification);
-                $institutionIdNode->setAttribute('institution-id-type', 'doi');
+                    $fundingSourceNode = $this->createElement('funding-source');
+                    $institutionWrapNode = $this->createElement('institution-wrap');
+                    $institutionIdNode = $this->createElement('institution-id', $funder[0]->funder_identification);
+                    $institutionIdNode->setAttribute('institution-id-type', 'doi');
 
-                $institutionWrapNode->appendChild($institutionIdNode);
-                $institutionWrapNode->appendChild($this->createElement('institution', $funder[0]->funder_name));
-                $fundingSourceNode->appendChild($institutionWrapNode);
-                $awardGroupNode->appendChild($fundingSourceNode);
+                    $institutionWrapNode->appendChild($institutionIdNode);
+                    $institutionWrapNode->appendChild($this->createElement('institution', $funder[0]->funder_name));
+                    $fundingSourceNode->appendChild($institutionWrapNode);
+                    $awardGroupNode->appendChild($fundingSourceNode);
 
-                foreach ($funder as $awards) {
-                    if (isset($awards->funder_award_number)) {
-                        $awardIdNode = $this->createElement('award-id', $awards->funder_award_number);
-                        $awardGroupNode->appendChild($awardIdNode);
+                    foreach ($funder as $awards) {
+                        if (isset($awards->funder_award_number)) {
+                            $awardIdNode = $this->createElement('award-id', $awards->funder_award_number);
+                            $awardGroupNode->appendChild($awardIdNode);
+                        }
                     }
+                    $fundingGroupNode->appendChild($awardGroupNode);
                 }
-                $fundingGroupNode->appendChild($awardGroupNode);
             }
             if (!empty($fundingStatement)) {
                 foreach ($fundingStatement as $locale => $statement) {
@@ -693,8 +697,7 @@ class ArticleFront extends DOMDocument
      */
     public function createArticleContribGroup(Submission $submission, Publication $publication): array
     {
-        $contribGroupElement = $this->appendChild($this->createElement('contrib-group'))
-            ->setAttribute('content-type', 'author')->parentNode;
+        $contribGroupElement = $this->appendChild($this->createElement('contrib-group'));
 
         // Include authors
         $creditRoleTerms = Repo::creditRole()->getTerms($submission->getData('locale'));
@@ -714,80 +717,120 @@ class ArticleFront extends DOMDocument
                 }
             }
 
-            $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
-            if ($publication->getData('primaryContactId') == $author->getId()) {
-                $contribElement->setAttribute('corresp', 'yes');
-            }
-
-            if ($author->getOrcid()) {
-                $contribElement->appendChild($this->createElement('contrib-id'))
-                    ->setAttribute('contrib-id-type', 'orcid')->parentNode
-                    ->setAttribute('authenticated', $author->hasVerifiedOrcid() ? 'true' : 'false')->parentNode
-                    ->appendChild($this->createTextNode($author->getOrcid()));
-            }
-
-            $nameAlternativesElement = $contribElement->appendChild($this->createElement('name-alternatives'));
-
-            $preferredName = $author->getPreferredPublicName($submission->getData('locale'));
-            if (!empty($preferredName)) {
-                $stringNameElement = $nameAlternativesElement->appendChild($this->createElement('string-name'))
-                    ->setAttribute('specific-use', 'display')->parentNode;
-                $stringNameElement->appendChild($this->createTextNode($preferredName));
-            }
-
-            $nameElement = $nameAlternativesElement->appendChild($this->createElement('name'))
-                ->setAttribute('name-style', 'western')->parentNode;
-            $nameElement->setAttribute('specific-use', 'primary');
-
-            if ($surname = $author->getLocalizedFamilyName()) {
-                $nameElement->appendChild($this->createElement('surname'))
-                    ->appendChild($this->createTextNode($surname));
-            }
-            $nameElement->appendChild($this->createElement('given-names'))
-                ->appendChild($this->createTextNode($author->getLocalizedGivenName()));
-
-            $contribElement->appendChild($this->createElement('email'))
-                ->appendChild($this->createTextNode($author->getEmail()));
-
-            foreach ($authorTokenList as $token) {
-                $contribElement->appendChild($this->createElement('xref'))
-                    ->setAttribute('ref-type', 'aff')->parentNode
-                    ->setAttribute('rid', $token);
-            }
-            if (($s = $author->getUrl()) != '') {
-                $contribElement
-                    ->appendChild($this->createElement('uri'))
-                    ->appendChild($this->createTextNode($s));
-            }
-
-            foreach ((array) $author->getData('biography') as $locale => $bio) {
-                if (empty($bio)) {
-                    continue;
-                }
-
-                $bioElement = $this->createElement('bio');
-                $bioElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
-
-                $strippedBio = PKPString::stripUnsafeHtml($bio);
-                $bioDocument = new DOMDocument();
-                $bioDocument->createDocumentFragment();
-                $bioDocument->loadHTML($strippedBio);
-                foreach ($bioDocument->getElementsByTagName('body')->item(0)->childNodes->getIterator() as $bioChildNode) {
-                    $bioElement->appendChild($this->importNode($bioChildNode, true));
-                }
-                $contribElement->appendChild($bioElement);
-            }
-
+            $roleNodes = [];
             foreach ($author->getData('creditRoles') ?? [] as ['role' => $role, 'degree' => $degree]) {
                 $roleTerm = $creditRoleTerms['roles'][$role];
-                $roleElement = $contribElement->appendChild($this->createElement('role'));
-                $roleElement
+                $roleNode = $this->createElement('role');
+                $roleNode
                     ->setAttribute('vocab', 'CRediT')->parentNode
                     ->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
                     ->setAttribute('vocab-term', $roleTerm)->parentNode
                     ->setAttribute('vocab-term-identifier', $role)->parentNode
                     ->setAttribute('degree-contribution', $creditRoleTerms['degrees'][CreditRoleDegree::toLabel($degree)]);
-                $roleElement->appendChild($this->createTextNode($roleTerm));
+                $roleNode->appendChild($this->createTextNode($roleTerm));
+                $roleNodes[] = $roleNode;
+            }
+
+            $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
+            $contribRoleIds = $author->getContributorRoleIdentifiers();
+
+            // Only one contrib-type may be set for a contributor, so prioritize author and translator roles.
+            $contribType = match (true) {
+                in_array(ContributorRoleIdentifier::AUTHOR->getName(), $contribRoleIds) => 'author',
+                in_array(ContributorRoleIdentifier::TRANSLATOR->getName(), $contribRoleIds) => 'translator',
+                default => strtolower($contribRoleIds[0] ?? 'other'),
+            };
+            $contribElement->setAttribute('contrib-type', $contribType);
+
+            if ($publication->getData('primaryContactId') == $author->getId()) {
+                $contribElement->setAttribute('corresp', 'yes');
+            }
+
+            $contributorType = $author->getData('contributorType');
+            if (
+                $contributorType === ContributorType::PERSON->getName() ||
+                $contributorType === ContributorType::ORGANIZATION->getName()
+            ) {
+                if ($contributorType === ContributorType::PERSON->getName()) {
+                    if ($author->getOrcid()) {
+                        $contribElement->appendChild($this->createElement('contrib-id'))
+                            ->setAttribute('contrib-id-type', 'orcid')->parentNode
+                            ->setAttribute('authenticated', $author->hasVerifiedOrcid() ? 'true' : 'false')->parentNode
+                            ->appendChild($this->createTextNode($author->getOrcid()));
+                    }
+
+                    $nameAlternativesElement = $contribElement->appendChild($this->createElement('name-alternatives'));
+
+                    $preferredName = $author->getPreferredPublicName($submission->getData('locale'));
+                    if (!empty($preferredName)) {
+                        $stringNameElement = $nameAlternativesElement->appendChild($this->createElement('string-name'))
+                            ->setAttribute('specific-use', 'display')->parentNode;
+                        $stringNameElement->appendChild($this->createTextNode($preferredName));
+                    }
+
+                    $nameElement = $nameAlternativesElement->appendChild($this->createElement('name'));
+
+                    if ($surname = $author->getLocalizedFamilyName()) {
+                        $nameStyle = 'western';
+                        $nameElement->appendChild($this->createElement('surname'))
+                            ->appendChild($this->createTextNode($surname));
+                    } else {
+                        $nameStyle = 'given-only';
+                    }
+                    $nameElement->setAttribute('name-style', $nameStyle);
+                    $nameElement->setAttribute('specific-use', 'primary');
+                    $nameElement->appendChild($this->createElement('given-names'))
+                        ->appendChild($this->createTextNode($author->getLocalizedGivenName()));
+                }
+
+                if ($contributorType === ContributorType::ORGANIZATION->getName()) {
+                    $collabElement = $this->createElement('collab');
+                    $collabElement->appendChild($this->createTextNode($author->getLocalizedOrganizationName()));
+                    $contribElement->appendChild($collabElement);
+                }
+
+                foreach ((array) $author->getData('biography') as $locale => $bio) {
+                    if (empty($bio)) {
+                        continue;
+                    }
+
+                    $bioElement = $this->createElement('bio');
+                    $bioElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
+
+                    $strippedBio = PKPString::stripUnsafeHtml($bio);
+                    $bioDocument = new DOMDocument();
+                    $bioDocument->createDocumentFragment();
+                    $bioDocument->loadHTML($strippedBio);
+                    foreach ($bioDocument->getElementsByTagName('body')->item(0)->childNodes->getIterator() as $bioChildNode) {
+                        $bioElement->appendChild($this->importNode($bioChildNode, true));
+                    }
+                    $contribElement->appendChild($bioElement);
+                }
+
+                $contribElement->appendChild($this->createElement('email'))
+                    ->appendChild($this->createTextNode($author->getEmail()));
+
+                foreach ($roleNodes as $roleNode) {
+                    $contribElement->appendChild($roleNode);
+                }
+
+                if (($s = $author->getUrl()) != '') {
+                    $contribElement
+                        ->appendChild($this->createElement('uri'))
+                        ->appendChild($this->createTextNode($s));
+                }
+
+                foreach ($authorTokenList as $token) {
+                    $contribElement->appendChild($this->createElement('xref'))
+                        ->setAttribute('ref-type', 'aff')->parentNode
+                        ->setAttribute('rid', $token);
+                }
+            } elseif ($contributorType === ContributorType::ANONYMOUS->getName()) {
+                $contribElement->appendChild($this->createElement('anonymous'));
+
+                foreach ($roleNodes as $roleNode) {
+                    $contribElement->appendChild($roleNode);
+                }
             }
         }
         return ['contribGroupElement' => $contribGroupElement, 'institutions' => $institutions];

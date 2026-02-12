@@ -3,8 +3,8 @@
 /**
  * @file ArticleBodyTest.php
  *
- * Copyright (c) 2003-2025 Simon Fraser University
- * Copyright (c) 2003-2025 John Willinsky
+ * Copyright (c) 2003-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article body element unit tests
@@ -12,21 +12,24 @@
 
 namespace APP\plugins\generic\jatsTemplate\tests\functional;
 
-use PKP\doi\Doi;
-use APP\issue\Issue;
 use APP\author\Author;
-use PKP\galley\Galley;
-use PKP\oai\OAIRecord;
+use APP\issue\Issue;
 use APP\journal\Journal;
-use APP\section\Section;
-use PKP\tests\PKPTestCase;
-use APP\submission\Submission;
-use APP\publication\Publication;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\Attributes\CoversClass;
 use APP\plugins\generic\jatsTemplate\classes\Article;
 use APP\plugins\generic\jatsTemplate\classes\ArticleBody;
+use APP\publication\Publication;
+use APP\section\Section;
+use APP\submission\Submission;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\MockObject\MockObject;
 use PKP\affiliation\Affiliation;
+use PKP\author\contributorRole\ContributorRole;
+use PKP\author\contributorRole\ContributorRoleIdentifier;
+use PKP\author\contributorRole\ContributorType;
+use PKP\doi\Doi;
+use PKP\galley\Galley;
+use PKP\oai\OAIRecord;
+use PKP\tests\PKPTestCase;
 
 #[CoversClass(ArticleBody::class)]
 class ArticleBodyTest extends PKPTestCase
@@ -34,7 +37,7 @@ class ArticleBodyTest extends PKPTestCase
     private string $xmlFilePath = 'plugins/generic/jatsTemplate/tests/data/';
 
     /**
-     * @throws \DOMException
+     * Create article mock instance.
      */
     private function createArticleMockInstance(OAIRecord $record)
     {
@@ -47,8 +50,7 @@ class ArticleBodyTest extends PKPTestCase
     }
 
     /**
-     * create mock OAIRecord object
-     * @return OAIRecord
+     * Create mock OAIRecord object.
      */
     private function createOAIRecordMockObject(): OAIRecord
     {
@@ -59,20 +61,32 @@ class ArticleBodyTest extends PKPTestCase
         $author = new Author();
         $author->setGivenName('author-firstname', 'en');
         $author->setFamilyName('author-lastname', 'en');
+        $author->setPreferredPublicName('author-preferred-name', 'en');
+        $author->setData('contributorType', ContributorType::PERSON->getName());
+        $contributorRoleAuthor = new ContributorRole();
+        $contributorRoleAuthor->fill([
+            'contributor_role_id' => 1,
+            'context_id' => $journalId,
+            'contributor_role_identifier' => ContributorRoleIdentifier::AUTHOR->getName(),
+            'name' => ['en' => 'Author'],
+        ]);
+        $author->setContributorRoles([$contributorRoleAuthor]);
         $affiliation = new Affiliation();
         $affiliation->setName('author-affiliation', 'en');
         $affiliation->setAuthorId(1);
+        $affiliation->setRor('https://ror.org/05ek4tb53');
         $author->setAffiliations([$affiliation]);
         $author->setEmail('someone@example.com');
+        $author->setUrl('https://example.com');
 
         // Publication
-        /** @var Doi|MockObject */
+        /** @var Doi|MockObject $publicationDoiObject */
         $publicationDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
         $publicationDoiObject->setData('doi', 'article-doi');
 
-        /** @var Publication|MockObject */
+        /** @var Publication|MockObject $publication */
         $publication = $this->getMockBuilder(Publication::class)
             ->onlyMethods([])
             ->getMock();
@@ -92,14 +106,14 @@ class ArticleBodyTest extends PKPTestCase
         $publication->setData('copyrightYear', 'year');
         $publication->setData('authors', collect([$author]));
 
-        /** @var Doi|MockObject */
+        /** @var Doi|MockObject $galleyDoiObject */
         $galleyDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
         $galleyDoiObject->setData('doi', 'galley-doi');
 
         // Galleys
-        /** @var Galley|MockObject */
+        /** @var Galley|MockObject $galley */
         $galley = $this->getMockBuilder(Galley::class)
             ->onlyMethods(['getBestGalleyId'])
             ->getMock();
@@ -114,7 +128,7 @@ class ArticleBodyTest extends PKPTestCase
         $publication->setData('galleys', $galleys);
 
         // Article
-        /** @var Submission|MockObject */
+        /** @var Submission|MockObject $article */
         $article = $this->getMockBuilder(Submission::class)
             ->onlyMethods(['getBestId', 'getCurrentPublication','getGalleys'])
             ->getMock();
@@ -133,7 +147,7 @@ class ArticleBodyTest extends PKPTestCase
             ->willReturn($publication);
 
         // Journal
-        /** @var Journal|MockObject */
+        /** @var Journal|MockObject $journal */
         $journal = $this->getMockBuilder(Journal::class)
             ->onlyMethods(['getSetting'])
             ->getMock();
@@ -159,14 +173,14 @@ class ArticleBodyTest extends PKPTestCase
         $section->setIdentifyType('section-identify-type', 'en');
         $section->setTitle('section-identify-type', 'en');
 
-        /** @var Doi|MockObject */
+        /** @var Doi|MockObject $issueDoiObject */
         $issueDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
         $issueDoiObject->setData('doi', 'issue-doi');
 
         // Issue
-        /** @var Issue|MockObject */
+        /** @var Issue|MockObject $issue */
         $issue = $this->getMockBuilder(Issue::class)
             ->onlyMethods(['getIssueIdentification'])
             ->getMock();
@@ -193,9 +207,7 @@ class ArticleBodyTest extends PKPTestCase
         return $record;
     }
     /**
-     * uncomment and run the unit test if there is no files (articles)
-     * testing body element if there is no file
-     * @throws \DOMException
+     * Test creating the body element if there is no file.
      */
     public function testCreate()
     {

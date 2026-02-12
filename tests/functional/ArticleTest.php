@@ -3,8 +3,8 @@
 /**
  * @file ArticleTest.php
  *
- * Copyright (c) 2003-2025 Simon Fraser University
- * Copyright (c) 2003-2025 John Willinsky
+ * Copyright (c) 2003-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article unit tests
@@ -23,6 +23,9 @@ use Mockery;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PKP\affiliation\Affiliation;
+use PKP\author\contributorRole\ContributorRole;
+use PKP\author\contributorRole\ContributorRoleIdentifier;
+use PKP\author\contributorRole\ContributorType;
 use PKP\author\Repository as AuthorRepository;
 use PKP\citation\Citation;
 use PKP\citation\enum\CitationType;
@@ -63,8 +66,7 @@ class ArticleTest extends PKPTestCase
     }
 
     /**
-     * create mock OAIRecord object
-     * @return OAIRecord
+     * Create mock OAIRecord object.
      */
     private function createOAIRecordMockObject(): OAIRecord
     {
@@ -75,11 +77,23 @@ class ArticleTest extends PKPTestCase
         $author = new Author();
         $author->setGivenName('author-firstname', 'en');
         $author->setFamilyName('author-lastname', 'en');
+        $author->setPreferredPublicName('author-preferred-name', 'en');
+        $author->setData('contributorType', ContributorType::PERSON->getName());
+        $contributorRoleAuthor = new ContributorRole();
+        $contributorRoleAuthor->fill([
+            'contributor_role_id' => 1,
+            'context_id' => $journalId,
+            'contributor_role_identifier' => ContributorRoleIdentifier::AUTHOR->getName(),
+            'name' => ['en' => 'Author'],
+        ]);
+        $author->setContributorRoles([$contributorRoleAuthor]);
         $affiliation = new Affiliation();
         $affiliation->setName('author-affiliation', 'en');
         $affiliation->setAuthorId(1);
+        $affiliation->setRor('https://ror.org/05ek4tb53');
         $author->setAffiliations([$affiliation]);
         $author->setEmail('someone@example.com');
+        $author->setUrl('https://example.com');
 
         // Publication
         /** @var Doi|MockObject $publicationDoiObject */
@@ -390,7 +404,7 @@ class ArticleTest extends PKPTestCase
     }
 
     /**
-     * Test that the generated XML is valid against the JATS 1.2 DTD
+     * Test that the generated XML is valid against the JATS 1.2 DTD.
      */
     public function testValidateJats()
     {
@@ -404,7 +418,7 @@ class ArticleTest extends PKPTestCase
     }
 
     /**
-     * Helper to validate a DOMDocument against the JATS 1.2 DTD
+     * Helper to validate a DOMDocument against the JATS 1.2 DTD.
      */
     private function assertXmlValidatesAgainstJats12(\DOMDocument $dom)
     {
