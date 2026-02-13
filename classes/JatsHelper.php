@@ -39,9 +39,9 @@ class JatsHelper
 
         $jatsText = str_replace(array_keys($mapping), array_values($mapping), $escapedText);
 
-        // Convert links: &lt;a href=&quot;URL&quot;&gt; or &lt;a href='URL'&gt; → <ext-link>
+        // Convert links: &lt;a ... href=&quot;URL&quot; ...&gt; (any attribute order) → <ext-link>
         return preg_replace(
-            '/&lt;a\s+href=(?:&quot;|\')(.*?)(?:&quot;|\').*?&gt;/i',
+            '/&lt;a\b(?:(?!&gt;).)*?\bhref=(?:&quot;|\')(.*?)(?:&quot;|\')(?:(?!&gt;).)*&gt;/i',
             '<ext-link ext-link-type="uri" xlink:href="$1">',
             $jatsText
         );
