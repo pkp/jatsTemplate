@@ -697,10 +697,11 @@ class ArticleFront extends DOMDocument
      */
     public function createArticleContribGroup(Submission $submission, Publication $publication): array
     {
+        $submissionLocale = $submission->getData('locale');
         $contribGroupElement = $this->appendChild($this->createElement('contrib-group'));
 
         // Include authors
-        $creditRoleTerms = Repo::creditRole()->getTerms($submission->getData('locale'));
+        $creditRoleTerms = Repo::creditRole()->getTerms($submissionLocale);
         $affiliations = $institutions = [];
         foreach ($publication->getData('authors') as $author) { /** @var Author $author */
             $authorTokenList = [];
@@ -761,7 +762,7 @@ class ArticleFront extends DOMDocument
 
                     $nameAlternativesElement = $contribElement->appendChild($this->createElement('name-alternatives'));
 
-                    $preferredName = $author->getPreferredPublicName($submission->getData('locale'));
+                    $preferredName = $author->getPreferredPublicName($submissionLocale);
                     if (!empty($preferredName)) {
                         $stringNameElement = $nameAlternativesElement->appendChild($this->createElement('string-name'))
                             ->setAttribute('specific-use', 'display')->parentNode;
@@ -770,7 +771,7 @@ class ArticleFront extends DOMDocument
 
                     $nameElement = $nameAlternativesElement->appendChild($this->createElement('name'));
 
-                    if ($surname = $author->getLocalizedFamilyName()) {
+                    if ($surname = $author->getFamilyName($submissionLocale)) {
                         $nameStyle = 'western';
                         $nameElement->appendChild($this->createElement('surname'))
                             ->appendChild($this->createTextNode($surname));
@@ -780,12 +781,12 @@ class ArticleFront extends DOMDocument
                     $nameElement->setAttribute('name-style', $nameStyle);
                     $nameElement->setAttribute('specific-use', 'primary');
                     $nameElement->appendChild($this->createElement('given-names'))
-                        ->appendChild($this->createTextNode($author->getLocalizedGivenName()));
+                        ->appendChild($this->createTextNode($author->getGivenName($submissionLocale)));
                 }
 
                 if ($contributorType === ContributorType::ORGANIZATION->getName()) {
                     $collabElement = $this->createElement('collab');
-                    $collabElement->appendChild($this->createTextNode($author->getLocalizedOrganizationName()));
+                    $collabElement->appendChild($this->createTextNode($author->getLocalizedOrganizationName($submissionLocale)));
                     $contribElement->appendChild($collabElement);
                 }
 
@@ -793,18 +794,7 @@ class ArticleFront extends DOMDocument
                     if (empty($bio)) {
                         continue;
                     }
-
-                    $bioElement = $this->createElement('bio');
-                    $bioElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
-
-                    $strippedBio = PKPString::stripUnsafeHtml($bio);
-                    $bioDocument = new DOMDocument();
-                    $bioDocument->createDocumentFragment();
-                    $bioDocument->loadHTML($strippedBio);
-                    foreach ($bioDocument->getElementsByTagName('body')->item(0)->childNodes->getIterator() as $bioChildNode) {
-                        $bioElement->appendChild($this->importNode($bioChildNode, true));
-                    }
-                    $contribElement->appendChild($bioElement);
+                    $this->appendContributorBiography($contribElement, $bio, LocaleConversion::toBcp47($locale));
                 }
 
                 $contribElement->appendChild($this->createElement('email'))
@@ -834,6 +824,34 @@ class ArticleFront extends DOMDocument
             }
         }
         return ['contribGroupElement' => $contribGroupElement, 'institutions' => $institutions];
+    }
+
+    /**
+     * Append bio element with HTML converted to JATS.
+     */
+    protected function appendContributorBiography(DOMElement $contribElement, string $biography, string $locale): void
+    {
+        // Keep only safe formatting tags supported by JATS
+        $allowedTags = '<i><em><b><strong><u><a><sup><sub><p>';
+        $cleaned = strip_tags($biography, $allowedTags);
+
+        // Escape special characters
+        $escaped = htmlspecialchars($cleaned, ENT_COMPAT, 'UTF-8');
+
+        // Convert known safe tags to JATS
+        $convertedBiography = JatsHelper::htmlToJats($escaped);
+
+        $biographyXml = "<bio xml:lang=\"$locale\">$convertedBiography</bio>";
+
+        // Use document fragment to preserve JATS markup
+        $fragment = $this->createDocumentFragment();
+        // Suppress warnings from malformed user-provided biographies
+        if (@$fragment->appendXML($biographyXml)) {
+            $contribElement->appendChild($fragment);
+        } else {
+            // Fallback if XML parsing fails - createElement handles escaping automatically
+            $contribElement->appendChild($this->createElement('bio', htmlspecialchars(strip_tags($biography), ENT_COMPAT, 'UTF-8')));
+        }
     }
 
     /**

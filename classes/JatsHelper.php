@@ -34,6 +34,8 @@ class JatsHelper
             '&lt;/sup&gt;' => '</sup>',
             '&lt;sub&gt;' => '<sub>',
             '&lt;/sub&gt;' => '</sub>',
+            '&lt;p&gt;' => '<p>',
+            '&lt;/p&gt;' => '</p>',
             '&lt;/a&gt;' => '</ext-link>',
         ];
 

@@ -86,6 +86,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $author->setAffiliations([$affiliation]);
         $author->setEmail('someone@example.com');
         $author->setUrl('https://example.com');
+        $author->setBiography("<p>Test biography</p>", 'en');
 
         // Publication
         /** @var Doi|MockObject $publicationDoiObject */
