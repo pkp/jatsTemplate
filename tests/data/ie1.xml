@@ -76,20 +76,28 @@
                     <trans-title>article-title-de</trans-title>
                 </trans-title-group>
             </title-group>
-            <contrib-group content-type="author">
-                <contrib corresp="yes">
+            <contrib-group>
+                <contrib contrib-type="author" corresp="yes">
                     <name-alternatives>
+                        <string-name specific-use="display">author-preferred-name</string-name>
                         <name name-style="western" specific-use="primary">
                             <surname>author-lastname</surname>
                             <given-names>author-firstname</given-names>
                         </name>
                     </name-alternatives>
+                    <bio xml:lang="en">
+                        <p>Test biography</p>
+                    </bio>
                     <email>someone@example.com</email>
+                    <uri>https://example.com</uri>
                     <xref ref-type="aff" rid="aff-1"/>
                 </contrib>
             </contrib-group>
             <aff id="aff-1">
-                <institution content-type="orgname">author-affiliation</institution>
+                <institution-wrap>
+                    <institution content-type="orgname">author-affiliation</institution>
+                    <institution-id institution-id-type="ROR">https://ror.org/05ek4tb53</institution-id>
+                </institution-wrap>
             </aff>
             <pub-date date-type="pub" publication-format="epub">
                 <day>01</day>

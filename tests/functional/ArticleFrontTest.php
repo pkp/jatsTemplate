@@ -3,34 +3,37 @@
 /**
  * @file ArticleFrontTest.php
  *
- * Copyright (c) 2003-2025 Simon Fraser University
- * Copyright (c) 2003-2025 John Willinsky
+ * Copyright (c) 2003-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
- * @brief JATS xml article front element unit tests
+ * @brief JATS xml article front element unit tests.
  */
 
 namespace APP\plugins\generic\jatsTemplate\tests\functional;
 
-use PKP\doi\Doi;
-use APP\issue\Issue;
 use APP\author\Author;
-use PKP\galley\Galley;
-use PKP\oai\OAIRecord;
+use APP\issue\Issue;
 use APP\journal\Journal;
-use APP\section\Section;
-use APP\submission\Submission;
-use APP\publication\Publication;
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\Attributes\CoversClass;
 use APP\plugins\generic\jatsTemplate\classes\Article;
 use APP\plugins\generic\jatsTemplate\classes\ArticleFront;
+use APP\publication\Publication;
+use APP\section\Section;
+use APP\submission\Submission;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\MockObject\MockObject;
 use PKP\affiliation\Affiliation;
+use PKP\author\contributorRole\ContributorRole;
+use PKP\author\contributorRole\ContributorRoleIdentifier;
+use PKP\author\contributorRole\ContributorType;
+use PKP\doi\Doi;
+use PKP\galley\Galley;
+use PKP\oai\OAIRecord;
 
 #[CoversClass(ArticleFront::class)]
 class ArticleFrontTest extends \PKP\tests\PKPTestCase
 {
-    use \APP\plugins\generic\jatsTemplate\tests\functional\UsesRequestMock;
+    use UsesRequestMock;
 
     private string $xmlFilePath = 'plugins/generic/jatsTemplate/tests/data/';
     /**
@@ -42,8 +45,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     }
 
     /**
-     * create article mock instance
-     * @throws \DOMException
+     * Create article mock instance.
      */
     private function createArticleMockInstance(OAIRecord $record)
     {
@@ -56,8 +58,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     }
 
     /**
-     * create mock OAIRecord object
-     * @return OAIRecord
+     * Create mock OAIRecord object.
      */
     private function createOAIRecordMockObject(): OAIRecord
     {
@@ -68,20 +69,33 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $author = new Author();
         $author->setGivenName('author-firstname', 'en');
         $author->setFamilyName('author-lastname', 'en');
+        $author->setPreferredPublicName('author-preferred-name', 'en');
+        $author->setData('contributorType', ContributorType::PERSON->getName());
+        $contributorRoleAuthor = new ContributorRole();
+        $contributorRoleAuthor->fill([
+            'contributor_role_id' => 1,
+            'context_id' => $journalId,
+            'contributor_role_identifier' => ContributorRoleIdentifier::AUTHOR->getName(),
+            'name' => ['en' => 'Author'],
+        ]);
+        $author->setContributorRoles([$contributorRoleAuthor]);
         $affiliation = new Affiliation();
         $affiliation->setName('author-affiliation', 'en');
         $affiliation->setAuthorId(1);
+        $affiliation->setRor('https://ror.org/05ek4tb53');
         $author->setAffiliations([$affiliation]);
         $author->setEmail('someone@example.com');
+        $author->setUrl('https://example.com');
+        $author->setBiography("<p>Test biography</p>", 'en');
 
         // Publication
-        /** @var Doi|MockObject */
+        /** @var Doi|MockObject $publicationDoiObject */
         $publicationDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
         $publicationDoiObject->setData('doi', 'article-doi');
 
-        /** @var Publication|MockObject */
+        /** @var Publication|MockObject $publication */
         $publication = $this->getMockBuilder(Publication::class)
             ->onlyMethods([])
             ->getMock();
@@ -103,7 +117,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $publication->setData('authors', collect([$author]));
 
         // Article
-        /** @var Submission|MockObject */
+        /** @var Submission|MockObject $article */
         $article = $this->getMockBuilder(Submission::class)
             ->onlyMethods(['getBestId', 'getCurrentPublication'])
             ->getMock();
@@ -118,14 +132,14 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             ->method('getCurrentPublication')
             ->willReturn($publication);
 
-        /** @var Doi|MockObject */
+        /** @var Doi|MockObject $galleyDoiObject */
         $galleyDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
         $galleyDoiObject->setData('doi', 'galley-doi');
 
         // Galleys
-        /** @var Galley|MockObject */
+        /** @var Galley|MockObject $galley */
         $galley = $this->getMockBuilder(Galley::class)
             ->onlyMethods(['getBestGalleyId'])
             ->getMock();
@@ -142,7 +156,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $submissionFileMock = \Mockery::mock(\PKP\submissionFile\SubmissionFile::class);
         $submissionFileMock->shouldReceive('getData')
             ->andReturnUsing(function ($key) {
-                return match($key) {
+                return match ($key) {
                     'mimetype' => 'galley-filetype',
                     'fileId' => 1,
                     default => null
@@ -165,7 +179,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         app()->instance(\APP\submissionFile\Repository::class, $submissionFileRepoMock);
 
         // Journal
-        /** @var Journal|MockObject */
+        /** @var Journal|MockObject $journal */
         $journal = $this->getMockBuilder(Journal::class)
             ->onlyMethods(['getSetting'])
             ->getMock();
@@ -192,14 +206,14 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $section->setIdentifyType('section-identify-type', 'en');
         $section->setTitle('section-identify-type', 'en');
 
-        /** @var Doi|MockObject */
+        /** @var Doi|MockObject $issueDoiObject */
         $issueDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
         $issueDoiObject->setData('doi', 'issue-doi');
 
         // Issue
-        /** @var Issue|MockObject */
+        /** @var Issue|MockObject $issue */
         $issue = $this->getMockBuilder(Issue::class)
             ->onlyMethods(['getIssueIdentification'])
             ->getMock();
@@ -227,8 +241,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     }
 
     /**
-     * testing create front element
-     * @throws \DOMException
+     * Test creating ArticleFront element.
      */
     public function testCreate()
     {
@@ -259,8 +272,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     }
 
     /**
-     * testing create journal-meta element
-     * @throws \DOMException
+     * Test creating journal-meta element.
      */
     public function testCreateJournalMeta()
     {
@@ -281,8 +293,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     }
 
     /**
-     * testing create article-meta element
-     * @throws \DOMException
+     * Test creating article-meta element.
      */
     public function testCreateArticleMeta()
     {
@@ -313,8 +324,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     }
 
     /**
-     * testing create journal-meta journal-title-group element
-     * @throws \DOMException
+     * Test creating journal-meta journal-title-group element.
      */
     public function testCreateJournalMetaJournalTitleGroup()
     {
@@ -333,8 +343,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     }
 
     /**
-     * testing create article-meta contrib-group element
-     * @throws \DOMException
+     * Test creating article-meta contrib-group element.
      */
     public function testCreateArticleContribGroup()
     {
