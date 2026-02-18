@@ -31,7 +31,6 @@ class ArticleBody extends \DOMDocument
         $bodyElement = $this->appendChild($this->createElement('body'));
         $text = '';
         $galleys = $submission->getCurrentPublication()->getData('galleys');
-
         // Get HTML galleys for top of list, as they're quickest to parse
         // PDFs have second-highest priority over other file types
         $items = $galleys->reduce(function (array $carry, Galley $galley) {
@@ -52,6 +51,7 @@ class ArticleBody extends \DOMDocument
         $galleys = array_merge($items['html'], $items['pdf'], $items['other']);
         // Provide the full-text.
         $fileService = app()->get('file');
+        $text = '';
         foreach ($galleys as $galley) {
             $galleyFile = Repo::submissionFile()->get((int) $galley->getData('submissionFileId'));
             if (!$galleyFile) {
@@ -70,8 +70,6 @@ class ArticleBody extends \DOMDocument
                 }
                 // Remove non-paragraph content
                 $text = $purifier->purify(file_get_contents(Config::getVar('files', 'files_dir') . '/' . $filepath));
-
-                // Remove empty paragraphs
             } else {
                 $parser = SearchFileParser::fromFile($galleyFile);
                 if ($parser && $parser->open()) {
@@ -80,16 +78,14 @@ class ArticleBody extends \DOMDocument
                     }
                     $parser->close();
                 }
-                if (!empty($text)) {
-                    // create element p
-                    $bodyElement
-                        ->appendChild(
-                            $this->createElement('p', htmlspecialchars($text, ENT_IGNORE))
-                        );
-                }
             }
             // Use the first parseable galley.
             if (!empty($text)) {
+                // create element p
+                $bodyElement
+                    ->appendChild(
+                        $this->createElement('p', htmlspecialchars($text, ENT_IGNORE))
+                    );
                 break;
             }
         }
