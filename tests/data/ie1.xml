@@ -8,7 +8,7 @@
   *
   * JATS Article Test XML file.
   -->
-<article xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xml:lang="en">
+<article xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" dtd-version="1.2" xml:lang="en">
     <front>
         <journal-meta>
             <journal-id journal-id-type="ojs">journal-path</journal-id>
@@ -72,8 +72,10 @@
             </article-categories>
             <title-group>
                 <article-title xml:lang="en">article-title-en</article-title>
+                <subtitle xml:lang="en">article-subtitle-en</subtitle>
                 <trans-title-group xml:lang="de">
                     <trans-title>article-title-de</trans-title>
+                    <trans-subtitle>article-subtitle-de</trans-subtitle>
                 </trans-title-group>
             </title-group>
             <contrib-group>
@@ -116,6 +118,15 @@
             <abstract>
                 <p>article-abstract</p>
             </abstract>
+            <abstract abstract-type="plain-language-summary">
+                <p>article-plain-language-summary-en</p>
+            </abstract>
+            <trans-abstract xml:lang="de">
+                <p>article-abstract-de</p>
+            </trans-abstract>
+            <trans-abstract abstract-type="plain-language-summary" xml:lang="de">
+                <p>article-plain-language-summary-de</p>
+            </trans-abstract>
             <kwd-group xml:lang="en">
                 <title>Keywords</title>
                 <kwd>Professional Development</kwd>

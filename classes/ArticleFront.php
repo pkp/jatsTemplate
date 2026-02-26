@@ -34,6 +34,7 @@ use PKP\author\creditRole\CreditRoleDegree;
 use PKP\core\PKPApplication;
 use PKP\core\PKPRequest;
 use PKP\core\PKPString;
+use PKP\galley\Galley;
 use PKP\i18n\LocaleConversion;
 use PKP\plugins\PluginRegistry;
 use PKP\submissionFile\SubmissionFile;
@@ -150,7 +151,7 @@ class ArticleFront extends DOMDocument
             ->setAttribute('xml:lang', LocaleConversion::toBcp47($journal->getPrimaryLocale()))->parentNode
             ->appendChild($this->createTextNode($journal->getName($journal->getPrimaryLocale())));
 
-        foreach ($journal->getName(null) as $locale => $title) {
+        foreach ($journal->getName() as $locale => $title) {
             if ($locale == $journal->getPrimaryLocale()) {
                 continue;
             }
@@ -273,13 +274,14 @@ class ArticleFront extends DOMDocument
             if (trim($translatedTitle = $article->mapHtmlTagsForTitle($publication->getLocalizedTitle($locale, 'html'))) === '') {
                 continue;
             }
-            $titleGroupElement->appendChild($this->createElement('trans-title-group'))
-                ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
-                ->appendChild($this->createElement('trans-title', $translatedTitle));
 
+            $transTitleGroupElement = $this->createElement('trans-title-group');
+            $transTitleGroupElement->appendChild($this->createElement('trans-title', $translatedTitle));
             if (!empty($translatedSubTitle = $article->mapHtmlTagsForTitle($publication->getLocalizedSubTitle($locale, 'html')))) {
-                $titleGroupElement->appendChild($this->createElement('trans-subtitle', $translatedSubTitle));
+                $transTitleGroupElement->appendChild($this->createElement('trans-subtitle', $translatedSubTitle));
             }
+            $titleGroupElement->appendChild($transTitleGroupElement)
+                ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode;
         }
         $contribGroup = $this->createArticleContribGroup($submission, $publication);
 
@@ -462,11 +464,11 @@ class ArticleFront extends DOMDocument
             ->appendChild($this->createElement('self-uri'))
             ->setAttribute('xlink:href', $url);
 
-        $galleys = $publication->getData('galleys'); /** @var iterable|\PKP\galley\Galley[] $galleys */
+        $galleys = $publication->getData('galleys'); /** @var iterable|Galley[] $galleys */
         if (!empty($galleys)) {
             $router = $request->getRouter();
             $dispatcher = $router->getDispatcher();
-            foreach ($galleys as $galley) { /** @var \PKP\galley\Galley $galley */
+            foreach ($galleys as $galley) { /** @var Galley $galley */
                 $uriNode = $articleMetaElement->appendChild($this->createElement('self-uri'));
                 $uriNode->setAttribute(
                     'xlink:href',
@@ -494,6 +496,7 @@ class ArticleFront extends DOMDocument
 
         // Add abstract
         $abstracts = $publication->getData('abstract');
+        $transAbstracts = [];
         if (!empty($abstracts)) {
             foreach ($abstracts as $locale => $abstract) {
                 if (empty($abstract)) {
@@ -508,7 +511,7 @@ class ArticleFront extends DOMDocument
                     ? 'abstract'
                     : 'trans-abstract';
 
-                // generate from XSL
+                // Generate from XSL
                 $abstractElement = $this->generateAbstractContentFromXSL(
                     $submission,
                     $elementType,
@@ -518,6 +521,12 @@ class ArticleFront extends DOMDocument
                 );
 
                 $articleMetaElement->appendChild($abstractElement);
+
+                if ($elementType === 'trans-abstract') {
+                    $transAbstracts[] = $abstractElement;
+                } else {
+                    $articleMetaElement->appendChild($abstractElement);
+                }
             }
         }
 
@@ -546,7 +555,17 @@ class ArticleFront extends DOMDocument
                     'plain-language-summary',
                 );
 
-                $articleMetaElement->appendChild($plainLanguageSummaryElement);
+                if ($elementType === 'trans-abstract') {
+                    $transAbstracts[] = $plainLanguageSummaryElement;
+                } else {
+                    $articleMetaElement->appendChild($plainLanguageSummaryElement);
+                }
+            }
+        }
+
+        if (!empty($transAbstracts)) {
+            foreach ($transAbstracts as $transAbstractElement) {
+                $articleMetaElement->appendChild($transAbstractElement);
             }
         }
 
