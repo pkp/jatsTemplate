@@ -3,8 +3,8 @@
 /**
  * @file ArticleBody.php
  *
- * Copyright (c) 2003-2022 Simon Fraser University
- * Copyright (c) 2003-2022 John Willinsky
+ * Copyright (c) 2003-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article body element
@@ -21,15 +21,12 @@ use PKP\search\parsers\SearchFileParser;
 class ArticleBody extends \DOMDocument
 {
     /**
-     * create xml body DOMNode
-     * @param Submission $submission
-     * @return \DOMNode
+     * Create xml body DOMNode.
      */
     public function create(Submission $submission): \DOMNode
     {
         // create element body
         $bodyElement = $this->appendChild($this->createElement('body'));
-        $text = '';
         $galleys = $submission->getCurrentPublication()->getData('galleys');
         // Get HTML galleys for top of list, as they're quickest to parse
         // PDFs have second-highest priority over other file types
