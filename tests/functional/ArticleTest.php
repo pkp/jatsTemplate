@@ -114,9 +114,14 @@ class ArticleTest extends PKPTestCase
         $publication->setData('type', 'art-type', 'en');
         $publication->setData('title', 'article-title-en', 'en');
         $publication->setData('title', 'article-title-de', 'de');
+        $publication->setData('subtitle', 'article-subtitle-en', 'en');
+        $publication->setData('subtitle', 'article-subtitle-de', 'de');
         $publication->setData('coverage', ['en' => ['article-coverage-geo', 'article-coverage-chron', 'article-coverage-sample']]);
         $publication->setData('keywords', ['en' => [['name' => 'Professional Development'],['name' => 'Social Transformation']]]);
         $publication->setData('abstract', 'article-abstract', 'en');
+        $publication->setData('abstract', 'article-abstract-de', 'de');
+        $publication->setData('plainLanguageSummary', 'article-plain-language-summary-en', 'en');
+        $publication->setData('plainLanguageSummary', 'article-plain-language-summary-de', 'de');
         $publication->setData('sponsor', 'article-sponsor', 'en');
         $publication->setData('doiObject', $publicationDoiObject);
         $publication->setData('languages', ['en' => ['en']]);

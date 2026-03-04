@@ -23,16 +23,18 @@ use PKP\citation\enum\CitationType;
 class ArticleBack extends \DOMDocument
 {
     /**
-     * create xml back DOMNode
+     * Create xml back DOMNode
      */
-    public function create(Publication $publication): DOMNode
+    public function create(Publication $publication): DOMNode|null
     {
-        // create element back
-        $backElement = $this->appendChild($this->createElement('back'));
+        $backElement = null;
 
         // consider citations
         $citations = $publication->getData('citations');
         if (!empty($citations)) {
+            // create element back
+            $backElement = $this->appendChild($this->createElement('back'));
+
             $refListElement = $backElement->appendChild($this->createElement('ref-list'));
             $i = 1;
             foreach ($citations as $citation) {
