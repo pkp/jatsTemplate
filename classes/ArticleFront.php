@@ -308,6 +308,38 @@ class ArticleFront extends DOMDocument
             }
         }
 
+        $competingInterests = $contribGroup['competingInterests'];
+        if (count($competingInterests) > 0) {
+            $authorNotesNode = $this->createElement('author-notes');
+            foreach ($competingInterests as $id => $competingInterest) {
+                $coiStatement = $competingInterest['coi-statement'];
+
+                // Keep only safe formatting tags supported by JATS
+                $allowedTags = '<i><em><b><strong><u><a><sup><sub><p>';
+                $cleaned = strip_tags($coiStatement, $allowedTags);
+
+                // Escape special characters
+                $escaped = htmlspecialchars($cleaned, ENT_COMPAT, 'UTF-8');
+
+                $coiText = JatsHelper::htmlToJats($escaped);
+                $coiStatementXml = "<fn fn-type=\"coi-statement\" id=\"$id\">$coiText</fn>";
+
+                // Use document fragment to preserve JATS markup
+                $fragment = $this->createDocumentFragment();
+                // Suppress warnings from malformed user-provided biographies
+                if (@$fragment->appendXML($coiStatementXml)) {
+                    $authorNotesNode->appendChild($fragment);
+                } else {
+                    // Fallback if XML parsing fails - createElement handles escaping automatically
+                    $fnNode = $this->createElement('fn', htmlspecialchars(strip_tags($coiStatement), ENT_COMPAT, 'UTF-8'));
+                    $fnNode->setAttribute('fn-type', 'coi-statement');
+                    $fnNode->setAttribute('rid', $id);
+                    $authorNotesNode->appendChild($fnNode);
+                }
+            }
+            $articleMetaElement->appendChild($authorNotesNode);
+        }
+
         if ($datePublished = $publication->getData('datePublished')) {
             $datePublished = strtotime($datePublished);
         } elseif ($issue) {
@@ -721,7 +753,7 @@ class ArticleFront extends DOMDocument
 
         // Include authors
         $creditRoleTerms = Repo::creditRole()->getTerms($submissionLocale);
-        $affiliations = $institutions = [];
+        $affiliations = $institutions = $competingInterests = [];
         foreach ($publication->getData('authors') as $author) { /** @var Author $author */
             $authorTokenList = [];
             $authorAffiliations = $author->getAffiliations();
@@ -834,6 +866,20 @@ class ArticleFront extends DOMDocument
                         ->setAttribute('ref-type', 'aff')->parentNode
                         ->setAttribute('rid', $token);
                 }
+
+                // Competing interests
+                if ($authorCompetingInterests = $author->getCompetingInterests($submissionLocale)) {
+                    $competingInterestTokenList = [];
+                    $competingInterestsToken = 'con-' . (count($competingInterests) + 1);
+                    $competingInterestTokenList[] = $competingInterestsToken;
+                    $competingInterests[$competingInterestsToken]['coi-statement'] = $authorCompetingInterests;
+
+                    foreach ($competingInterestTokenList as $token) {
+                        $contribElement->appendChild($this->createElement('xref'))
+                            ->setAttribute('ref-type', 'author-notes')->parentNode
+                            ->setAttribute('rid', $token);
+                    }
+                }
             } elseif ($contributorType === ContributorType::ANONYMOUS->getName()) {
                 $contribElement->appendChild($this->createElement('anonymous'));
 
@@ -842,7 +888,12 @@ class ArticleFront extends DOMDocument
                 }
             }
         }
-        return ['contribGroupElement' => $contribGroupElement, 'institutions' => $institutions];
+
+        return [
+            'contribGroupElement' => $contribGroupElement,
+            'institutions' => $institutions,
+            'competingInterests' => $competingInterests
+        ];
     }
 
     /**
