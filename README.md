@@ -76,6 +76,8 @@ Previous versions of the plugin generated JATS that did not pass DTD validation,
 | [institution-wrap](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/institution-wrap.html)         | :ok:    | :ok:       |
 | [institution](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/institution.html)                   | :ok:    | :ok:       |
 | [institution-id](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/institution-id.html)             | :ok:    | :ok:       |
+| [author-notes](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/author-notes.html)                 | :ok:    | :ok:       |
+| [fn](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/fn.html)                                     | :ok:    | :ok:       |
 | [pub-date](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/pub-date.html)                         | :ok:    | :ok:       |
 | [day](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/day.html)                                   | :ok:    | :ok:       |
 | [month](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/month.html)                               | :ok:    | :ok:       |
