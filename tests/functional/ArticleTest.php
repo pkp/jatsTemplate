@@ -95,6 +95,7 @@ class ArticleTest extends PKPTestCase
         $author->setEmail('someone@example.com');
         $author->setUrl('https://example.com');
         $author->setBiography("<p>Test biography</p>", 'en');
+        $author->setCompetingInterests("<p>Competing interests</p>", 'en');
 
         // Publication
         /** @var Doi|MockObject $publicationDoiObject */
