@@ -428,6 +428,9 @@ class ArticleFront extends DOMDocument
                     ->appendChild($this->createTextNode($matchedPageTo));
                 $pageCount = $matchedPageTo - $matchedPageFrom + 1;
             }
+        } elseif ($articleNumber = $publication->getData('articleNumber')) {
+            $articleMetaElement->appendChild($this->createElement('elocation-id'))
+                ->appendChild($this->createTextNode($articleNumber));
         }
 
         if (($date = $submission->getData('dateSubmitted')) !== null) {
