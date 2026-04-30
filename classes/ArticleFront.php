@@ -633,31 +633,35 @@ class ArticleFront extends DOMDocument
         }
 
         // Funding data
-        $fundingData = $this->getFundingData($journal->getId(), $submission->getId());
+        $funders = $publication->getData('funders');
         $fundingStatement = $publication->getData('fundingStatement');
-        if (($fundingData && !$fundingData->isEmpty()) || !empty($fundingStatement)) {
+        if (!empty($funders) || !empty($fundingStatement)) {
             $fundingGroupNode = $this->createElement('funding-group');
-            if ($fundingData) {
-                foreach ($fundingData as $i => $funder) {
+            if (!empty($funders)) {
+                foreach ($funders as $i => $funder) {
                     $awardGroupNode = $this->createElement('award-group');
                     $awardGroupNode->setAttribute('id', 'ag' . $i);
 
                     $fundingSourceNode = $this->createElement('funding-source');
                     $institutionWrapNode = $this->createElement('institution-wrap');
-                    $institutionIdNode = $this->createElement('institution-id', $funder[0]->funder_identification);
-                    $institutionIdNode->setAttribute('institution-id-type', 'doi');
 
-                    $institutionWrapNode->appendChild($institutionIdNode);
-                    $institutionWrapNode->appendChild($this->createElement('institution', $funder[0]->funder_name));
+                    if (!empty($funder->ror)) {
+                        $institutionIdNode = $this->createElement('institution-id', $funder->ror);
+                        $institutionIdNode->setAttribute('institution-id-type', 'ror');
+                        $institutionWrapNode->appendChild($institutionIdNode);
+                    }
+
+                    $institutionWrapNode->appendChild($this->createElement('institution', $funder->name[$locale]));
                     $fundingSourceNode->appendChild($institutionWrapNode);
                     $awardGroupNode->appendChild($fundingSourceNode);
 
-                    foreach ($funder as $awards) {
-                        if (isset($awards->funder_award_number)) {
-                            $awardIdNode = $this->createElement('award-id', $awards->funder_award_number);
+                    foreach ($funder->grants as $grant) {
+                        if (!empty($grant['grantNumber'])) {
+                            $awardIdNode = $this->createElement('award-id', $grant['grantNumber']);
                             $awardGroupNode->appendChild($awardIdNode);
                         }
                     }
+
                     $fundingGroupNode->appendChild($awardGroupNode);
                 }
             }
@@ -1023,36 +1027,5 @@ class ArticleFront extends DOMDocument
         }
 
         return $abstractElement;
-    }
-
-    /**
-     * Helper function to retrieve funding data when available.
-     */
-    public function getFundingData(int $contextId, int $submissionId): Collection|false
-    {
-        if (!PluginRegistry::getPlugin('generic', 'FundingPlugin')) {
-            return false;
-        }
-
-        $fundingData = DB::table('funders AS f')
-            ->select(
-                'f.funder_id',
-                'f.funder_identification',
-                'fs.setting_value as funder_name',
-                'fa.funder_award_id',
-                'fa.funder_award_number'
-            )
-            ->where('f.submission_id', $submissionId)
-            ->where('f.context_id', $contextId)
-            ->leftJoin(
-                'funder_settings AS fs',
-                fn (JoinClause $j) => $j->on('f.funder_id', '=', 'fs.funder_id')
-                    ->where('fs.setting_name', '=', 'funderName')
-            )
-            ->leftjoin('funder_awards AS fa', 'f.funder_id', '=', 'fa.funder_id')
-            ->get()
-            ->groupBy('funder_id');
-
-        return $fundingData ?? false;
     }
 }
