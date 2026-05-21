@@ -25,7 +25,7 @@ class ArticleBack extends \DOMDocument
         $backElement = $this->appendChild($this->createElement('back'));
 
         $citations = $publication->getData('citations');
-        if (!empty($citations)) {
+        if ($citations?->isNotEmpty()) {
             // create element ref-list
             $refListElement = $backElement->appendChild($this->createElement('ref-list'));
             $i = 1;
