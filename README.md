@@ -1,5 +1,4 @@
-JATS Template Plugin
-====================
+# JATS Template Plugin
 
 This plugin permits OJS to use a basic JATS XML document generated from the OJS
 metadata and full-text extraction in cases where a better JATS XML document is
@@ -56,6 +55,7 @@ Previous versions of the plugin generated JATS that did not pass DTD validation,
 | [self-uri](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/self-uri.html)                         | :ok:    | :ok:       |
 | [article-meta](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/article-meta.html)                 | :ok:    | :ok:       |
 | [article-id](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/article-id.html)                     | :ok:    | :ok:       |
+| [article-version](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/article-version.html)           | :ok:    | :ok:       |
 | [article-categories](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/article-categories.html)     | :ok:    | :ok:       |
 | [subj-group](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/subj-group.html)                     | :ok:    | :ok:       |
 | [subject](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/subject.html)                           | :ok:    | :ok:       |

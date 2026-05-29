@@ -7,7 +7,7 @@
  * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
- * @brief JATS xml article front element
+ * @brief JATS XML article front element
  */
 
 namespace APP\plugins\generic\jatsTemplate\classes;
@@ -17,6 +17,7 @@ use APP\core\Application;
 use APP\facades\Repo;
 use APP\issue\Issue;
 use APP\journal\Journal;
+use APP\publication\enums\VersionStage;
 use APP\publication\Publication;
 use APP\section\Section;
 use APP\submission\Submission;
@@ -245,6 +246,30 @@ class ArticleFront extends DOMDocument
             $articleMetaElement->appendChild($this->createElement('article-id'))
                 ->setAttribute('pub-id-type', 'doi')->parentNode
                 ->appendChild($this->createTextNode($doi));
+        }
+
+        // Store the article-version, skipping PMUR as it is not yet part of the standard
+        $versionStage = $publication->getData('versionStage');
+        if ($versionStage && $versionStage !== VersionStage::PUBLISHED_MANUSCRIPT_UNDER_REVIEW->value) {
+            $stage = VersionStage::tryFrom($versionStage);
+            $versionLabel = $stage?->label('en');
+
+            $versionMajor = $publication->getData('versionMajor');
+            $versionMinor = $publication->getData('versionMinor');
+            $version = null;
+            if ($versionMajor !== null) {
+                $version = $versionMajor . '.' . ($versionMinor ?? 0);
+            }
+
+            if ($versionLabel && $version) {
+                $articleVersionElement = $this->createElement('article-version');
+                $articleVersionElement->setAttribute('vocab', 'JAV');
+                $articleVersionElement->setAttribute('vocab-identifier', 'http://www.niso.org/publications/rp/RP-8-2008.pdf');
+                $articleVersionElement->setAttribute('article-version-type', $versionStage);
+                $articleVersionElement->setAttribute('vocab-term', $versionLabel);
+                $articleVersionElement->appendChild($this->createTextNode($version));
+                $articleMetaElement->appendChild($articleVersionElement);
+            }
         }
 
         // Store the article-categories

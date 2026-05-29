@@ -117,6 +117,9 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $publication->setData('plainLanguageSummary', 'article-plain-language-summary-de', 'de');
         $publication->setData('sponsor', 'article-sponsor', 'en');
         $publication->setData('doiObject', $publicationDoiObject);
+        $publication->setData('versionStage', 'VoR');
+        $publication->setData('versionMajor', 1);
+        $publication->setData('versionMinor', 0);
         $publication->setData('languages', ['en' => ['en']]);
         $publication->setData('copyrightHolder', 'article-copyright');
         $publication->setData('copyrightYear', 'year');
