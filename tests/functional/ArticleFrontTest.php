@@ -560,6 +560,97 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     }
 
     /**
+     * When the stamped identity differs from the journal's current values,
+     * article-meta must include prev-* entries to preserve the historical identity.
+     */
+    public function testCreateArticleMetaEmitsPrevIdentityWhenStampDiffers(): void
+    {
+        $record = $this->createOAIRecordMockObject();
+        /** @var Submission $submission */
+        $submission = $record->getData('article');
+        /** @var Journal $journal */
+        $journal = $record->getData('journal');
+        $section = $record->getData('section');
+        /** @var Issue $issue */
+        $issue = $record->getData('issue');
+        /** @var Publication $publication */
+        $publication = $submission->getCurrentPublication();
+
+        // Stamp values that differ from the journal's current values.
+        // The journal (from createOAIRecordMockObject) has:
+        //   name='journal-title', onlineIssn='onlineIssn', printIssn='printIssn',
+        //   publisherInstitution='journal-publisher'.
+        $publication->setData('contextName', ['en' => 'Old Journal Title']);
+        $publication->setData('onlineIssn', 'old-online-issn');
+        $publication->setData('printIssn', 'old-print-issn');
+        $publication->setData('publisher', 'Old Publisher');
+
+        $this->stubPreviousVersionRelation();
+
+        $articleFrontElement = new ArticleFront();
+        $xml = $articleFrontElement->createArticleMeta(
+            $submission,
+            $journal,
+            $section,
+            $issue,
+            $this->createRequestMockInstance(),
+            $publication
+        );
+        $xmlString = $articleFrontElement->saveXML($xml);
+
+        $this->assertStringContainsString('<meta-name>prev-journal-title</meta-name>', $xmlString);
+        $this->assertStringContainsString('<meta-value>Old Journal Title</meta-value>', $xmlString);
+        $this->assertStringContainsString('<meta-name>prev-online-issn</meta-name>', $xmlString);
+        $this->assertStringContainsString('<meta-value>old-online-issn</meta-value>', $xmlString);
+        $this->assertStringContainsString('<meta-name>prev-print-issn</meta-name>', $xmlString);
+        $this->assertStringContainsString('<meta-value>old-print-issn</meta-value>', $xmlString);
+        $this->assertStringContainsString('<meta-name>prev-publisher</meta-name>', $xmlString);
+        $this->assertStringContainsString('<meta-value>Old Publisher</meta-value>', $xmlString);
+    }
+
+    /**
+     * When the publication's stamped identity matches the journal's current values,
+     * no prev-* entries should be emitted — the identity has not changed.
+     */
+    public function testCreateArticleMetaOmitsPrevIdentityWhenStampMatchesCurrent(): void
+    {
+        $record = $this->createOAIRecordMockObject();
+        /** @var Submission $submission */
+        $submission = $record->getData('article');
+        /** @var Journal $journal */
+        $journal = $record->getData('journal');
+        $section = $record->getData('section');
+        /** @var Issue $issue */
+        $issue = $record->getData('issue');
+        /** @var Publication $publication */
+        $publication = $submission->getCurrentPublication();
+
+        // Stamp values identical to the journal's current values — no prev-* should appear.
+        $publication->setData('contextName', ['en' => 'journal-title']);
+        $publication->setData('onlineIssn', 'onlineIssn');
+        $publication->setData('printIssn', 'printIssn');
+        $publication->setData('publisher', 'journal-publisher');
+
+        $this->stubPreviousVersionRelation();
+
+        $articleFrontElement = new ArticleFront();
+        $xml = $articleFrontElement->createArticleMeta(
+            $submission,
+            $journal,
+            $section,
+            $issue,
+            $this->createRequestMockInstance(),
+            $publication
+        );
+        $xmlString = $articleFrontElement->saveXML($xml);
+
+        $this->assertStringNotContainsString('prev-journal-title', $xmlString);
+        $this->assertStringNotContainsString('prev-online-issn', $xmlString);
+        $this->assertStringNotContainsString('prev-print-issn', $xmlString);
+        $this->assertStringNotContainsString('prev-publisher', $xmlString);
+    }
+
+    /**
      * Test creating article-meta contrib-group element.
      */
     public function testCreateArticleContribGroup()
