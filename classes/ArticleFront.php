@@ -912,7 +912,7 @@ class ArticleFront extends DOMDocument
                 $roleTerm = $creditRoleTerms['roles'][$role];
                 $roleNode = $this->createElement('role');
                 $roleNode
-                    ->setAttribute('vocab', 'CRediT')->parentNode
+                    ->setAttribute('vocab', 'credit')->parentNode
                     ->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
                     ->setAttribute('vocab-term', $roleTerm)->parentNode
                     ->setAttribute('vocab-term-identifier', $role)->parentNode
