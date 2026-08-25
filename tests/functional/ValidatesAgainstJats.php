@@ -14,11 +14,12 @@ namespace APP\plugins\generic\jatsTemplate\tests\functional;
 
 use DOMDocument;
 use DOMImplementation;
+use PKP\core\Core;
 
 trait ValidatesAgainstJats
 {
     private const JATS_12_PUBLIC_ID = '-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.2 20190208//EN';
-    private const JATS_12_SYSTEM_ID = 'http://jats.nlm.nih.gov/publishing/1.2/JATS-journalpublishing1.dtd';
+    private const JATS_12_DTD_PATH = '/dtd/jats/1.2/JATS-journalpublishing1.dtd';
 
     /**
      * Assert that a generated document is valid against the JATS 1.2 DTD.
@@ -26,7 +27,7 @@ trait ValidatesAgainstJats
     protected function assertXmlValidatesAgainstJats12(DOMDocument $dom): void
     {
         $impl = new DOMImplementation();
-        $dtd = $impl->createDocumentType('article', self::JATS_12_PUBLIC_ID, self::JATS_12_SYSTEM_ID);
+        $dtd = $impl->createDocumentType('article', self::JATS_12_PUBLIC_ID, $this->getJats12DtdPath());
 
         $validationDoc = $impl->createDocument(null, '', $dtd);
         $validationDoc->encoding = 'UTF-8';
@@ -43,5 +44,17 @@ trait ValidatesAgainstJats
         }
 
         self::assertTrue($isValid, 'JATS 1.2 DTD Validation failed:' . $errorMessage);
+    }
+
+    /**
+     * Get a file: URI for the DTD bundled with the application, so that validation
+     * resolves the DTD and its modules locally instead of over the network.
+     */
+    private function getJats12DtdPath(): string
+    {
+        $path = Core::getBaseDir() . self::JATS_12_DTD_PATH;
+        self::assertFileExists($path, 'The bundled JATS 1.2 DTD is missing; expected it at ' . self::JATS_12_DTD_PATH);
+
+        return 'file://' . $path;
     }
 }

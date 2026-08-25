@@ -489,37 +489,4 @@ class ArticleTest extends PKPTestCase
             ->andReturn($versionRelation);
         app()->instance(Repository::class, $publicationRepoMock);
     }
-
-    /**
-     * Helper to validate a DOMDocument against the JATS 1.2 DTD.
-     */
-    private function assertXmlValidatesAgainstJats12(\DOMDocument $dom)
-    {
-        // Create a new document with the JATS 1.2 DOCTYPE
-        $impl = new \DOMImplementation();
-        $dtd = $impl->createDocumentType(
-            'article',
-            '-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.2 20190208//EN',
-            'http://jats.nlm.nih.gov/publishing/1.2/JATS-journalpublishing1.dtd'
-        );
-
-        $validationDoc = $impl->createDocument(null, '', $dtd);
-        $validationDoc->encoding = 'UTF-8';
-
-        // Import the generated article
-        $root = $validationDoc->importNode($dom->documentElement, true);
-        $validationDoc->appendChild($root);
-
-        libxml_use_internal_errors(true);
-        $isValid = $validationDoc->validate();
-        $errors = libxml_get_errors();
-        libxml_clear_errors();
-
-        $errorMessage = '';
-        foreach ($errors as $error) {
-            $errorMessage .= sprintf("\nLine %d: %s", $error->line, trim($error->message));
-        }
-
-        $this->assertTrue($isValid, 'JATS 1.2 DTD Validation failed:' . $errorMessage);
-    }
 }
