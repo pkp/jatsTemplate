@@ -72,8 +72,8 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             'publicationId' => 5,
             'versionStage' => 'VoR',
             'versionString' => '',
-            'doi' => null,
-            'doiUrl' => 'previous-article-doi',
+            'doi' => '10.1234/previous',
+            'doiUrl' => 'https://doi.org/10.1234/previous',
             'datePublished' => '2010-01-01',
             'relationType' => VersionRelationType::IS_NEW_VERSION_OF,
             'updateType' => UpdateType::NEW_VERSION,
@@ -162,7 +162,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $previousDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
-        $previousDoiObject->setData('doi', 'previous-article-doi');
+        $previousDoiObject->setData('doi', '10.1234/previous');
 
         /** @var Publication|MockObject $previousPublication */
         $previousPublication = $this->getMockBuilder(Publication::class)
@@ -427,7 +427,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             'publicationId' => 5,
             'versionStage' => 'VoR',
             'versionString' => 'Version of Record 1.0',
-            'doi' => 'prev-doi',
+            'doi' => '10.1234/test.prev',
             'doiUrl' => 'https://doi.org/10.1234/test.prev',
             'datePublished' => '2010-01-01',
             'relationType' => VersionRelationType::IS_NEW_VERSION_OF,
@@ -457,7 +457,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         self::assertSame('updated-article', $relatedArticle->getAttribute('related-article-type'));
         self::assertSame('isNewVersionOf', $relatedArticle->getAttribute('specific-use'));
         self::assertSame('doi', $relatedArticle->getAttribute('ext-link-type'));
-        self::assertSame('https://doi.org/10.1234/test.prev', $relatedArticle->getAttribute('xlink:href'));
+        self::assertSame('10.1234/test.prev', $relatedArticle->getAttribute('xlink:href'));
         self::assertSame('Version of Record 1.0', $relatedArticle->textContent);
     }
 

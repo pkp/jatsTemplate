@@ -262,7 +262,7 @@ class ArticleFront extends DOMDocument
 
         // Store the OJS publication (version) ID.
         $articleMetaElement->appendChild($this->createElement('article-id'))
-            ->setAttribute('pub-id-type', 'other')->parentNode
+            ->setAttribute('pub-id-type', 'publisher-id')->parentNode
             ->setAttribute('specific-use', 'publication')->parentNode
             ->appendChild($this->createTextNode($publication->getId()));
 
@@ -606,17 +606,12 @@ class ArticleFront extends DOMDocument
         $versionRelation = Repo::publication()->getVersionRelation($publication, $submission, $journal);
         if ($versionRelation) {
             $relatedArticleElement = $articleMetaElement->appendChild($this->createElement('related-article'));
-            // Set a JATS related-article-type when the relationship maps to one; otherwise
-            // leave it unset. The DataCite ordering relation (isNewVersionOf) is always
-            // preserved in specific-use.
-            $relatedArticleType = $this->versionRelatedArticleType($versionRelation);
-            if ($relatedArticleType) {
-                $relatedArticleElement->setAttribute('related-article-type', $relatedArticleType);
-            }
+            $relatedArticleElement->setAttribute('related-article-type', $this->versionRelatedArticleType($versionRelation));
+            $relatedArticleElement->setAttribute('id', 'ra1');
             $relatedArticleElement->setAttribute('specific-use', $versionRelation->relationType->value);
-            if ($versionRelation->doiUrl) {
+            if ($versionRelation->doi) {
                 $relatedArticleElement->setAttribute('ext-link-type', 'doi');
-                $relatedArticleElement->setAttribute('xlink:href', $versionRelation->doiUrl);
+                $relatedArticleElement->setAttribute('xlink:href', $versionRelation->doi);
             } else {
                 $relatedArticleElement->setAttribute('ext-link-type', 'uri');
                 $relatedArticleElement->setAttribute('xlink:href', $dispatcher->url(
@@ -1170,23 +1165,23 @@ class ArticleFront extends DOMDocument
      * so the target is always an OLDER version that this record acts on (e.g. a correction names
      * the corrected-article; a retraction the retracted-article; a new version/edition names the
      * updated-article, following PMC's convention for updated/republished articles since it is not
-     * captured in the JATS guidelines).
+     * captured in the JATS guidelines). The attribute is required, so a version without an
+     * update type falls back to updated-article.
      *
      * https://jats.nlm.nih.gov/archiving/tag-library/1.2/attribute/related-article-type.html
      * https://pmc.ncbi.nlm.nih.gov/tagging-guidelines/article/tags/#el-relart
      */
-    protected function versionRelatedArticleType(object $versionRelation): ?string
+    protected function versionRelatedArticleType(object $versionRelation): string
     {
         return match ($versionRelation->updateType) {
             UpdateType::ADDENDUM => 'addendum',
-            UpdateType::NEW_VERSION, UpdateType::NEW_EDITION => 'updated-article',
             UpdateType::CLARIFICATION, UpdateType::CORRECTION,
             UpdateType::CORRIGENDUM, UpdateType::ERRATUM => 'corrected-article',
             UpdateType::EXPRESSION_OF_CONCERN => 'expression-of-concern',
             UpdateType::PARTIAL_RETRACTION => 'partial-retraction',
             UpdateType::RETRACTION, UpdateType::WITHDRAWAL,
             UpdateType::REMOVAL => 'retracted-article',
-            default => null,
+            default => 'updated-article', // NEW_VERSION, NEW_EDITION, and general fallback
         };
     }
 }

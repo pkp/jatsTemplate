@@ -65,7 +65,7 @@
         <article-meta>
             <article-id pub-id-type="publisher-id">9</article-id>
             <article-id pub-id-type="doi">article-doi</article-id>
-            <article-id pub-id-type="other" specific-use="publication">1</article-id>
+            <article-id pub-id-type="publisher-id" specific-use="publication">1</article-id>
             <article-categories>
                 <subj-group xml:lang="en" subj-group-type="heading">
                     <subject>section-identify-type</subject>
@@ -133,7 +133,7 @@
             </permissions>
             <self-uri xlink:href="journal-path-article-view"/>
             <self-uri xlink:href="journal-path-article-download" xml:lang="en" xlink:title="galley-label" content-type="galley-filetype"/>
-            <related-article related-article-type="updated-article" specific-use="isNewVersionOf" ext-link-type="doi" xlink:href="previous-article-doi"/>
+            <related-article related-article-type="updated-article" id="ra1" specific-use="isNewVersionOf" ext-link-type="doi" xlink:href="10.1234/previous"/>
             <abstract>
                 <p>article-abstract</p>
             </abstract>

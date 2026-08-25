@@ -675,6 +675,32 @@ class PeerReviewTest extends PKPTestCase
         );
     }
 
+    public function testSubArticlesCarryUniqueIdAnchors(): void
+    {
+        $doc = $this->buildDocument([
+            $this->createRound(
+                [$this->createReview(['id' => 1]), $this->createReview(['id' => 2])],
+                'Version of Record 1.0',
+                1,
+                $this->createAuthorResponse(['response' => ['en' => '<p>Revised.</p>']])
+            ),
+            $this->createRound(
+                [$this->createReview(['id' => 3])],
+                'Version of Record 1.1',
+                2,
+                $this->createAuthorResponse(['response' => ['en' => '<p>Revised again.</p>']])
+            ),
+        ]);
+
+        $ids = [];
+        foreach ($this->query($doc, '//article/sub-article') as $subArticle) {
+            $ids[] = $subArticle->getAttribute('id');
+        }
+
+        // Reports and responses are numbered independently and continue across rounds
+        self::assertSame(['rr1', 'rr2', 'ar1', 'rr3', 'ar2'], $ids);
+    }
+
     public function testAuthorResponseTitlesAreDistinguishedByRound(): void
     {
         $doc = $this->buildDocument([

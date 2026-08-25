@@ -96,6 +96,7 @@ class PeerReview extends DOMDocument
     ): array {
         $subArticles = [];
         $reviewNumber = 1;
+        $responseNumber = 1;
         foreach ($reviewRounds as $round) {
             $openReviews = array_filter(
                 $round['reviews'] ?? [],
@@ -115,8 +116,9 @@ class PeerReview extends DOMDocument
             }
 
             // The authors' response to the round's reviews follows the reviewer reports
-            if ($authorComment = $this->createAuthorComment($round, $openReviews, $articleTitle, $locale)) {
+            if ($authorComment = $this->createAuthorComment($round, $openReviews, $articleTitle, $responseNumber, $locale)) {
                 $subArticles[] = $authorComment;
+                $responseNumber++;
             }
         }
 
@@ -143,6 +145,7 @@ class PeerReview extends DOMDocument
 
         $subArticle = $this->createElement('sub-article');
         $subArticle->setAttribute('article-type', 'reviewer-report');
+        $subArticle->setAttribute('id', 'rr' . $reviewNumber);
         $frontStub = $subArticle->appendChild($this->createElement('front-stub'));
 
         // Review DOI
@@ -375,11 +378,13 @@ class PeerReview extends DOMDocument
      *
      * @param array $reviews The round's published reviews, so the response can link to the
      *   reviewer reports it addresses
+     * @param int $responseNumber Sequential number across rounds, for the sub-article anchor
      */
     protected function createAuthorComment(
         array $round,
         array $reviews,
         string $articleTitle,
+        int $responseNumber,
         ?string $locale = null
     ): ?DOMNode {
         $authorResponse = $round['authorResponse'] ?? null;
@@ -398,6 +403,7 @@ class PeerReview extends DOMDocument
 
         $subArticle = $this->createElement('sub-article');
         $subArticle->setAttribute('article-type', 'author-comment');
+        $subArticle->setAttribute('id', 'ar' . $responseNumber);
 
         $frontStub = $subArticle->appendChild($this->createElement('front-stub'));
 

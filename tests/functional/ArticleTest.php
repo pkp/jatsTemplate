@@ -144,7 +144,7 @@ class ArticleTest extends PKPTestCase
         $previousDoiObject = $this->getMockBuilder(Doi::class)
             ->onlyMethods([])
             ->getMock();
-        $previousDoiObject->setData('doi', 'previous-article-doi');
+        $previousDoiObject->setData('doi', '10.1234/previous');
 
         /** @var Publication|MockObject $previousPublication */
         $previousPublication = $this->getMockBuilder(Publication::class)
@@ -478,8 +478,8 @@ class ArticleTest extends PKPTestCase
             'publicationId' => 2,
             'versionStage' => 'VoR',
             'versionString' => '',
-            'doi' => null,
-            'doiUrl' => 'previous-article-doi',
+            'doi' => '10.1234/previous',
+            'doiUrl' => 'https://doi.org/10.1234/previous',
             'datePublished' => '2010-01-01',
             'relationType' => VersionRelationType::IS_NEW_VERSION_OF,
             'updateType' => UpdateType::NEW_VERSION,
