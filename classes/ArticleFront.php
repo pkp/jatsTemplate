@@ -736,7 +736,7 @@ class ArticleFront extends DOMDocument
         }
 
         // Funding data
-        $funders = $publication->getData('funders');
+        $funders = $submission->getData('funders')->toArray();
         $fundingStatement = $publication->getData('fundingStatement');
         if (!empty($funders) || !empty($fundingStatement)) {
             $fundingGroupNode = $this->createElement('funding-group');
