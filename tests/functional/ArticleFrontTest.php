@@ -183,6 +183,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $article->setId(9);
         $article->setData('contextId', $journalId);
         $article->setData('locale', 'en');
+        $article->setData('funders', collect());
         $author->setSubmissionId($article->getId());
         $article->expects($this->any())
             ->method('getCurrentPublication')

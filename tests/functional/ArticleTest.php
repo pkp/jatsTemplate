@@ -263,6 +263,7 @@ class ArticleTest extends PKPTestCase
             ->willReturn($galleys);
         $article->setId(9);
         $article->setData('contextId', $journalId);
+        $article->setData('funders', collect());
         $article->setData('locale', 'en');
         $author->setSubmissionId($article->getId());
         $article->expects($this->any())
