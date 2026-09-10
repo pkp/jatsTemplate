@@ -25,7 +25,6 @@ use Carbon\Carbon;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
-use Exception;
 use PKP\author\contributorRole\ContributorRoleIdentifier;
 use PKP\author\contributorRole\ContributorType;
 use PKP\author\creditRole\CreditRoleDegree;
@@ -41,7 +40,6 @@ use PKP\publication\enums\UpdateType;
 use PKP\submission\GenreDAO;
 use PKP\submissionFile\SubmissionFile;
 use PKP\userGroup\UserGroup;
-use XSLTProcessor;
 
 class ArticleFront extends DOMDocument
 {
@@ -662,25 +660,9 @@ class ArticleFront extends DOMDocument
                     continue;
                 }
 
-                $elementType = ($locale == $submission->getData('locale'))
-                    ? 'abstract'
-                    : 'trans-abstract';
-
-                // Generate from XSL
-                $abstractElement = $this->generateAbstractContentFromXSL(
-                    $submission,
-                    $elementType,
-                    $locale,
-                    $abstract,
-                    $articleMetaElement,
-                );
-
-                $articleMetaElement->appendChild($abstractElement);
-
-                if ($elementType === 'trans-abstract') {
+                $abstractElement = $this->createAbstractElement($articleMetaElement, $submission, $locale, $abstract);
+                if ($abstractElement->nodeName === 'trans-abstract') {
                     $transAbstracts[] = $abstractElement;
-                } else {
-                    $articleMetaElement->appendChild($abstractElement);
                 }
             }
         }
@@ -696,32 +678,16 @@ class ArticleFront extends DOMDocument
                 if (trim($strippedSummary) === '') {
                     continue;
                 }
-                $elementType = ($locale == $submission->getData('locale'))
-                    ? 'abstract'
-                    : 'trans-abstract';
-
-                // Generate from XSL
-                $plainLanguageSummaryElement = $this->generateAbstractContentFromXSL(
-                    $submission,
-                    $elementType,
-                    $locale,
-                    $strippedSummary,
-                    $articleMetaElement,
-                    'plain-language-summary',
-                );
-
-                if ($elementType === 'trans-abstract') {
+                $plainLanguageSummaryElement = $this->createAbstractElement($articleMetaElement, $submission, $locale, $strippedSummary, 'plain-language-summary');
+                if ($plainLanguageSummaryElement->nodeName === 'trans-abstract') {
                     $transAbstracts[] = $plainLanguageSummaryElement;
-                } else {
-                    $articleMetaElement->appendChild($plainLanguageSummaryElement);
                 }
             }
         }
 
-        if (!empty($transAbstracts)) {
-            foreach ($transAbstracts as $transAbstractElement) {
-                $articleMetaElement->appendChild($transAbstractElement);
-            }
+        // Translations follow every abstract in the submission's locale
+        foreach ($transAbstracts as $transAbstractElement) {
+            $articleMetaElement->appendChild($transAbstractElement);
         }
 
         // Fetch keyword data from the publication object, this will only include the name attribute.
@@ -1092,103 +1058,29 @@ class ArticleFront extends DOMDocument
     }
 
     /**
-     * Generate JATS abstract or trans-abstract element from HTML using XSLT
-     *
-     * @param Submission $article The submission object
-     * @param string $elementType 'abstract' or 'trans-abstract'
-     * @param string $locale The locale of the abstract
-     * @param string $abstract The HTML abstract content
-     * @param DOMElement $parentElement The article-meta DOM element
-     * @param ?string $abstractType Optional abstract type (e.g., 'plain-language-summary')
-     *
-     * @throws Exception
-     *
-     * @return DOMElement|null The created abstract element or null if transformation fails
+     * Append an <abstract> for the submission's locale, or a <trans-abstract> for any other,
+     * holding the HTML converted to JATS paragraphs and inline markup.
      */
-    public function generateAbstractContentFromXSL(
-        Submission $article,
-        string $elementType,
-        string $locale,
-        string $abstract,
-        DOMElement $parentElement,
-        ?string $abstractType = null
-    ): ?DOMElement {
-        $xslPath = dirname(__FILE__, 2) . '/xsl/htmlAbstractToJats.xsl';
-        if (!file_exists($xslPath)) {
-            throw new Exception('unable to find the XSL file');
-        }
-
-        $xslDoc = new DOMDocument();
-        if (!$xslDoc->load($xslPath)) {
-            throw new Exception('JatsTemplate: Failed to load XSLT file ' . $xslPath);
-        }
-
-        $htmlDoc = new DOMDocument();
-
-        $htmlContent = $abstract;
-
-        if (!str_contains($htmlContent, '<p>')) { // Wrap plain text in <p> if no <p> tags are present
-            $htmlContent = "<p>$htmlContent</p>";
-        }
-
-        libxml_use_internal_errors(true);
-        if (!$htmlDoc->loadHTML('<?xml encoding="UTF-8"?>' . $htmlContent)) {
-            error_log('JatsTemplate: Failed to load HTML abstract for article ' . $article->getId() . ': ' . print_r(libxml_get_errors(), true));
-            libxml_clear_errors();
-            return null;
-        }
-        libxml_use_internal_errors(false);
-
-        $processor = new XSLTProcessor();
-        if (!$processor->importStylesheet($xslDoc)) {
-            error_log('JatsTemplate: Failed to import XSLT stylesheet for article ' . $article->getId());
-            return null;
-        }
-
-        $jatsFragment = $processor->transformToDoc($htmlDoc);
-        if (!$jatsFragment) {
-            error_log('JatsTemplate: XSLT transformation failed for article ' . $article->getId() . ': No output');
-            return null;
-        }
-
-        $abstractElement = $parentElement->appendChild($this->createElement($elementType));
-
-        // Set abstract-type if provided
-        // useful case such as plain language summary which has same `abstract/trans-abstract` tag but with
-        // abstract-type="plain-language-summary" attribute
+    public function createAbstractElement(DOMElement $parentElement, Submission $submission, string $locale, string $html, ?string $abstractType = null): DOMElement
+    {
+        $isTranslation = $locale != $submission->getData('locale');
+        $attributes = [];
         if ($abstractType) {
-            $abstractElement->setAttribute('abstract-type', $abstractType);
+            $attributes['abstract-type'] = $abstractType;
+        }
+        if ($isTranslation) {
+            $attributes['xml:lang'] = LocaleConversion::toBcp47($locale);
         }
 
-        // Set xml:lang only for non primary e.g. <trans-abstract> tag
-        if ($elementType === 'trans-abstract') {
-            $abstractElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
-        }
+        $parentElement->appendChild(JatsHelper::htmlToJatsElement(
+            $this,
+            $isTranslation ? 'trans-abstract' : 'abstract',
+            $html,
+            $attributes,
+            allowParagraphs: true
+        ));
 
-        // Handle XSLT output: expect <abstract> root
-        $rootNodes = $jatsFragment->childNodes;
-        $hasAbstract = false;
-        foreach ($rootNodes as $node) {
-            if ($node instanceof DOMElement && $node->tagName === 'abstract') {
-                // Proper <abstract> root
-                foreach ($node->childNodes as $child) {
-                    $abstractElement->appendChild($this->importNode($child, true));
-                }
-                $hasAbstract = true;
-                break;
-            }
-        }
-
-        // Fallback: handle multiple <p> nodes or fragment
-        if (!$hasAbstract) {
-            foreach ($rootNodes as $node) {
-                if ($node instanceof DOMElement && $node->tagName === 'p') {
-                    $abstractElement->appendChild($this->importNode($node, true));
-                }
-            }
-        }
-
-        return $abstractElement;
+        return $parentElement->lastChild;
     }
 
     /**

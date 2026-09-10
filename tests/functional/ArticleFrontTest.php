@@ -113,8 +113,8 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $author->setAffiliations([$affiliation]);
         $author->setEmail('someone@example.com');
         $author->setUrl('https://example.com');
-        $author->setBiography("<p>Test biography</p>", 'en');
-        $author->setCompetingInterests("<p>Competing interests</p>", 'en');
+        $author->setBiography('<p>Test biography</p>', 'en');
+        $author->setCompetingInterests('<p>Competing interests</p>', 'en');
         $author->setCountry('GB');
 
         // Publication
@@ -475,6 +475,50 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $permissions = $this->createPermissionsElement($record);
 
         self::assertSame(1, $permissions->getElementsByTagName('ali:free_to_read')->length);
+    }
+
+    /**
+     * Convert an HTML abstract and return the resulting element as serialized XML.
+     */
+    private function convertAbstract(string $html, string $locale = 'en', ?string $abstractType = null): string
+    {
+        $submission = new Submission();
+        $submission->setData('locale', 'en');
+
+        $articleFront = new ArticleFront();
+        $articleMeta = $articleFront->appendChild($articleFront->createElement('article-meta'));
+
+        return $articleFront->saveXML($articleFront->createAbstractElement($articleMeta, $submission, $locale, $html, $abstractType));
+    }
+
+    /**
+     * The markup the abstract editor offers (bold, italic, sub/superscript and links) is
+     * converted, paragraphs are kept, and word spacing around inline elements survives.
+     */
+    public function testCreateAbstractElementKeepsInlineMarkup()
+    {
+        $html = '<p>Water is H<sub>2</sub>O and <em>never</em> <strong>not</strong>, see '
+            . '<a title="Source" href="https://example.org/">the source</a>.</p><p>Second paragraph.</p>';
+
+        self::assertSame(
+            '<abstract><p>Water is H<sub>2</sub>O and <italic>never</italic> <bold>not</bold>, see '
+            . '<ext-link ext-link-type="uri" xlink:href="https://example.org/">the source</ext-link>.</p>'
+            . '<p>Second paragraph.</p></abstract>',
+            $this->convertAbstract($html)
+        );
+    }
+
+    /**
+     * An abstract in another locale is a trans-abstract with its language, and a plain
+     * language summary carries its abstract-type.
+     */
+    public function testCreateAbstractElementForTranslatedPlainLanguageSummary()
+    {
+        self::assertSame(
+            '<trans-abstract abstract-type="plain-language-summary" xml:lang="fr-CA">'
+            . '<p>Un résumé.</p></trans-abstract>',
+            $this->convertAbstract('<p>Un résumé.</p>', 'fr_CA', 'plain-language-summary')
+        );
     }
 
     /**
