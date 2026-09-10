@@ -69,6 +69,7 @@ Previous versions of the plugin generated JATS that did not pass DTD validation,
 | [collab](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/collab.html)                             | :ok:    | :x:        |
 | [anonymous](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/anonymous.html)                       | :ok:    | :x:        |
 | [email](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/email.html)                               | :ok:    | :ok:       |
+| [address](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/address.html)                           | :ok:    | :x:        |
 | [role](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/role.html)                                 | :ok:    | :x:        |
 | [bio](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/bio.html)                                   | :ok:    | :ok:       |
 | [xref](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/xref.html)                                 | :ok:    | :ok:       |
@@ -78,6 +79,7 @@ Previous versions of the plugin generated JATS that did not pass DTD validation,
 | [institution-id](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/institution-id.html)             | :ok:    | :ok:       |
 | [author-notes](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/author-notes.html)                 | :ok:    | :ok:       |
 | [fn](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/fn.html)                                     | :ok:    | :ok:       |
+| [corresp](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/corresp.html)                           | :ok:    | :x:        |
 | [pub-date](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/pub-date.html)                         | :ok:    | :ok:       |
 | [day](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/day.html)                                   | :ok:    | :ok:       |
 | [month](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/month.html)                               | :ok:    | :ok:       |
@@ -88,6 +90,8 @@ Previous versions of the plugin generated JATS that did not pass DTD validation,
 | [issue-title](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/issue-title.html)                   | :ok:    | :x:        |
 | [fpage](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/fpage.html)                               | :ok:    | :ok:       |
 | [lpage](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/lpage.html)                               | :ok:    | :ok:       |
+| [elocation-id](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/elocation-id.html)                 | :ok:    | :x:        |
+| [history](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/history.html)                           | :ok:    | :ok:       |
 | [pub-history](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/pub-history.html)                   | :ok:    | :x:        |
 | [event](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/event.html)                               | :ok:    | :x:        |
 | [event-desc](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/event-desc.html)                     | :ok:    | :x:        |
@@ -98,7 +102,10 @@ Previous versions of the plugin generated JATS that did not pass DTD validation,
 | [copyright-holder](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/copyright-holder.html)         | :ok:    | :ok:       |
 | [license](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/license.html)                           | :ok:    | :x:        |
 | [license-p](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/license-p.html)                       | :ok:    | :x:        |
+| [ali:free_to_read](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/ali-free_to_read.html)         | :ok:    | :ok:       |
+| [ali:license_ref](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/ali-license_ref.html)           | :ok:    | :ok:       |
 | [related-article](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/related-article.html)           | :ok:    | :ok:       |
+| [supplementary-material](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/supplementary-material.html) | :ok:    | :x:        |
 | [abstract](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/abstract.html)                         | :ok:    | :ok:       |
 | [trans-abstract](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/trans-abstract.html)             | :ok:    | :ok:       |
 | [p](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/p.html)                                       | :ok:    | :ok:       |
@@ -107,7 +114,6 @@ Previous versions of the plugin generated JATS that did not pass DTD validation,
 | [underline](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/underline.html)                       | :ok:    | :x:        |
 | [sub](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/sub.html)                                   | :ok:    | :ok:       |
 | [sup](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/sup.html)                                   | :ok:    | :ok:       |
-| [break](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/break.html)                               | :ok:    | :x:        |
 | [ext-link](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/ext-link.html)                         | :ok:    | :ok:       |
 | [kwd-group](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/kwd-group.html)                       | :ok:    | :ok:       |
 | [title](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/title.html)                               | :ok:    | :ok:       |
@@ -124,7 +130,9 @@ Previous versions of the plugin generated JATS that did not pass DTD validation,
 | [meta-name](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/meta-name.html)                       | :ok:    | :x:        |
 | [meta-value](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/meta-value.html)                     | :ok:    | :x:        |
 | [inline-graphic](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/inline-graphic.html)             | :ok:    | :x:        |
+| [notes](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/notes.html)                               | :ok:    | :x:        |
 | [body](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/body.html)                                 | :ok:    | :ok:       |
+| [sec](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/sec.html)                                   | :ok:    | :ok:       |
 | [back](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/back.html)                                 | :ok:    | :ok:       |
 | [ref-list](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/ref-list.html)                         | :ok:    | :ok:       |
 | [ref](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/ref.html)                                   | :ok:    | :ok:       |
@@ -135,6 +143,9 @@ Previous versions of the plugin generated JATS that did not pass DTD validation,
 | [part-title](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/part-title.html)                     | :ok:    | :ok:       |
 | [data-title](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/data-title.html)                     | :ok:    | :ok:       |
 | [mixed-citation](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/mixed-citation.html)             | :ok:    | :ok:       |
+| [sub-article](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/sub-article.html)                   | :ok:    | :ok:       |
+| [front-stub](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/front-stub.html)                     | :ok:    | :ok:       |
+| [related-object](https://jats.nlm.nih.gov/archiving/tag-library/1.2/element/related-object.html)             | :ok:    | :ok:       |
 
 ## Automated Tests
 
