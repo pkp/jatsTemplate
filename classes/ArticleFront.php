@@ -32,6 +32,7 @@ use PKP\core\PKPApplication;
 use PKP\core\PKPRequest;
 use PKP\core\PKPString;
 use PKP\db\DAORegistry;
+use PKP\decision\Decision;
 use PKP\facades\Locale;
 use PKP\galley\Galley;
 use PKP\i18n\LocaleConversion;
@@ -506,8 +507,25 @@ class ArticleFront extends DOMDocument
             }
         }
 
-        if (($date = $submission->getData('dateSubmitted')) !== null) {
-            $date = Carbon::createFromTimestamp(strtotime($date));
+        // Processing dates go in <history>, which PMC reads: the date the submission was
+        // received, and the date it was accepted where an editor recorded that decision.
+        if (($dateSubmitted = $submission->getData('dateSubmitted')) !== null) {
+            $historyElement = $articleMetaElement->appendChild($this->createElement('history'));
+            $historyElement->appendChild($this->createHistoryDate('received', $dateSubmitted));
+
+            // The latest acceptance, should the submission have been accepted more than once
+            $acceptDecision = Repo::decision()->getCollector()
+                ->filterBySubmissionIds([$submission->getId()])
+                ->getMany()
+                ->filter(fn (Decision $decision) => $decision->getData('decision') === Decision::ACCEPT)
+                ->sortBy(fn (Decision $decision) => $decision->getData('dateDecided'))
+                ->last();
+            if ($acceptDecision?->getData('dateDecided')) {
+                $historyElement->appendChild($this->createHistoryDate('accepted', $acceptDecision->getData('dateDecided')));
+            }
+
+            // The received event is also kept in <pub-history>, as OAI harvesters have had it
+            $date = Carbon::createFromTimestamp(strtotime($dateSubmitted));
             $eventElement = $articleMetaElement->appendChild($this->createElement('pub-history'))
                 ->appendChild($this->createElement('event'));
             $eventElement->setAttribute('event-type', 'received');
@@ -821,6 +839,23 @@ class ArticleFront extends DOMDocument
         }
 
         return $articleMetaElement;
+    }
+
+    /**
+     * A history date: day, month and year as integers, with the date in ISO 8601 form on
+     * the element.
+     */
+    protected function createHistoryDate(string $dateType, string $date): DOMElement
+    {
+        $date = Carbon::parse($date);
+        $dateElement = $this->createElement('date');
+        $dateElement->setAttribute('date-type', $dateType);
+        $dateElement->setAttribute('iso-8601-date', $date->toDateString());
+        $dateElement->appendChild($this->createElement('day', (string) $date->day));
+        $dateElement->appendChild($this->createElement('month', (string) $date->month));
+        $dateElement->appendChild($this->createElement('year', (string) $date->year));
+
+        return $dateElement;
     }
 
     /**

@@ -13,6 +13,7 @@
 namespace APP\plugins\generic\jatsTemplate\tests\functional;
 
 use APP\author\Author;
+use APP\decision\Repository as DecisionRepository;
 use APP\issue\Issue;
 use APP\journal\Journal;
 use APP\plugins\generic\jatsTemplate\classes\ArticleFront;
@@ -20,6 +21,7 @@ use APP\publication\Publication;
 use APP\publication\Repository;
 use APP\section\Section;
 use APP\submission\Submission;
+use Illuminate\Support\LazyCollection;
 use Mockery;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -27,6 +29,8 @@ use PKP\affiliation\Affiliation;
 use PKP\author\contributorRole\ContributorRole;
 use PKP\author\contributorRole\ContributorRoleIdentifier;
 use PKP\author\contributorRole\ContributorType;
+use PKP\decision\Collector as DecisionCollector;
+use PKP\decision\Decision;
 use PKP\doi\Doi;
 use PKP\galley\Galley;
 use PKP\oai\OAIRecord;
@@ -58,6 +62,14 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             \APP\submissionFile\Repository::class,
             Repository::class,
         ];
+    }
+
+    protected function tearDown(): void
+    {
+        // The decision repository is not instantiable without a request, so it is bound
+        // per test rather than backed up through getMockedContainerKeys()
+        app()->forgetInstance(DecisionRepository::class);
+        parent::tearDown();
     }
 
     /**
@@ -435,6 +447,92 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         );
 
         return $xml->getElementsByTagName('permissions')->item(0);
+    }
+
+    /**
+     * Bind a decision repository handing back the given decisions for any submission.
+     *
+     * @param array $decisions [decision type => date decided], in the order returned
+     */
+    private function bindDecisions(array $decisions): void
+    {
+        $objects = [];
+        foreach ($decisions as [$type, $dateDecided]) {
+            $decision = new Decision();
+            $decision->setData('decision', $type);
+            $decision->setData('dateDecided', $dateDecided);
+            $objects[] = $decision;
+        }
+
+        $collector = $this->createMock(DecisionCollector::class);
+        $collector->method('filterBySubmissionIds')->willReturnSelf();
+        $collector->method('getMany')->willReturn(LazyCollection::make($objects));
+
+        $repository = $this->createMock(DecisionRepository::class);
+        $repository->method('getCollector')->willReturn($collector);
+        app()->instance(DecisionRepository::class, $repository);
+    }
+
+    /**
+     * Build the article-meta for a submitted record and return its history element,
+     * or null when none was written.
+     */
+    private function createHistoryElement(array $decisions): ?\DOMElement
+    {
+        $record = $this->createOAIRecordMockObject();
+        $record->getData('article')->setData('dateSubmitted', '2026-01-13 09:30:00');
+        $this->bindDecisions($decisions);
+
+        $articleMeta = $this->createPermissionsElement($record)->parentNode;
+        $articleMeta->ownerDocument->formatOutput = true;
+
+        return $articleMeta->getElementsByTagName('history')->item(0);
+    }
+
+    /**
+     * Received and accepted dates are processing dates, so they go in history as dates,
+     * with the latest acceptance the one reported. The received event that harvesters
+     * have read from pub-history is kept as it was.
+     */
+    public function testCreateArticleMetaWritesReceivedAndAcceptedDatesInHistory()
+    {
+        $history = $this->createHistoryElement([
+            [Decision::ACCEPT, '2026-02-02 12:00:00'],
+            [Decision::PENDING_REVISIONS, '2026-01-20 12:00:00'],
+            [Decision::ACCEPT, '2026-03-01 12:00:00'],
+        ]);
+
+        $expected = <<<'XML'
+            <history>
+              <date date-type="received" iso-8601-date="2026-01-13">
+                <day>13</day>
+                <month>1</month>
+                <year>2026</year>
+              </date>
+              <date date-type="accepted" iso-8601-date="2026-03-01">
+                <day>1</day>
+                <month>3</month>
+                <year>2026</year>
+              </date>
+            </history>
+            XML;
+
+        self::assertSame($expected, trim($history->ownerDocument->saveXML($history)));
+
+        $pubHistory = $history->nextSibling;
+        self::assertSame('pub-history', $pubHistory->nodeName);
+        self::assertSame('received', $pubHistory->firstChild->getAttribute('event-type'));
+        self::assertSame(1, $pubHistory->getElementsByTagName('date')->length);
+    }
+
+    public function testCreateArticleMetaOmitsAcceptedDateWithoutAnAcceptance()
+    {
+        $history = $this->createHistoryElement([
+            [Decision::PENDING_REVISIONS, '2026-01-20 12:00:00'],
+        ]);
+
+        self::assertSame(1, $history->getElementsByTagName('date')->length);
+        self::assertSame('received', $history->getElementsByTagName('date')->item(0)->getAttribute('date-type'));
     }
 
     /**
