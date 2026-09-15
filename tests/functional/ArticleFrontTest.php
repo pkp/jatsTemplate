@@ -3,8 +3,8 @@
 /**
  * @file ArticleFrontTest.php
  *
- * Copyright (c) 2003-2025 Simon Fraser University
- * Copyright (c) 2003-2025 John Willinsky
+ * Copyright (c) 2003-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article front element unit tests
@@ -90,7 +90,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $publication->setData('locale', 'en');
         $publication->setData('pages', 15);
         $publication->setData('type', 'art-type', 'en');
-        $publication->setData('title', 'article-title-en', 'en');
+        $publication->setData('title', 'article-title-en <b>bold</b> <i>italic</i> &amp; H<sub>2</sub>O', 'en');
         $publication->setData('title', 'article-title-de', 'de');
         $publication->setData('coverage', ['en' => ['article-coverage-geo', 'article-coverage-chron', 'article-coverage-sample']]);
         $publication->setData('keywords', ['en' => [['name' => 'Professional Development'],['name' => 'Social Transformation']]]);

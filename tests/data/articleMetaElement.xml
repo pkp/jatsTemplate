@@ -6,7 +6,7 @@
     </subj-group>
   </article-categories>
   <title-group>
-    <article-title xml:lang="en">article-title-en</article-title>
+    <article-title xml:lang="en">article-title-en <bold>bold</bold> <italic>italic</italic> &amp; H<sub>2</sub>O</article-title>
     <trans-title-group xml:lang="de">
       <trans-title>article-title-de</trans-title>
     </trans-title-group>
