@@ -1139,7 +1139,7 @@ class ArticleFront extends DOMDocument
             if ($node instanceof DOMElement && $node->tagName === 'abstract') {
                 // Proper <abstract> root
                 foreach ($node->childNodes as $child) {
-                    $abstractElement->appendChild($this->importNode($child, true));
+                    $abstractElement->appendChild($this->copyXslOutputNode($child));
                 }
                 $hasAbstract = true;
                 break;
@@ -1150,12 +1150,37 @@ class ArticleFront extends DOMDocument
         if (!$hasAbstract) {
             foreach ($rootNodes as $node) {
                 if ($node instanceof DOMElement && $node->tagName === 'p') {
-                    $abstractElement->appendChild($this->importNode($node, true));
+                    $abstractElement->appendChild($this->copyXslOutputNode($node));
                 }
             }
         }
 
         return $abstractElement;
+    }
+
+    /**
+     * Copy a node of the XSLT output into this document.
+     *
+     * The XSLT output binds the xlink prefix to its namespace, which importNode() would re-declare
+     * as xmlns:xlink on the imported elements, where the JATS DTD does not allow it. Rebuilding the
+     * elements sets xlink attributes as plain "xlink:*" attributes instead, like the rest of the
+     * document, which declares the namespace once on the <article> element.
+     */
+    protected function copyXslOutputNode(DOMNode $node): DOMNode
+    {
+        if (!$node instanceof DOMElement) {
+            return $this->importNode($node, true);
+        }
+
+        $element = $this->createElement($node->nodeName);
+        foreach ($node->attributes as $attribute) {
+            $element->setAttribute($attribute->nodeName, $attribute->value);
+        }
+        foreach ($node->childNodes as $child) {
+            $element->appendChild($this->copyXslOutputNode($child));
+        }
+
+        return $element;
     }
 
     /**

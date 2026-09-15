@@ -20,6 +20,7 @@ use APP\publication\Publication;
 use APP\publication\Repository;
 use APP\section\Section;
 use APP\submission\Submission;
+use DOMXPath;
 use Mockery;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -466,6 +467,33 @@ class ArticleTest extends PKPTestCase
         $article->convertOAIToXml($record, $request);
 
         // Validate against JATS 1.2 DTD
+        $this->assertXmlValidatesAgainstJats12($article);
+    }
+
+    /**
+     * Test that lists in the abstract and plain language summary are exported as JATS lists
+     * and the generated XML stays valid against the JATS 1.2 DTD.
+     */
+    public function testListsInAbstractsValidateJats()
+    {
+        $request = $this->createRequestMockInstance();
+        $record = $this->createOAIRecordMockObject();
+        $publication = $record->getData('article')->getCurrentPublication(); /** @var Publication $publication */
+        $publication->setData(
+            'abstract',
+            '<p>Intro with a <a href="https://example.com">link</a>:</p><ul><li>First<ol><li>Nested <strong>item</strong></li></ol></li><li>Second<br>line</li></ul>',
+            'en'
+        );
+        $publication->setData('plainLanguageSummary', '<ol><li>Eins</li><li>Zwei</li></ol>', 'de');
+        $this->stubPreviousVersionRelation();
+        $article = new Article();
+        $article->convertOAIToXml($record, $request);
+
+        $xpath = new DOMXPath($article);
+        self::assertSame(2, $xpath->query('//article-meta/abstract[not(@abstract-type)]/p/list[@list-type="bullet"]/list-item')->length);
+        self::assertSame(1, $xpath->query('//article-meta/abstract[not(@abstract-type)]/p/list/list-item/list[@list-type="order"]/list-item')->length);
+        self::assertSame(2, $xpath->query('//article-meta/trans-abstract[@abstract-type="plain-language-summary"][@xml:lang="de"]/p/list[@list-type="order"]/list-item')->length);
+
         $this->assertXmlValidatesAgainstJats12($article);
     }
 

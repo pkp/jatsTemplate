@@ -22,6 +22,7 @@ use APP\section\Section;
 use APP\submission\Submission;
 use Mockery;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PKP\affiliation\Affiliation;
 use PKP\author\contributorRole\ContributorRole;
@@ -579,5 +580,124 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             $this->xmlFilePath . 'articleMetaArticle_ContribGroupElement.xml',
             $articleFrontElement->saveXML($xml['contribGroupElement'])
         );
+    }
+
+    /**
+     * Test converting abstract HTML (also used for the plain language summary) to JATS abstract content.
+     */
+    #[DataProvider('abstractHtmlProvider')]
+    public function testGenerateAbstractContentFromXSL(string $html, string $expectedXml)
+    {
+        $submission = new Submission();
+        $submission->setId(9);
+
+        $articleFrontElement = new ArticleFront();
+        $articleMetaElement = $articleFrontElement->appendChild($articleFrontElement->createElement('article-meta'));
+        $abstractElement = $articleFrontElement->generateAbstractContentFromXSL(
+            $submission,
+            'abstract',
+            'en',
+            $html,
+            $articleMetaElement
+        );
+
+        self::assertSame($expectedXml, $articleFrontElement->saveXML($abstractElement));
+    }
+
+    /**
+     * Abstract HTML as stored by the rich text editor, and the JATS abstract it must convert to.
+     */
+    public static function abstractHtmlProvider(): array
+    {
+        return [
+            'plain text is wrapped in a paragraph' => [
+                'article-abstract',
+                '<abstract><p>article-abstract</p></abstract>',
+            ],
+            'inline markup stays within its paragraph' => [
+                '<p>Intro <em>italic</em> and <strong>bold</strong>.</p>',
+                '<abstract><p>Intro <italic>italic</italic> and <bold>bold</bold>.</p></abstract>',
+            ],
+            'stray inline content between blocks is wrapped in a paragraph' => [
+                '<p>First</p>Stray <em>text</em>',
+                '<abstract><p>First</p><p>Stray <italic>text</italic></p></abstract>',
+            ],
+            'line break becomes a space' => [
+                '<p>Line one<br>Line two</p>',
+                '<abstract><p>Line one Line two</p></abstract>',
+            ],
+            'unordered list becomes a bullet list wrapped in a paragraph' => [
+                '<p>Intro</p><ul><li>One</li><li>Two</li></ul>',
+                '<abstract><p>Intro</p><p><list list-type="bullet"><list-item><p>One</p></list-item><list-item><p>Two</p></list-item></list></p></abstract>',
+            ],
+            'ordered list becomes an order list' => [
+                '<ol><li>First</li><li>Second</li></ol>',
+                '<abstract><p><list list-type="order"><list-item><p>First</p></list-item><list-item><p>Second</p></list-item></list></p></abstract>',
+            ],
+            'editor whitespace between block elements is ignored' => [
+                "<p>Intro</p>\n<ul>\n<li>Parent\n<ul>\n<li>Child</li>\n</ul>\n</li>\n<li>Two</li>\n</ul>\n<p>Outro</p>",
+                '<abstract><p>Intro</p><p><list list-type="bullet"><list-item><p>Parent' . "\n" . '</p><list list-type="bullet"><list-item><p>Child</p></list-item></list></list-item><list-item><p>Two</p></list-item></list></p><p>Outro</p></abstract>',
+            ],
+            'nested list follows the paragraph of its list item' => [
+                '<ol><li>Parent<ul><li>Child one</li><li>Child two</li></ul></li><li>Sibling</li></ol>',
+                '<abstract><p><list list-type="order"><list-item><p>Parent</p><list list-type="bullet"><list-item><p>Child one</p></list-item><list-item><p>Child two</p></list-item></list></list-item><list-item><p>Sibling</p></list-item></list></p></abstract>',
+            ],
+            'lists nest to any depth' => [
+                '<ul><li>L1<ol><li>L2<ul><li>L3</li></ul></li></ol></li></ul>',
+                '<abstract><p><list list-type="bullet"><list-item><p>L1</p><list list-type="order"><list-item><p>L2</p><list list-type="bullet"><list-item><p>L3</p></list-item></list></list-item></list></list-item></list></p></abstract>',
+            ],
+            'text after a nested list gets its own paragraph' => [
+                '<ul><li>Before<ul><li>Nested</li></ul>After</li></ul>',
+                '<abstract><p><list list-type="bullet"><list-item><p>Before</p><list list-type="bullet"><list-item><p>Nested</p></list-item></list><p>After</p></list-item></list></p></abstract>',
+            ],
+            'list item holding only a nested list has no paragraph of its own' => [
+                '<ul><li><ul><li>Child only</li></ul></li><li>Sibling</li></ul>',
+                '<abstract><p><list list-type="bullet"><list-item><list list-type="bullet"><list-item><p>Child only</p></list-item></list></list-item><list-item><p>Sibling</p></list-item></list></p></abstract>',
+            ],
+            'sibling nested lists in one list item keep their order and type' => [
+                '<ul><li>Parent<ul><li>Bullet child</li></ul><ol><li>Numbered child</li></ol></li></ul>',
+                '<abstract><p><list list-type="bullet"><list-item><p>Parent</p><list list-type="bullet"><list-item><p>Bullet child</p></list-item></list><list list-type="order"><list-item><p>Numbered child</p></list-item></list></list-item></list></p></abstract>',
+            ],
+            'text between nested lists in one list item gets its own paragraph' => [
+                '<ol><li>Start<ul><li>First nested</li></ul>Middle text<ul><li>Second nested</li></ul>End</li></ol>',
+                '<abstract><p><list list-type="order"><list-item><p>Start</p><list list-type="bullet"><list-item><p>First nested</p></list-item></list><p>Middle text</p><list list-type="bullet"><list-item><p>Second nested</p></list-item></list><p>End</p></list-item></list></p></abstract>',
+            ],
+            'nested list without any non-empty item is dropped from its list item' => [
+                "<ul>\n<li>Parent\n<ul>\n<li>\u{00A0}</li>\n</ul>\n</li>\n</ul>",
+                '<abstract><p><list list-type="bullet"><list-item><p>Parent' . "\n" . '</p></list-item></list></p></abstract>',
+            ],
+            'paragraph inside a list item is not wrapped again' => [
+                '<ul><li><p>Pasted paragraph</p></li></ul>',
+                '<abstract><p><list list-type="bullet"><list-item><p>Pasted paragraph</p></list-item></list></p></abstract>',
+            ],
+            'inline markup inside a list item is preserved' => [
+                '<ul><li>H<sub>2</sub>O and E=mc<sup>2</sup> in <strong>bold</strong></li></ul>',
+                '<abstract><p><list list-type="bullet"><list-item><p>H<sub>2</sub>O and E=mc<sup>2</sup> in <bold>bold</bold></p></list-item></list></p></abstract>',
+            ],
+            'links become ext-link and email' => [
+                '<ul><li>See <a href="https://example.com/?a=1&amp;b=2">site</a> or <a href="mailto:editor@example.com">email</a></li></ul>',
+                '<abstract><p><list list-type="bullet"><list-item><p>See <ext-link ext-link-type="uri" xlink:href="https://example.com/?a=1&amp;b=2">site</ext-link> or <email>editor@example.com</email></p></list-item></list></p></abstract>',
+            ],
+            'empty list items and empty lists are dropped' => [
+                '<p>Intro</p><ul><li></li><li><br></li><li>Kept</li></ul><ol><li> </li></ol>',
+                '<abstract><p>Intro</p><p><list list-type="bullet"><list-item><p>Kept</p></list-item></list></p></abstract>',
+            ],
+            'list items holding only a non-breaking space, as the editor stores empty items, are dropped' => [
+                "<ul>\n<li>\u{00A0}</li>\n<li>Kept</li>\n</ul>\n<ol>\n<li>\u{00A0}</li>\n</ol>",
+                '<abstract><p><list list-type="bullet"><list-item><p>Kept</p></list-item></list></p></abstract>',
+            ],
+            'paragraph holding only a non-breaking space, as the editor stores blank lines, is dropped' => [
+                "<p>Intro</p>\n<p>\u{00A0}</p>\n<p>Outro</p>",
+                '<abstract><p>Intro</p><p>Outro</p></abstract>',
+            ],
+            'list directly inside a list gets its own list item' => [
+                '<ul><li>A</li><ul><li>A1</li></ul><li>B</li></ul>',
+                '<abstract><p><list list-type="bullet"><list-item><p>A</p></list-item><list-item><list list-type="bullet"><list-item><p>A1</p></list-item></list></list-item><list-item><p>B</p></list-item></list></p></abstract>',
+            ],
+            'entities are not double escaped' => [
+                '<p>Cats &amp; dogs</p><ul><li>x &lt; y</li></ul>',
+                '<abstract><p>Cats &amp; dogs</p><p><list list-type="bullet"><list-item><p>x &lt; y</p></list-item></list></p></abstract>',
+            ],
+        ];
     }
 }
