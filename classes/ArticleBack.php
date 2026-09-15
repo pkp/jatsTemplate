@@ -87,13 +87,17 @@ class ArticleBack extends DOMDocument
      */
     protected function appendDataAvailabilitySection(DOMElement $backElement, string $statement, string $locale): void
     {
-        $backElement->appendChild(JatsHelper::htmlToJatsElement(
+        $secElement = JatsHelper::htmlToJatsElement(
             $this,
             'sec',
             $statement,
             ['sec-type' => 'data-availability', 'xml:lang' => LocaleConversion::toBcp47($locale)],
             allowParagraphs: true
-        ));
+        );
+        if (!$secElement) {
+            return;
+        }
+        $backElement->appendChild($secElement);
         // The section title must precede its paragraphs
         $secElement = $backElement->lastChild;
         $titleElement = $this->createElement('title');

@@ -561,26 +561,9 @@ class PeerReview extends DOMDocument
      */
     protected function appendSanitizedContent(DOMElement $parent, string $html): void
     {
-        // Keep only safe formatting tags supported by JATS
-        // <br> is included for later processing.
-        $allowedTags = '<i><em><b><strong><u><a><sup><sub><p><br>';
-        $cleaned = strip_tags($html, $allowedTags);
-        // Decode before re-escaping so an already-escaped character is not escaped twice.
-        // Anything decoding to markup other than the allowed tags stays escaped below, and so
-        // survives as the literal text the author wrote.
-        $cleaned = html_entity_decode($cleaned, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $escaped = htmlspecialchars($cleaned, ENT_COMPAT, 'UTF-8');
-        $converted = JatsHelper::htmlToJats($escaped);
-
-        // JATS 1.2 has no in-paragraph line break, so a soft break ends the paragraph and starts
-        // the next one. Line breaks are still escaped at this point, so they cannot be mistaken
-        // for markup the author wrote.
-        $converted = preg_replace('/&lt;br\s*\/?&gt;/i', '</p><p>', $converted);
-
-        // The parent's content model is block-level, so every run has to be a paragraph: one the
-        // author left outside a <p> as much as one a break has just closed. This also drops the
-        // empty paragraph a break against an edge, or on an existing boundary, leaves behind.
-        $converted = JatsHelper::normalizeParagraphs($converted);
+        // The parent's content model is block-level: paragraphs, lists and line breaks are
+        // normalized the same way as every other block-level field
+        $converted = JatsHelper::htmlToJatsContent($html, allowParagraphs: true);
 
         $fragment = $this->createDocumentFragment();
         // Suppress warnings from malformed user-provided content

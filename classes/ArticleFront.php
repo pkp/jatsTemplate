@@ -30,7 +30,6 @@ use PKP\author\contributorRole\ContributorType;
 use PKP\author\creditRole\CreditRoleDegree;
 use PKP\core\PKPApplication;
 use PKP\core\PKPRequest;
-use PKP\core\PKPString;
 use PKP\db\DAORegistry;
 use PKP\decision\Decision;
 use PKP\facades\Locale;
@@ -71,8 +70,8 @@ class ArticleFront extends DOMDocument
             );
 
             // <notes> is a sibling of <article-meta> within <front> (front-model: journal-meta, article-meta, notes?).
-            $summaryOfChanges = $workingPublication->getLocalizedData('summaryOfChanges', $workingPublication->getData('locale'));
-            if (!empty($summaryOfChanges)) {
+            $summaryOfChanges = (string) $workingPublication->getLocalizedData('summaryOfChanges', $workingPublication->getData('locale'));
+            if (JatsHelper::hasBlockContent($summaryOfChanges)) {
                 $frontNode->appendChild(JatsHelper::htmlToJatsElement(
                     $this,
                     'notes',
@@ -379,11 +378,10 @@ class ArticleFront extends DOMDocument
             }
 
             foreach ($competingInterests as $id => $competingInterest) {
-                $coiStatement = $competingInterest['coi-statement'];
                 $authorNotesNode->appendChild(JatsHelper::htmlToJatsElement(
                     $this,
                     'fn',
-                    $coiStatement,
+                    $competingInterest['coi-statement'],
                     ['fn-type' => 'coi-statement', 'id' => $id],
                     allowParagraphs: true
                 ));
@@ -673,13 +671,8 @@ class ArticleFront extends DOMDocument
                 if (empty($abstract)) {
                     continue;
                 }
-                $abstract = PKPString::stripUnsafeHtml($abstract);
-                if (trim($abstract) === '') {
-                    continue;
-                }
-
                 $abstractElement = $this->createAbstractElement($articleMetaElement, $submission, $locale, $abstract);
-                if ($abstractElement->nodeName === 'trans-abstract') {
+                if ($abstractElement?->nodeName === 'trans-abstract') {
                     $transAbstracts[] = $abstractElement;
                 }
             }
@@ -692,12 +685,8 @@ class ArticleFront extends DOMDocument
                 if (empty($plainLanguageSummary)) {
                     continue;
                 }
-                $strippedSummary = PKPString::stripUnsafeHtml($plainLanguageSummary);
-                if (trim($strippedSummary) === '') {
-                    continue;
-                }
-                $plainLanguageSummaryElement = $this->createAbstractElement($articleMetaElement, $submission, $locale, $strippedSummary, 'plain-language-summary');
-                if ($plainLanguageSummaryElement->nodeName === 'trans-abstract') {
+                $plainLanguageSummaryElement = $this->createAbstractElement($articleMetaElement, $submission, $locale, $plainLanguageSummary, 'plain-language-summary');
+                if ($plainLanguageSummaryElement?->nodeName === 'trans-abstract') {
                     $transAbstracts[] = $plainLanguageSummaryElement;
                 }
             }
@@ -1048,8 +1037,9 @@ class ArticleFront extends DOMDocument
                         ->setAttribute('rid', 'corresp-1');
                 }
 
-                // Competing interests
-                if ($authorCompetingInterests = $author->getCompetingInterests($submissionLocale)) {
+                // Competing interests: a blank statement gets neither a footnote nor a reference to one
+                $authorCompetingInterests = (string) $author->getCompetingInterests($submissionLocale);
+                if (JatsHelper::hasBlockContent($authorCompetingInterests)) {
                     $competingInterestTokenList = [];
                     $competingInterestsToken = 'con-' . (count($competingInterests) + 1);
                     $competingInterestTokenList[] = $competingInterestsToken;
@@ -1083,20 +1073,17 @@ class ArticleFront extends DOMDocument
      */
     protected function appendContributorBiography(DOMElement $contribElement, string $biography, string $locale): void
     {
-        $contribElement->appendChild(JatsHelper::htmlToJatsElement(
-            $this,
-            'bio',
-            $biography,
-            ['xml:lang' => $locale],
-            allowParagraphs: true
-        ));
+        $bioElement = JatsHelper::htmlToJatsElement($this, 'bio', $biography, ['xml:lang' => $locale], allowParagraphs: true);
+        if ($bioElement) {
+            $contribElement->appendChild($bioElement);
+        }
     }
 
     /**
      * Append an <abstract> for the submission's locale, or a <trans-abstract> for any other,
      * holding the HTML converted to JATS paragraphs and inline markup.
      */
-    public function createAbstractElement(DOMElement $parentElement, Submission $submission, string $locale, string $html, ?string $abstractType = null): DOMElement
+    public function createAbstractElement(DOMElement $parentElement, Submission $submission, string $locale, string $html, ?string $abstractType = null): ?DOMElement
     {
         $isTranslation = $locale != $submission->getData('locale');
         $attributes = [];
@@ -1107,13 +1094,17 @@ class ArticleFront extends DOMDocument
             $attributes['xml:lang'] = LocaleConversion::toBcp47($locale);
         }
 
-        $parentElement->appendChild(JatsHelper::htmlToJatsElement(
+        $abstractElement = JatsHelper::htmlToJatsElement(
             $this,
             $isTranslation ? 'trans-abstract' : 'abstract',
             $html,
             $attributes,
             allowParagraphs: true
-        ));
+        );
+        if (!$abstractElement) {
+            return null;
+        }
+        $parentElement->appendChild($abstractElement);
 
         return $parentElement->lastChild;
     }
