@@ -156,12 +156,16 @@ class JatsHelper
         $jatsText = preg_replace('/&lt;ul\b(?:(?!&gt;).)*&gt;/is', '<list list-type="bullet">', $jatsText);
         $jatsText = preg_replace('/&lt;li\b(?:(?!&gt;).)*&gt;/is', '<list-item>', $jatsText);
 
-        // Convert links: &lt;a ... href=&quot;URL&quot; ...&gt; (any attribute order) → <ext-link>
+        // Convert links: &lt;a ... href=&quot;URL&quot; ...&gt; (any attribute order) → <ext-link>,
+        // or <email> for a mailto link, holding the address rather than the link text.
         // A link left without an href is reduced to its text, and a stray tag is dropped.
         $jatsText = preg_replace_callback(
             '/&lt;a\b((?:(?!&gt;).)*)&gt;(.*?)&lt;\/a&gt;/is',
             function (array $matches): string {
                 if (preg_match('/\bhref=(?:&quot;|\')(.*?)(?:&quot;|\')/i', $matches[1], $href)) {
+                    if (preg_match('/^mailto:(.+)$/i', $href[1], $mailto)) {
+                        return '<email>' . $mailto[1] . '</email>';
+                    }
                     return '<ext-link ext-link-type="uri" xlink:href="' . $href[1] . '">' . $matches[2] . '</ext-link>';
                 }
                 return $matches[2];
@@ -356,6 +360,9 @@ class JatsHelper
         if ($block->tagName !== 'p') {
             return;
         }
+        // Dropping an element can leave adjacent text nodes; merge them first, or only the
+        // last of them would be trimmed
+        $block->normalize();
         if ($block->firstChild?->nodeType === XML_TEXT_NODE) {
             $block->firstChild->nodeValue = preg_replace('/^[\s\x{00A0}]+/u', '', $block->firstChild->nodeValue);
         }
