@@ -88,9 +88,9 @@ class JatsHelper
     public static function htmlToJatsContent(string $html, bool $allowParagraphs = false): string
     {
         $html = PKPString::stripUnsafeHtml($html);
-        // <li> is kept in both modes: as a list item where block content is allowed, and as a
-        // separator between items where it is not
-        $allowedTags = '<i><em><b><strong><u><a><sup><sub><br><li>' . ($allowParagraphs ? '<p><ol><ul>' : '');
+        // <p> and <li> are kept in both modes: as blocks where block content is allowed, and as
+        // separators between the runs of text they held where it is not
+        $allowedTags = '<i><em><b><strong><u><a><sup><sub><br><p><li>' . ($allowParagraphs ? '<ol><ul>' : '');
         $cleaned = strip_tags($html, $allowedTags);
         // Stored rich-text HTML already has literal special characters entity-encoded (e.g. "&" as
         // "&amp;") - decode before re-escaping, or they'd be double-escaped (e.g. "&amp;amp;").
@@ -102,9 +102,9 @@ class JatsHelper
         // its closing "&gt;" rather than up to the next "&".
         $escaped = preg_replace('/&lt;br\b(?:(?!&gt;).)*&gt;/is', $allowParagraphs ? '<break/>' : ' ', $escaped);
         if (!$allowParagraphs) {
-            // Where a list cannot be built, use a separator
+            // Where a list cannot be built, use a separator; where a paragraph cannot, a space
             $escaped = preg_replace('/\s*&lt;\/li&gt;\s*&lt;li\b(?:(?!&gt;).)*&gt;\s*/is', '; ', $escaped);
-            $escaped = preg_replace('/\s*&lt;\/?li\b(?:(?!&gt;).)*&gt;\s*/is', ' ', $escaped);
+            $escaped = preg_replace('/\s*&lt;\/?(?:li|p)\b(?:(?!&gt;).)*&gt;\s*/is', ' ', $escaped);
             $escaped = trim(preg_replace('/ {2,}/', ' ', $escaped));
         }
         $jatsText = self::convertEscapedTags($escaped);
@@ -163,8 +163,14 @@ class JatsHelper
             '/&lt;a\b((?:(?!&gt;).)*)&gt;(.*?)&lt;\/a&gt;/is',
             function (array $matches): string {
                 if (preg_match('/\bhref=(?:&quot;|\')(.*?)(?:&quot;|\')/i', $matches[1], $href)) {
-                    if (preg_match('/^mailto:(.+)$/i', $href[1], $mailto)) {
-                        return '<email>' . $mailto[1] . '</email>';
+                    if (preg_match('/^mailto:([^?]+)/i', $href[1], $mailto)) {
+                        // Only the address is kept, decoded, and escaped again for the XML
+                        $address = htmlspecialchars(
+                            rawurldecode(html_entity_decode($mailto[1], ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+                            ENT_COMPAT,
+                            'UTF-8'
+                        );
+                        return '<email>' . $address . '</email>';
                     }
                     return '<ext-link ext-link-type="uri" xlink:href="' . $href[1] . '">' . $matches[2] . '</ext-link>';
                 }
@@ -372,16 +378,13 @@ class JatsHelper
     }
 
     /**
-     * Whether a block holds elements or text.
+     * Whether a block holds text, however deeply nested in inline markup, or a list, which has
+     * no text of its own. An inline element left without text, such as an empty link, does not count.
      */
     protected static function hasContent(DOMElement $block): bool
     {
-        foreach ($block->childNodes as $node) {
-            if ($node instanceof DOMElement || self::trimSpace($node->nodeValue) !== '') {
-                return true;
-            }
-        }
-        return false;
+        return self::trimSpace($block->textContent) !== ''
+            || $block->getElementsByTagName('list')->length > 0;
     }
 
     /**

@@ -70,15 +70,15 @@ class ArticleFront extends DOMDocument
             );
 
             // <notes> is a sibling of <article-meta> within <front> (front-model: journal-meta, article-meta, notes?).
-            $summaryOfChanges = (string) $workingPublication->getLocalizedData('summaryOfChanges', $workingPublication->getData('locale'));
-            if (JatsHelper::hasBlockContent($summaryOfChanges)) {
-                $frontNode->appendChild(JatsHelper::htmlToJatsElement(
-                    $this,
-                    'notes',
-                    $summaryOfChanges,
-                    ['notes-type' => 'update-notice'],
-                    allowParagraphs: true
-                ));
+            $notesElement = JatsHelper::htmlToJatsElement(
+                $this,
+                'notes',
+                (string) $workingPublication->getLocalizedData('summaryOfChanges', $workingPublication->getData('locale')),
+                ['notes-type' => 'update-notice'],
+                allowParagraphs: true
+            );
+            if ($notesElement) {
+                $frontNode->appendChild($notesElement);
             }
         }
 

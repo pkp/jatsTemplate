@@ -266,13 +266,18 @@ class JatsHelperTest extends PKPTestCase
 
     /**
      * Elements whose content model disallows <p> (e.g. mixed-citation, funding-statement) must
-     * have any source <p> tags stripped, not preserved or auto-wrapped.
+     * have any source <p> tags stripped, not preserved or auto-wrapped, with the runs of text
+     * the paragraphs held kept apart.
      */
     public function testStripsParagraphsWhenNotAllowed()
     {
         self::assertSame(
             '<root><mixed-citation>Some citation text.</mixed-citation></root>',
             $this->render('mixed-citation', '<p>Some citation text.</p>')
+        );
+        self::assertSame(
+            '<root><funding-statement>Grant A. Grant B.</funding-statement></root>',
+            $this->render('funding-statement', '<p>Grant A.</p><p>Grant B.</p>')
         );
     }
 
@@ -387,6 +392,29 @@ class JatsHelperTest extends PKPTestCase
         self::assertSame(
             '<root><p>Write to <email>editor@example.com</email> or see <ext-link ext-link-type="uri" xlink:href="https://example.com/">the site</ext-link>.</p></root>',
             $this->render('p', 'Write to <a href="mailto:editor@example.com">the editor</a> or see <a href="https://example.com/">the site</a>.')
+        );
+    }
+
+    /**
+     * Only the address of a mailto link is kept: its query string is dropped and percent-encoding decoded.
+     */
+    public function testMailtoLinkKeepsOnlyTheDecodedAddress()
+    {
+        self::assertSame(
+            '<root><p><email>a b@example.org</email> <email>x&amp;y@example.org</email></p></root>',
+            $this->render('p', '<a href="mailto:a%20b@example.org?subject=Hi&amp;body=z">me</a> <a href="mailto:x%26y@example.org">me</a>')
+        );
+    }
+
+    /**
+     * A paragraph holding no text, however deeply nested its inline markup, is dropped, and
+     * so is a link left without text.
+     */
+    public function testDropsParagraphsWithoutTextInsideInlineMarkup()
+    {
+        self::assertSame(
+            '<root><notes><p>Real</p></notes></root>',
+            $this->render('notes', '<p><b><i> </i></b></p><p>&nbsp;<b>&nbsp;</b></p><p><a href="https://example.com"></a></p><p>Real</p>', [], allowParagraphs: true)
         );
     }
 
