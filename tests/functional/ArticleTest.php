@@ -292,6 +292,7 @@ class ArticleTest extends PKPTestCase
         $journal->setData('publisherInstitution', 'journal-publisher');
         $journal->setData('onlineIssn', 'onlineIssn');
         $journal->setData('printIssn', 'printIssn');
+        $journal->setData('publishingMode', Journal::PUBLISHING_MODE_OPEN);
         $journal->setId($journalId);
 
         // Section

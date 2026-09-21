@@ -13,6 +13,7 @@
 namespace APP\plugins\generic\jatsTemplate\tests\functional;
 
 use APP\author\Author;
+use APP\decision\Repository as DecisionRepository;
 use APP\issue\Issue;
 use APP\journal\Journal;
 use APP\plugins\generic\jatsTemplate\classes\ArticleFront;
@@ -20,6 +21,7 @@ use APP\publication\Publication;
 use APP\publication\Repository;
 use APP\section\Section;
 use APP\submission\Submission;
+use Illuminate\Support\LazyCollection;
 use Mockery;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -27,6 +29,8 @@ use PKP\affiliation\Affiliation;
 use PKP\author\contributorRole\ContributorRole;
 use PKP\author\contributorRole\ContributorRoleIdentifier;
 use PKP\author\contributorRole\ContributorType;
+use PKP\decision\Collector as DecisionCollector;
+use PKP\decision\Decision;
 use PKP\doi\Doi;
 use PKP\galley\Galley;
 use PKP\oai\OAIRecord;
@@ -58,6 +62,14 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             \APP\submissionFile\Repository::class,
             Repository::class,
         ];
+    }
+
+    protected function tearDown(): void
+    {
+        // The decision repository is not instantiable without a request, so it is bound
+        // per test rather than backed up through getMockedContainerKeys()
+        app()->forgetInstance(DecisionRepository::class);
+        parent::tearDown();
     }
 
     /**
@@ -113,8 +125,8 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $author->setAffiliations([$affiliation]);
         $author->setEmail('someone@example.com');
         $author->setUrl('https://example.com');
-        $author->setBiography("<p>Test biography</p>", 'en');
-        $author->setCompetingInterests("<p>Competing interests</p>", 'en');
+        $author->setBiography('<p>Test biography</p>', 'en');
+        $author->setCompetingInterests('<p>Competing interests</p>', 'en');
         $author->setCountry('GB');
 
         // Publication
@@ -286,6 +298,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $journal->setData('publisherInstitution', 'journal-publisher');
         $journal->setData('onlineIssn', 'onlineIssn');
         $journal->setData('printIssn', 'printIssn');
+        $journal->setData('publishingMode', Journal::PUBLISHING_MODE_OPEN);
         $journal->setId($journalId);
 
         // Section
@@ -407,6 +420,202 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         self::assertEquals(
             trim(file_get_contents($this->xmlFilePath . 'articleMetaElement.xml')),
             trim($articleFrontElement->saveXML($xml))
+        );
+    }
+
+    /**
+     * Build the article-meta for the mock record, after the caller has adjusted the
+     * mocks, and return its permissions element.
+     */
+    private function createPermissionsElement(OAIRecord $record): \DOMElement
+    {
+        $submission = $record->getData('article'); /** @var Submission $submission */
+        $journal = $record->getData('journal'); /** @var Journal $journal */
+        $section = $record->getData('section'); /** @var Section $section */
+        $issue = $record->getData('issue'); /** @var Issue $issue */
+
+        $this->stubPreviousVersionRelation();
+
+        $articleFrontElement = new ArticleFront();
+        $xml = $articleFrontElement->createArticleMeta(
+            $submission,
+            $journal,
+            $section,
+            $issue,
+            $this->createRequestMockInstance(),
+            $submission->getCurrentPublication()
+        );
+
+        return $xml->getElementsByTagName('permissions')->item(0);
+    }
+
+    /**
+     * Bind a decision repository handing back the given decisions for any submission.
+     *
+     * @param array $decisions [decision type => date decided], in the order returned
+     */
+    private function bindDecisions(array $decisions): void
+    {
+        $objects = [];
+        foreach ($decisions as [$type, $dateDecided]) {
+            $decision = new Decision();
+            $decision->setData('decision', $type);
+            $decision->setData('dateDecided', $dateDecided);
+            $objects[] = $decision;
+        }
+
+        $collector = $this->createMock(DecisionCollector::class);
+        $collector->method('filterBySubmissionIds')->willReturnSelf();
+        $collector->method('getMany')->willReturn(LazyCollection::make($objects));
+
+        $repository = $this->createMock(DecisionRepository::class);
+        $repository->method('getCollector')->willReturn($collector);
+        app()->instance(DecisionRepository::class, $repository);
+    }
+
+    /**
+     * Build the article-meta for a submitted record and return its history element,
+     * or null when none was written.
+     */
+    private function createHistoryElement(array $decisions): ?\DOMElement
+    {
+        $record = $this->createOAIRecordMockObject();
+        $record->getData('article')->setData('dateSubmitted', '2026-01-13 09:30:00');
+        $this->bindDecisions($decisions);
+
+        $articleMeta = $this->createPermissionsElement($record)->parentNode;
+        $articleMeta->ownerDocument->formatOutput = true;
+
+        return $articleMeta->getElementsByTagName('history')->item(0);
+    }
+
+    /**
+     * Received and accepted dates are processing dates, so they go in history as dates,
+     * with the latest acceptance the one reported. The received event that harvesters
+     * have read from pub-history is kept as it was.
+     */
+    public function testCreateArticleMetaWritesReceivedAndAcceptedDatesInHistory()
+    {
+        $history = $this->createHistoryElement([
+            [Decision::ACCEPT, '2026-02-02 12:00:00'],
+            [Decision::PENDING_REVISIONS, '2026-01-20 12:00:00'],
+            [Decision::ACCEPT, '2026-03-01 12:00:00'],
+        ]);
+
+        $expected = <<<'XML'
+            <history>
+              <date date-type="received" iso-8601-date="2026-01-13">
+                <day>13</day>
+                <month>1</month>
+                <year>2026</year>
+              </date>
+              <date date-type="accepted" iso-8601-date="2026-03-01">
+                <day>1</day>
+                <month>3</month>
+                <year>2026</year>
+              </date>
+            </history>
+            XML;
+
+        self::assertSame($expected, trim($history->ownerDocument->saveXML($history)));
+
+        $pubHistory = $history->nextSibling;
+        self::assertSame('pub-history', $pubHistory->nodeName);
+        self::assertSame('received', $pubHistory->firstChild->getAttribute('event-type'));
+        self::assertSame(1, $pubHistory->getElementsByTagName('date')->length);
+    }
+
+    public function testCreateArticleMetaOmitsAcceptedDateWithoutAnAcceptance()
+    {
+        $history = $this->createHistoryElement([
+            [Decision::PENDING_REVISIONS, '2026-01-20 12:00:00'],
+        ]);
+
+        self::assertSame(1, $history->getElementsByTagName('date')->length);
+        self::assertSame('received', $history->getElementsByTagName('date')->item(0)->getAttribute('date-type'));
+    }
+
+    /**
+     * A subscription journal's article is not free to read unless its issue or the
+     * article itself is open access, but its licence is still machine-readable.
+     */
+    public function testCreateArticleMetaOmitsFreeToReadForSubscriptionContent()
+    {
+        $record = $this->createOAIRecordMockObject();
+        $record->getData('journal')->setData('publishingMode', Journal::PUBLISHING_MODE_SUBSCRIPTION);
+
+        $permissions = $this->createPermissionsElement($record);
+
+        self::assertSame(0, $permissions->getElementsByTagName('ali:free_to_read')->length);
+        self::assertSame(
+            'https://creativecommons.org/licenses/by/4.0/',
+            $permissions->getElementsByTagName('ali:license_ref')->item(0)->textContent
+        );
+    }
+
+    public function testCreateArticleMetaMarksOpenAccessArticleInSubscriptionJournalFreeToRead()
+    {
+        $record = $this->createOAIRecordMockObject();
+        $record->getData('journal')->setData('publishingMode', Journal::PUBLISHING_MODE_SUBSCRIPTION);
+        $record->getData('article')->getCurrentPublication()->setData('accessStatus', Submission::ARTICLE_ACCESS_OPEN);
+
+        $permissions = $this->createPermissionsElement($record);
+
+        self::assertSame(1, $permissions->getElementsByTagName('ali:free_to_read')->length);
+    }
+
+    public function testCreateArticleMetaMarksOpenAccessIssueInSubscriptionJournalFreeToRead()
+    {
+        $record = $this->createOAIRecordMockObject();
+        $record->getData('journal')->setData('publishingMode', Journal::PUBLISHING_MODE_SUBSCRIPTION);
+        $record->getData('issue')->setData('accessStatus', Issue::ISSUE_ACCESS_OPEN);
+
+        $permissions = $this->createPermissionsElement($record);
+
+        self::assertSame(1, $permissions->getElementsByTagName('ali:free_to_read')->length);
+    }
+
+    /**
+     * Convert an HTML abstract and return the resulting element as serialized XML.
+     */
+    private function convertAbstract(string $html, string $locale = 'en', ?string $abstractType = null): string
+    {
+        $submission = new Submission();
+        $submission->setData('locale', 'en');
+
+        $articleFront = new ArticleFront();
+        $articleMeta = $articleFront->appendChild($articleFront->createElement('article-meta'));
+
+        return $articleFront->saveXML($articleFront->createAbstractElement($articleMeta, $submission, $locale, $html, $abstractType));
+    }
+
+    /**
+     * The markup the abstract editor offers (bold, italic, sub/superscript and links) is
+     * converted, paragraphs are kept, and word spacing around inline elements survives.
+     */
+    public function testCreateAbstractElementKeepsInlineMarkup()
+    {
+        $html = '<p>Water is H<sub>2</sub>O and <em>never</em> <strong>not</strong>, see '
+            . '<a title="Source" href="https://example.org/">the source</a>.</p><p>Second paragraph.</p>';
+
+        self::assertSame(
+            '<abstract><p>Water is H<sub>2</sub>O and <italic>never</italic> <bold>not</bold>, see '
+            . '<ext-link ext-link-type="uri" xlink:href="https://example.org/">the source</ext-link>.</p>'
+            . '<p>Second paragraph.</p></abstract>',
+            $this->convertAbstract($html)
+        );
+    }
+
+    /**
+     * An abstract in another locale is a trans-abstract with its language, and a plain
+     * language summary carries its abstract-type.
+     */
+    public function testCreateAbstractElementForTranslatedPlainLanguageSummary()
+    {
+        self::assertSame(
+            '<trans-abstract abstract-type="plain-language-summary" xml:lang="fr-CA">'
+            . '<p>Un résumé.</p></trans-abstract>',
+            $this->convertAbstract('<p>Un résumé.</p>', 'fr_CA', 'plain-language-summary')
         );
     }
 

@@ -25,14 +25,13 @@ use Carbon\Carbon;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
-use Exception;
 use PKP\author\contributorRole\ContributorRoleIdentifier;
 use PKP\author\contributorRole\ContributorType;
 use PKP\author\creditRole\CreditRoleDegree;
 use PKP\core\PKPApplication;
 use PKP\core\PKPRequest;
-use PKP\core\PKPString;
 use PKP\db\DAORegistry;
+use PKP\decision\Decision;
 use PKP\facades\Locale;
 use PKP\galley\Galley;
 use PKP\i18n\LocaleConversion;
@@ -41,7 +40,6 @@ use PKP\publication\enums\UpdateType;
 use PKP\submission\GenreDAO;
 use PKP\submissionFile\SubmissionFile;
 use PKP\userGroup\UserGroup;
-use XSLTProcessor;
 
 class ArticleFront extends DOMDocument
 {
@@ -72,15 +70,15 @@ class ArticleFront extends DOMDocument
             );
 
             // <notes> is a sibling of <article-meta> within <front> (front-model: journal-meta, article-meta, notes?).
-            $summaryOfChanges = $workingPublication->getLocalizedData('summaryOfChanges', $workingPublication->getData('locale'));
-            if (!empty($summaryOfChanges)) {
-                $frontNode->appendChild(JatsHelper::htmlToJatsElement(
-                    $this,
-                    'notes',
-                    $summaryOfChanges,
-                    ['notes-type' => 'update-notice'],
-                    allowParagraphs: true
-                ));
+            $notesElement = JatsHelper::htmlToJatsElement(
+                $this,
+                'notes',
+                (string) $workingPublication->getLocalizedData('summaryOfChanges', $workingPublication->getData('locale')),
+                ['notes-type' => 'update-notice'],
+                allowParagraphs: true
+            );
+            if ($notesElement) {
+                $frontNode->appendChild($notesElement);
             }
         }
 
@@ -355,7 +353,7 @@ class ArticleFront extends DOMDocument
                     ->setAttribute('content-type', 'orgname');
                 $institutionWrapNode->appendChild($this->createElement('institution-id'))
                     ->appendChild($this->createTextNode($institution['id']))->parentNode
-                    ->setAttribute('institution-id-type', 'ROR');
+                    ->setAttribute('institution-id-type', 'ror');
             } else {
                 $affNode->appendChild($this->createElement('institution'))
                     ->appendChild($this->createTextNode($institution['name']))->parentNode
@@ -380,11 +378,10 @@ class ArticleFront extends DOMDocument
             }
 
             foreach ($competingInterests as $id => $competingInterest) {
-                $coiStatement = $competingInterest['coi-statement'];
                 $authorNotesNode->appendChild(JatsHelper::htmlToJatsElement(
                     $this,
                     'fn',
-                    $coiStatement,
+                    $competingInterest['coi-statement'],
                     ['fn-type' => 'coi-statement', 'id' => $id],
                     allowParagraphs: true
                 ));
@@ -508,8 +505,25 @@ class ArticleFront extends DOMDocument
             }
         }
 
-        if (($date = $submission->getData('dateSubmitted')) !== null) {
-            $date = Carbon::createFromTimestamp(strtotime($date));
+        // Processing dates go in <history>, which PMC reads: the date the submission was
+        // received, and the date it was accepted where an editor recorded that decision.
+        if (($dateSubmitted = $submission->getData('dateSubmitted')) !== null) {
+            $historyElement = $articleMetaElement->appendChild($this->createElement('history'));
+            $historyElement->appendChild($this->createHistoryDate('received', $dateSubmitted));
+
+            // The latest acceptance, should the submission have been accepted more than once
+            $acceptDecision = Repo::decision()->getCollector()
+                ->filterBySubmissionIds([$submission->getId()])
+                ->getMany()
+                ->filter(fn (Decision $decision) => $decision->getData('decision') === Decision::ACCEPT)
+                ->sortBy(fn (Decision $decision) => $decision->getData('dateDecided'))
+                ->last();
+            if ($acceptDecision?->getData('dateDecided')) {
+                $historyElement->appendChild($this->createHistoryDate('accepted', $acceptDecision->getData('dateDecided')));
+            }
+
+            // The received event is also kept in <pub-history>, as OAI harvesters have had it
+            $date = Carbon::createFromTimestamp(strtotime($dateSubmitted));
             $eventElement = $articleMetaElement->appendChild($this->createElement('pub-history'))
                 ->appendChild($this->createElement('event'));
             $eventElement->setAttribute('event-type', 'received');
@@ -544,9 +558,12 @@ class ArticleFront extends DOMDocument
                 $permissionsElement->appendChild($this->createElement('copyright-holder'))
                     ->appendChild($this->createTextNode($copyrightHolder));
             }
+            // NISO ALI free-to-read indicator (JATS4R permissions, PMC tagging guidelines)
+            if ($this->isFreeToRead($journal, $issue, $publication)) {
+                $permissionsElement->appendChild($this->createElement('ali:free_to_read'));
+            }
             if ($licenseUrl) {
-                $licenseElement = $permissionsElement->appendChild($this->createElement('license'))
-                    ->setAttribute('xlink:href', $licenseUrl)->parentNode;
+                $licenseElement = $permissionsElement->appendChild($this->createElement('license'));
                 if ($ccBadge) {
                     // The CC badge locale string is "<a...><img.../></a><p>prose sentence</p>";
                     // keep only the prose sentence - the image-badge anchor has no text content to preserve.
@@ -554,6 +571,20 @@ class ArticleFront extends DOMDocument
                     $contentType = str_contains($licenseUrl, '/by-nc') ? 'licensed non-commercial use' : 'open-access';
                     $licenseElement->appendChild(JatsHelper::htmlToJatsElement($this, 'license-p', $ccProse, ['content-type' => $contentType]));
                 }
+                // The machine-readable licence URL goes in ali:license_ref, and must match any
+                // licence link in license-p exactly. The badge prose links the canonical URL
+                // for the licence, so it is used wherever the URL appears.
+                $licenseRef = $licenseUrl;
+                foreach ($licenseElement->getElementsByTagName('ext-link') as $extLink) {
+                    if ($href = $extLink->getAttribute('xlink:href')) {
+                        $licenseRef = $href;
+                        break;
+                    }
+                }
+                $licenseElement->setAttribute('xlink:href', $licenseRef);
+                $licenseRefElement = $this->createElement('ali:license_ref');
+                $licenseRefElement->appendChild($this->createTextNode($licenseRef));
+                $licenseElement->insertBefore($licenseRefElement, $licenseElement->firstChild);
             }
         }
 
@@ -640,30 +671,9 @@ class ArticleFront extends DOMDocument
                 if (empty($abstract)) {
                     continue;
                 }
-                $abstract = PKPString::stripUnsafeHtml($abstract);
-                if (trim($abstract) === '') {
-                    continue;
-                }
-
-                $elementType = ($locale == $submission->getData('locale'))
-                    ? 'abstract'
-                    : 'trans-abstract';
-
-                // Generate from XSL
-                $abstractElement = $this->generateAbstractContentFromXSL(
-                    $submission,
-                    $elementType,
-                    $locale,
-                    $abstract,
-                    $articleMetaElement,
-                );
-
-                $articleMetaElement->appendChild($abstractElement);
-
-                if ($elementType === 'trans-abstract') {
+                $abstractElement = $this->createAbstractElement($articleMetaElement, $submission, $locale, $abstract);
+                if ($abstractElement?->nodeName === 'trans-abstract') {
                     $transAbstracts[] = $abstractElement;
-                } else {
-                    $articleMetaElement->appendChild($abstractElement);
                 }
             }
         }
@@ -675,36 +685,16 @@ class ArticleFront extends DOMDocument
                 if (empty($plainLanguageSummary)) {
                     continue;
                 }
-                $strippedSummary = PKPString::stripUnsafeHtml($plainLanguageSummary);
-                if (trim($strippedSummary) === '') {
-                    continue;
-                }
-                $elementType = ($locale == $submission->getData('locale'))
-                    ? 'abstract'
-                    : 'trans-abstract';
-
-                // Generate from XSL
-                $plainLanguageSummaryElement = $this->generateAbstractContentFromXSL(
-                    $submission,
-                    $elementType,
-                    $locale,
-                    $strippedSummary,
-                    $articleMetaElement,
-                    'plain-language-summary',
-                );
-
-                if ($elementType === 'trans-abstract') {
+                $plainLanguageSummaryElement = $this->createAbstractElement($articleMetaElement, $submission, $locale, $plainLanguageSummary, 'plain-language-summary');
+                if ($plainLanguageSummaryElement?->nodeName === 'trans-abstract') {
                     $transAbstracts[] = $plainLanguageSummaryElement;
-                } else {
-                    $articleMetaElement->appendChild($plainLanguageSummaryElement);
                 }
             }
         }
 
-        if (!empty($transAbstracts)) {
-            foreach ($transAbstracts as $transAbstractElement) {
-                $articleMetaElement->appendChild($transAbstractElement);
-            }
+        // Translations follow every abstract in the submission's locale
+        foreach ($transAbstracts as $transAbstractElement) {
+            $articleMetaElement->appendChild($transAbstractElement);
         }
 
         // Fetch keyword data from the publication object, this will only include the name attribute.
@@ -841,6 +831,36 @@ class ArticleFront extends DOMDocument
     }
 
     /**
+     * A history date: day, month and year as integers, with the date in ISO 8601 form on
+     * the element.
+     */
+    protected function createHistoryDate(string $dateType, string $date): DOMElement
+    {
+        $date = Carbon::parse($date);
+        $dateElement = $this->createElement('date');
+        $dateElement->setAttribute('date-type', $dateType);
+        $dateElement->setAttribute('iso-8601-date', $date->toDateString());
+        $dateElement->appendChild($this->createElement('day', (string) $date->day));
+        $dateElement->appendChild($this->createElement('month', (string) $date->month));
+        $dateElement->appendChild($this->createElement('year', (string) $date->year));
+
+        return $dateElement;
+    }
+
+    /**
+     * Whether the article is available without access barriers: published in an open access
+     * journal, or as an open access issue or article in a subscription journal.
+     */
+    protected function isFreeToRead(Journal $journal, ?Issue $issue, Publication $publication): bool
+    {
+        $publishingMode = $journal->getData('publishingMode');
+
+        return ($publishingMode !== null && (int) $publishingMode === Journal::PUBLISHING_MODE_OPEN)
+            || (int) $issue?->getAccessStatus() === Issue::ISSUE_ACCESS_OPEN
+            || (int) $publication->getData('accessStatus') === Submission::ARTICLE_ACCESS_OPEN;
+    }
+
+    /**
      * Get a galley's underlying submission file if its genre is marked as supplementary, else null.
      */
     protected function getSupplementaryGalleyFile(Galley $galley): ?SubmissionFile
@@ -908,8 +928,11 @@ class ArticleFront extends DOMDocument
                     ->setAttribute('vocab', 'credit')->parentNode
                     ->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
                     ->setAttribute('vocab-term', $roleTerm)->parentNode
-                    ->setAttribute('vocab-term-identifier', $role)->parentNode
-                    ->setAttribute('degree-contribution', $creditRoleTerms['degrees'][CreditRoleDegree::toLabel($degree)]);
+                    ->setAttribute('vocab-term-identifier', $role);
+                $degreeValue = CreditRoleDegree::toValue($degree);
+                if ($degreeValue && !empty($creditRoleTerms['degrees'][$degreeValue])) {
+                    $roleNode->setAttribute('degree-contribution', $creditRoleTerms['degrees'][$degreeValue]);
+                }
                 $roleNode->appendChild($this->createTextNode($roleTerm));
                 $roleNodes[] = $roleNode;
             }
@@ -1014,8 +1037,9 @@ class ArticleFront extends DOMDocument
                         ->setAttribute('rid', 'corresp-1');
                 }
 
-                // Competing interests
-                if ($authorCompetingInterests = $author->getCompetingInterests($submissionLocale)) {
+                // Competing interests: a blank statement gets neither a footnote nor a reference to one
+                $authorCompetingInterests = (string) $author->getCompetingInterests($submissionLocale);
+                if (JatsHelper::hasBlockContent($authorCompetingInterests)) {
                     $competingInterestTokenList = [];
                     $competingInterestsToken = 'con-' . (count($competingInterests) + 1);
                     $competingInterestTokenList[] = $competingInterestsToken;
@@ -1049,113 +1073,40 @@ class ArticleFront extends DOMDocument
      */
     protected function appendContributorBiography(DOMElement $contribElement, string $biography, string $locale): void
     {
-        $contribElement->appendChild(JatsHelper::htmlToJatsElement(
-            $this,
-            'bio',
-            $biography,
-            ['xml:lang' => $locale],
-            allowParagraphs: true
-        ));
+        $bioElement = JatsHelper::htmlToJatsElement($this, 'bio', $biography, ['xml:lang' => $locale], allowParagraphs: true);
+        if ($bioElement) {
+            $contribElement->appendChild($bioElement);
+        }
     }
 
     /**
-     * Generate JATS abstract or trans-abstract element from HTML using XSLT
-     *
-     * @param Submission $article The submission object
-     * @param string $elementType 'abstract' or 'trans-abstract'
-     * @param string $locale The locale of the abstract
-     * @param string $abstract The HTML abstract content
-     * @param DOMElement $parentElement The article-meta DOM element
-     * @param ?string $abstractType Optional abstract type (e.g., 'plain-language-summary')
-     *
-     * @throws Exception
-     *
-     * @return DOMElement|null The created abstract element or null if transformation fails
+     * Append an <abstract> for the submission's locale, or a <trans-abstract> for any other,
+     * holding the HTML converted to JATS paragraphs and inline markup.
      */
-    public function generateAbstractContentFromXSL(
-        Submission $article,
-        string $elementType,
-        string $locale,
-        string $abstract,
-        DOMElement $parentElement,
-        ?string $abstractType = null
-    ): ?DOMElement {
-        $xslPath = dirname(__FILE__, 2) . '/xsl/htmlAbstractToJats.xsl';
-        if (!file_exists($xslPath)) {
-            throw new Exception('unable to find the XSL file');
-        }
-
-        $xslDoc = new DOMDocument();
-        if (!$xslDoc->load($xslPath)) {
-            throw new Exception('JatsTemplate: Failed to load XSLT file ' . $xslPath);
-        }
-
-        $htmlDoc = new DOMDocument();
-
-        $htmlContent = $abstract;
-
-        if (!str_contains($htmlContent, '<p>')) { // Wrap plain text in <p> if no <p> tags are present
-            $htmlContent = "<p>$htmlContent</p>";
-        }
-
-        libxml_use_internal_errors(true);
-        if (!$htmlDoc->loadHTML('<?xml encoding="UTF-8"?>' . $htmlContent)) {
-            error_log('JatsTemplate: Failed to load HTML abstract for article ' . $article->getId() . ': ' . print_r(libxml_get_errors(), true));
-            libxml_clear_errors();
-            return null;
-        }
-        libxml_use_internal_errors(false);
-
-        $processor = new XSLTProcessor();
-        if (!$processor->importStylesheet($xslDoc)) {
-            error_log('JatsTemplate: Failed to import XSLT stylesheet for article ' . $article->getId());
-            return null;
-        }
-
-        $jatsFragment = $processor->transformToDoc($htmlDoc);
-        if (!$jatsFragment) {
-            error_log('JatsTemplate: XSLT transformation failed for article ' . $article->getId() . ': No output');
-            return null;
-        }
-
-        $abstractElement = $parentElement->appendChild($this->createElement($elementType));
-
-        // Set abstract-type if provided
-        // useful case such as plain language summary which has same `abstract/trans-abstract` tag but with
-        // abstract-type="plain-language-summary" attribute
+    public function createAbstractElement(DOMElement $parentElement, Submission $submission, string $locale, string $html, ?string $abstractType = null): ?DOMElement
+    {
+        $isTranslation = $locale != $submission->getData('locale');
+        $attributes = [];
         if ($abstractType) {
-            $abstractElement->setAttribute('abstract-type', $abstractType);
+            $attributes['abstract-type'] = $abstractType;
+        }
+        if ($isTranslation) {
+            $attributes['xml:lang'] = LocaleConversion::toBcp47($locale);
         }
 
-        // Set xml:lang only for non primary e.g. <trans-abstract> tag
-        if ($elementType === 'trans-abstract') {
-            $abstractElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
+        $abstractElement = JatsHelper::htmlToJatsElement(
+            $this,
+            $isTranslation ? 'trans-abstract' : 'abstract',
+            $html,
+            $attributes,
+            allowParagraphs: true
+        );
+        if (!$abstractElement) {
+            return null;
         }
+        $parentElement->appendChild($abstractElement);
 
-        // Handle XSLT output: expect <abstract> root
-        $rootNodes = $jatsFragment->childNodes;
-        $hasAbstract = false;
-        foreach ($rootNodes as $node) {
-            if ($node instanceof DOMElement && $node->tagName === 'abstract') {
-                // Proper <abstract> root
-                foreach ($node->childNodes as $child) {
-                    $abstractElement->appendChild($this->importNode($child, true));
-                }
-                $hasAbstract = true;
-                break;
-            }
-        }
-
-        // Fallback: handle multiple <p> nodes or fragment
-        if (!$hasAbstract) {
-            foreach ($rootNodes as $node) {
-                if ($node instanceof DOMElement && $node->tagName === 'p') {
-                    $abstractElement->appendChild($this->importNode($node, true));
-                }
-            }
-        }
-
-        return $abstractElement;
+        return $parentElement->lastChild;
     }
 
     /**

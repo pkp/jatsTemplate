@@ -75,6 +75,7 @@ class Article extends DOMDocument
             ->setAttribute('xml:lang', LocaleConversion::toBcp47($submission->getData('locale')))->parentNode
             ->setAttribute('xmlns:mml', 'http://www.w3.org/1998/Math/MathML')->parentNode
             ->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance')->parentNode
+            ->setAttribute('xmlns:ali', 'http://www.niso.org/schemas/ali/1.0/')->parentNode
             ->setAttribute('dtd-version', self::JATS_VERSION)->parentNode;
 
         $articleFront = new ArticleFront();

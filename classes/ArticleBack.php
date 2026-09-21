@@ -21,6 +21,7 @@ use PKP\citation\Citation;
 use PKP\citation\enum\CitationSourceType;
 use PKP\citation\enum\CitationType;
 use PKP\dataCitation\DataCitation;
+use PKP\i18n\LocaleConversion;
 
 class ArticleBack extends DOMDocument
 {
@@ -33,11 +34,23 @@ class ArticleBack extends DOMDocument
 
         $citations = $publication->getData('citations');
         $dataCitations = $publication->getData('dataCitations');
+        $dataAvailability = array_filter(
+            $publication->getData('dataAvailability') ?? [],
+            fn (?string $statement) => trim(strip_tags((string) $statement)) !== ''
+        );
 
-        if ($citations->isNotEmpty() || $dataCitations->isNotEmpty()) {
+        if (!empty($dataAvailability) || $citations->isNotEmpty() || $dataCitations->isNotEmpty()) {
             // create element back
             $backElement = $this->appendChild($this->createElement('back'));
 
+            // Data availability statement(s) precede the reference list
+            // s. https://jats.nlm.nih.gov/archiving/tag-library/1.2/chapter/tag-data-avail.html
+            foreach ($dataAvailability as $locale => $statement) {
+                $this->appendDataAvailabilitySection($backElement, $statement, $locale);
+            }
+        }
+
+        if ($citations->isNotEmpty() || $dataCitations->isNotEmpty()) {
             $refListElement = $backElement->appendChild($this->createElement('ref-list'));
             $i = 1;
             foreach ($citations ?? [] as $citation) {
@@ -67,6 +80,29 @@ class ArticleBack extends DOMDocument
         }
 
         return $backElement;
+    }
+
+    /**
+     * Append a data availability <sec> element for a single locale
+     */
+    protected function appendDataAvailabilitySection(DOMElement $backElement, string $statement, string $locale): void
+    {
+        $secElement = JatsHelper::htmlToJatsElement(
+            $this,
+            'sec',
+            $statement,
+            ['sec-type' => 'data-availability', 'xml:lang' => LocaleConversion::toBcp47($locale)],
+            allowParagraphs: true
+        );
+        if (!$secElement) {
+            return;
+        }
+        $backElement->appendChild($secElement);
+        // The section title must precede its paragraphs
+        $secElement = $backElement->lastChild;
+        $titleElement = $this->createElement('title');
+        $titleElement->appendChild($this->createTextNode(__('submission.dataAvailability', [], $locale)));
+        $secElement->insertBefore($titleElement, $secElement->firstChild);
     }
 
     /**
@@ -266,8 +302,6 @@ class ArticleBack extends DOMDocument
      *
      * @param DOMElement $elementCitation The element-citation DOM element to append to
      * @param DataCitation $dataCitation The data citation object containing the citation information
-     * 
-     * @return void
      */
     protected function appendDataCitation(DOMElement $elementCitation, DataCitation $dataCitation): void
     {

@@ -20,12 +20,15 @@ use APP\plugins\generic\jatsTemplate\classes\ArticleBack;
 use APP\publication\Publication;
 use APP\section\Section;
 use APP\submission\Submission;
+use DOMDocument;
+use DOMXPath;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PKP\affiliation\Affiliation;
 use PKP\author\contributorRole\ContributorRole;
 use PKP\author\contributorRole\ContributorRoleIdentifier;
 use PKP\author\contributorRole\ContributorType;
+use PKP\citation\Citation;
 use PKP\doi\Doi;
 use PKP\galley\Galley;
 use PKP\oai\OAIRecord;
@@ -34,6 +37,8 @@ use PKP\tests\PKPTestCase;
 #[CoversClass(ArticleBack::class)]
 class ArticleBackTest extends PKPTestCase
 {
+    use ValidatesAgainstJats;
+
     private string $xmlFilePath = 'plugins/generic/jatsTemplate/tests/data/';
 
     /**
@@ -49,7 +54,6 @@ class ArticleBackTest extends PKPTestCase
 
     /**
      * create mock OAIRecord object
-     * @return OAIRecord
      */
     private function createOAIRecordMockObject(): OAIRecord
     {
@@ -77,8 +81,8 @@ class ArticleBackTest extends PKPTestCase
         $author->setAffiliations([$affiliation]);
         $author->setEmail('someone@example.com');
         $author->setUrl('https://example.com');
-        $author->setBiography("<p>Test biography</p>", 'en');
-        $author->setCompetingInterests("<p>Competing interests</p>", 'en');
+        $author->setBiography('<p>Test biography</p>', 'en');
+        $author->setCompetingInterests('<p>Competing interests</p>', 'en');
 
         // Publication
         /** @var Doi|MockObject $publicationDoiObject */
@@ -216,16 +220,108 @@ class ArticleBackTest extends PKPTestCase
     }
     /**
      * test back element if citations table doesn't have records
+     *
      * @throws \DOMException
      */
     public function testCreate()
     {
         $OAIRecord = $this->createOAIRecordMockObject();
-        $record =& $OAIRecord;
-        $submission =& $record->getData('article');
+        $record = & $OAIRecord;
+        $submission = & $record->getData('article');
         $publication = $submission->getCurrentPublication();
 
         $articleBackElement = new ArticleBack();
         self::assertNull($articleBackElement->create($publication));
+    }
+
+    /**
+     * A data availability statement alone is enough to produce a back element, with one
+     * section per locale and no empty reference list
+     */
+    public function testDataAvailabilityWithoutCitations(): void
+    {
+        $publication = $this->createOAIRecordMockObject()->getData('article')->getCurrentPublication();
+        $publication->setData('dataAvailability', [
+            'en' => '<p>Data are available at <a href="https://example.com/data">https://example.com/data</a>.</p>',
+            'de' => '<p>Daten sind <b>verfügbar</b>.</p>',
+            'fr' => '<p></p>',
+        ]);
+
+        $articleBack = new ArticleBack();
+        $backNode = $articleBack->create($publication);
+        self::assertNotNull($backNode);
+
+        $xpath = new DOMXPath($articleBack);
+        self::assertCount(0, $xpath->query('/back/ref-list'));
+
+        $sections = $xpath->query('/back/sec[@sec-type="data-availability"]');
+        self::assertCount(2, $sections);
+
+        $enSection = $sections->item(0);
+        self::assertEquals('en', $enSection->getAttribute('xml:lang'));
+        self::assertEquals('title', $enSection->firstChild->nodeName);
+        self::assertEquals('Data Availability Statement', $enSection->firstChild->textContent);
+        self::assertCount(1, $xpath->query('p', $enSection));
+        $link = $xpath->query('p/ext-link', $enSection)->item(0);
+        self::assertEquals('https://example.com/data', $link->getAttribute('xlink:href'));
+
+        $deSection = $sections->item(1);
+        self::assertEquals('de', $deSection->getAttribute('xml:lang'));
+        self::assertEquals('verfügbar', $xpath->query('p/bold', $deSection)->item(0)->textContent);
+    }
+
+    /**
+     * The data availability section precedes the reference list
+     */
+    public function testDataAvailabilityPrecedesReferenceList(): void
+    {
+        $publication = $this->createOAIRecordMockObject()->getData('article')->getCurrentPublication();
+        $publication->setData('dataAvailability', ['en' => '<p>Data are available on request.</p>']);
+        $citation = new Citation();
+        $citation->setData('rawCitation', 'Author, A. (2020). A cited work.');
+        $publication->setData('citations', collect([$citation]));
+
+        $articleBack = new ArticleBack();
+        $articleBack->create($publication);
+
+        $children = [];
+        foreach ($articleBack->documentElement->childNodes as $child) {
+            $children[] = $child->nodeName;
+        }
+        self::assertEquals(['sec', 'ref-list'], $children);
+    }
+
+    /**
+     * Test that the back element is valid against the JATS 1.2 DTD
+     */
+    public function testValidatesAgainstJats12(): void
+    {
+        $publication = $this->createOAIRecordMockObject()->getData('article')->getCurrentPublication();
+        $publication->setData('dataAvailability', [
+            'en' => '<p>Data are available at <a href="https://example.com/data">the repository</a>.</p><p>Code is on request.</p>',
+            'de' => 'Daten sind verfügbar.',
+        ]);
+        $citation = new Citation();
+        $citation->setData('rawCitation', 'Author, A. (2020). A cited work.');
+        $publication->setData('citations', collect([$citation]));
+
+        $articleBack = new ArticleBack();
+        $backNode = $articleBack->create($publication);
+
+        // Wrap the back element in a minimal valid article
+        $doc = new DOMDocument();
+        $doc->loadXML(
+            '<article xmlns:xlink="http://www.w3.org/1999/xlink" dtd-version="1.2">'
+            . '<front><journal-meta><journal-id>j</journal-id><issn>0000-0000</issn></journal-meta>'
+            . '<article-meta><title-group><article-title>Title</article-title></title-group></article-meta></front>'
+            . '</article>'
+        );
+        $doc->documentElement->appendChild($doc->importNode($backNode, true));
+
+        $xpath = new DOMXPath($doc);
+        self::assertCount(2, $xpath->query('/article/back/sec[@sec-type="data-availability"]'));
+        self::assertCount(2, $xpath->query('/article/back/sec[@xml:lang="en"]/p'));
+        self::assertCount(1, $xpath->query('/article/back/sec[@xml:lang="de"]/p'));
+        $this->assertXmlValidatesAgainstJats12($doc);
     }
 }

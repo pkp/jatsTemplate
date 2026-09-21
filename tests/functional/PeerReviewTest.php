@@ -525,6 +525,39 @@ class PeerReviewTest extends PKPTestCase
         self::assertEquals('doi', $related->item(0)->getAttribute('document-id-type'));
     }
 
+    /**
+     * @id is optional in JATS but required by PMC. Several related-objects can point at the
+     * same DOI - every report links to the same reviewed version - so each gets an id of its
+     * own, which the DTD's ID type requires to be unique.
+     */
+    public function testEachRelatedObjectGetsItsOwnId(): void
+    {
+        $doc = $this->buildDocument([
+            $this->createRound(
+                [
+                    $this->createReview(['id' => 1, 'doi' => '10.1234/review.1']),
+                    $this->createReview(['id' => 2, 'doi' => '10.1234/review.2']),
+                ],
+                'Version of Record 1.0',
+                1,
+                $this->createAuthorResponse(),
+                '10.5555/article.v1'
+            ),
+        ]);
+
+        $related = $this->query($doc, '//related-object');
+        self::assertGreaterThan(1, $related->count());
+
+        $ids = [];
+        foreach ($related as $relatedObject) {
+            $ids[] = $relatedObject->getAttribute('id');
+        }
+
+        self::assertNotContains('', $ids, 'Every related-object should carry an id');
+        self::assertSame($ids, array_unique($ids), 'Every related-object id should be unique');
+        $this->assertXmlValidatesAgainstJats12($doc);
+    }
+
     public function testReviewerReportWithoutAReviewedDoiOmitsTheArticleLink(): void
     {
         $doc = $this->buildDocument([$this->createRound([$this->createReview()])]);
@@ -828,6 +861,30 @@ class PeerReviewTest extends PKPTestCase
         $paragraphs = $this->query($doc, '//sub-article/body/p');
         self::assertCount(1, $paragraphs);
         self::assertEquals('Only line.', $paragraphs->item(0)->textContent);
+    }
+
+    /**
+     * Content the author left outside a paragraph - a heading run before the first one - is a
+     * paragraph of its own. The parent's content model is block-level, so leaving it bare would
+     * put text and inline markup straight into a <sec> or <body>.
+     */
+    public function testContentOutsideAParagraphBecomesItsOwnParagraph(): void
+    {
+        $doc = $this->buildDocument([
+            $this->createRound([
+                $this->createReview(['reviewerComments' => ["<b>Summary</b>\n<p>The reviewer's comments.</p>"]]),
+            ]),
+        ]);
+
+        $paragraphs = $this->query($doc, '//sub-article/body/p');
+        self::assertCount(2, $paragraphs);
+        self::assertEquals('Summary', $paragraphs->item(0)->textContent);
+        self::assertCount(1, $this->query($doc, '//sub-article/body/p[1]/bold'));
+        self::assertEquals("The reviewer's comments.", $paragraphs->item(1)->textContent);
+
+        // Nothing may sit directly in the body but the paragraphs themselves
+        self::assertCount(0, $this->query($doc, '//sub-article/body/bold'));
+        $this->assertXmlValidatesAgainstJats12($doc);
     }
 
     /**

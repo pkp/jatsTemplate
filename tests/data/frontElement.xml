@@ -97,7 +97,7 @@
     <aff id="aff-1">
       <institution-wrap>
         <institution content-type="orgname">author-affiliation</institution>
-        <institution-id institution-id-type="ROR">https://ror.org/05ek4tb53</institution-id>
+        <institution-id institution-id-type="ror">https://ror.org/05ek4tb53</institution-id>
       </institution-wrap>
     </aff>
     <author-notes>
@@ -120,7 +120,9 @@
       <copyright-statement>Copyright (c) year article-copyright</copyright-statement>
       <copyright-year>year</copyright-year>
       <copyright-holder>article-copyright</copyright-holder>
-      <license xlink:href="https://creativecommons.org/licenses/by/4.0">
+      <ali:free_to_read/>
+      <license xlink:href="https://creativecommons.org/licenses/by/4.0/">
+        <ali:license_ref>https://creativecommons.org/licenses/by/4.0/</ali:license_ref>
         <license-p content-type="open-access">This work is licensed under a <ext-link ext-link-type="uri" xlink:href="https://creativecommons.org/licenses/by/4.0/">Creative Commons Attribution 4.0 International License</ext-link>.</license-p>
       </license>
     </permissions>

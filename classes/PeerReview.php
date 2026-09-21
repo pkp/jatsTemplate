@@ -55,6 +55,12 @@ class PeerReview extends DOMDocument
     protected const ROLE_AUTHOR = 'Author';
 
     /**
+     * Sequence behind the @id given to each <related-object>. Optional in JATS 1.2 but required for PMC,
+     * so it's included directly in the exported JATS.
+     */
+    protected int $relatedObjectSequence = 0;
+
+    /**
      * Create a sub-article DOMNode for each publicly visible peer review of a submission.
      *
      * Reviews are gathered through the shared peer review resource, so only reviews that are
@@ -311,6 +317,7 @@ class PeerReview extends DOMDocument
     protected function appendRelatedObject(DOMElement $parent, string $doi, string $documentType): void
     {
         $relatedObject = $parent->appendChild($this->createElement('related-object'));
+        $relatedObject->setAttribute('id', 'ro' . ++$this->relatedObjectSequence);
         $relatedObject->setAttribute('document-id', $doi);
         $relatedObject->setAttribute('document-id-type', 'doi');
         $relatedObject->setAttribute('document-type', $documentType);
@@ -554,28 +561,9 @@ class PeerReview extends DOMDocument
      */
     protected function appendSanitizedContent(DOMElement $parent, string $html): void
     {
-        // Keep only safe formatting tags supported by JATS
-        // <br> is included for later processing.
-        $allowedTags = '<i><em><b><strong><u><a><sup><sub><p><br>';
-        $cleaned = strip_tags($html, $allowedTags);
-        // Decode before re-escaping so an already-escaped character is not escaped twice.
-        // Anything decoding to markup other than the allowed tags stays escaped below, and so
-        // survives as the literal text the author wrote.
-        $cleaned = html_entity_decode($cleaned, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $escaped = htmlspecialchars($cleaned, ENT_COMPAT, 'UTF-8');
-        $converted = JatsHelper::htmlToJats($escaped);
-
-        // Ensure the content is wrapped in at least one block-level paragraph. Line breaks are
-        // still escaped at this point, so they cannot be mistaken for an existing paragraph.
-        if (!str_contains($converted, '<p>')) {
-            $converted = "<p>{$converted}</p>";
-        }
-
-        // JATS 1.2 has no in-paragraph line break, so a soft break ends the paragraph and
-        // starts the next one. A break that already sat on a paragraph boundary would double
-        // up the tags, and one against an edge would leave an empty paragraph.
-        $converted = preg_replace('/&lt;br\s*\/?&gt;/i', '</p><p>', $converted);
-        $converted = str_replace(['</p></p>', '<p><p>', '<p></p>'], ['</p>', '<p>', ''], $converted);
+        // The parent's content model is block-level: paragraphs, lists and line breaks are
+        // normalized the same way as every other block-level field
+        $converted = JatsHelper::htmlToJatsContent($html, allowParagraphs: true);
 
         $fragment = $this->createDocumentFragment();
         // Suppress warnings from malformed user-provided content
