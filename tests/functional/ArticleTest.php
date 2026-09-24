@@ -3,8 +3,8 @@
 /**
  * @file ArticleTest.php
  *
- * Copyright (c) 2003-2025 Simon Fraser University
- * Copyright (c) 2003-2025 John Willinsky
+ * Copyright (c) 2003-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article unit tests
@@ -221,17 +221,5 @@ class ArticleTest extends PKPTestCase
         $article = new Article();
         $article->convertOAIToXml($record, $request);
         self::assertXmlStringEqualsXmlFile($this->xmlFilePath . 'ie1.xml', $article->saveXml());
-    }
-
-    public function testMapHtmlTagsForTitle()
-    {
-        $request = $this->createRequestMockInstance();
-        $expected = '<bold>test</bold>';
-        $htmlString = '<b>test</b>';
-        $record = $this->createOAIRecordMockObject();
-        $article = new Article();
-        $article->convertOAIToXml($record, $request);
-        $actual = $article->mapHtmlTagsForTitle($htmlString);
-        self::assertEquals($expected, $actual);
     }
 }

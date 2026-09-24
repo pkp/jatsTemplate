@@ -3,8 +3,8 @@
 /**
  * @file Article.php
  *
- * Copyright (c) 2003-2022 Simon Fraser University
- * Copyright (c) 2003-2022 John Willinsky
+ * Copyright (c) 2003-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article
@@ -63,26 +63,5 @@ class Article extends \DOMDocument
 
         $articleBack = new ArticleBack();
         $articleElement->appendChild($this->importNode($articleBack->create($publication), true));
-    }
-
-    /**
-     * Map the specific HTML tags in title/ sub title for JATS schema compability
-     * @see https://jats.nlm.nih.gov/publishing/0.4/xsd/JATS-journalpublishing0.xsd
-     *
-     * @param  string $htmlTitle The submission title/sub title as in HTML
-     * @return string
-     */
-    public function mapHtmlTagsForTitle(string $htmlTitle): string
-    {
-        $mappings = [
-            '<b>'   => '<bold>',
-            '</b>'  => '</bold>',
-            '<i>'   => '<italic>',
-            '</i>'  => '</italic>',
-            '<u>'   => '<underline>',
-            '</u>'  => '</underline>',
-        ];
-
-        return str_replace(array_keys($mappings), array_values($mappings), $htmlTitle);
     }
 }

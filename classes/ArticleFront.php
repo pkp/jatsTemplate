@@ -3,8 +3,8 @@
 /**
  * @file ArticleFront.php
  *
- * Copyright (c) 2003-2025 Simon Fraser University
- * Copyright (c) 2003-2025 John Willinsky
+ * Copyright (c) 2003-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article front element
@@ -155,12 +155,20 @@ class ArticleFront extends \DOMDocument
 
         $titleGroupElement = $articleMetaElement->appendChild($this->createElement('title-group'));
 
-        $titleGroupElement->appendChild($this->createElement('article-title', $article->mapHtmlTagsForTitle($publication->getLocalizedTitle(null, 'html'))))
-            ->setAttribute('xml:lang', LocaleConversion::toBcp47($submission->getData('locale')));
+        $titleGroupElement->appendChild(JatsHelper::htmlToJatsElement(
+            $this,
+            'article-title',
+            $publication->getLocalizedTitle(null, 'html'),
+            ['xml:lang' => LocaleConversion::toBcp47($submission->getData('locale'))]
+        ));
 
-        if (!empty($subtitle = $article->mapHtmlTagsForTitle($publication->getLocalizedSubTitle(null, 'html')))) {
-            $titleGroupElement->appendChild($this->createElement('subtitle', $subtitle))
-                ->setAttribute('xml:lang', LocaleConversion::toBcp47($submission->getData('locale')));
+        if (!empty($subtitle = $publication->getLocalizedSubTitle(null, 'html'))) {
+            $titleGroupElement->appendChild(JatsHelper::htmlToJatsElement(
+                $this,
+                'subtitle',
+                $subtitle,
+                ['xml:lang' => LocaleConversion::toBcp47($submission->getData('locale'))]
+            ));
         }
 
         // Include translated submission titles
@@ -169,16 +177,18 @@ class ArticleFront extends \DOMDocument
                 continue;
             }
 
-            if (trim($translatedTitle = $article->mapHtmlTagsForTitle($publication->getLocalizedTitle($locale, 'html'))) === '') {
+            $translatedTitle = $publication->getLocalizedTitle($locale, 'html');
+            if (trim($translatedTitle) === '') {
                 continue;
             }
-            $titleGroupElement->appendChild($this->createElement('trans-title-group'))
-                ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode
-                ->appendChild($this->createElement('trans-title', $translatedTitle));
 
-            if (!empty($translatedSubTitle = $article->mapHtmlTagsForTitle($publication->getLocalizedSubTitle($locale, 'html')))) {
-                $titleGroupElement->appendChild($this->createElement('trans-subtitle', $translatedSubTitle));
+            $transTitleGroupElement = $this->createElement('trans-title-group');
+            $transTitleGroupElement->appendChild(JatsHelper::htmlToJatsElement($this, 'trans-title', $translatedTitle));
+            if (!empty($translatedSubTitle = $publication->getLocalizedSubTitle($locale, 'html'))) {
+                $transTitleGroupElement->appendChild(JatsHelper::htmlToJatsElement($this, 'trans-subtitle', $translatedSubTitle));
             }
+            $titleGroupElement->appendChild($transTitleGroupElement)
+                ->setAttribute('xml:lang', LocaleConversion::toBcp47($locale))->parentNode;
         }
         $contribGroup = $this->createArticleContribGroup($submission, $publication);
 
