@@ -355,12 +355,15 @@ class ArticleFront extends \DOMDocument
                 ->setAttribute('count', $pageCount);
         }
 
-        $customMetaGroupElement = $articleMetaElement->appendChild($this->createElement('custom-meta-group'));
         $layoutFiles = Repo::submissionFile()->getCollector()
             ->filterBySubmissionIds([$submission->getId()])
             ->filterByFileStages([SubmissionFile::SUBMISSION_FILE_PRODUCTION_READY])
             ->getMany();
 
+        // A custom-meta-group must hold at least one custom-meta, so only add it when there are files to list
+        $customMetaGroupElement = $layoutFiles->isNotEmpty()
+            ? $articleMetaElement->appendChild($this->createElement('custom-meta-group'))
+            : null;
         foreach ($layoutFiles as $layoutFile) {
             $sourceFileUrl = $request->getDispatcher()->url(
                 $request,

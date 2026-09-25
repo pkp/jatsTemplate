@@ -3,8 +3,8 @@
 /**
  * @file ArticleBackTest.php
  *
- * Copyright (c) 2003-2025 Simon Fraser University
- * Copyright (c) 2003-2025 John Willinsky
+ * Copyright (c) 2003-2026 Simon Fraser University
+ * Copyright (c) 2003-2026 John Willinsky
  * Distributed under the GNU GPL v3. For full terms see the file LICENSE.
  *
  * @brief JATS xml article back element unit tests
@@ -27,6 +27,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use APP\plugins\generic\jatsTemplate\classes\Article;
 use APP\plugins\generic\jatsTemplate\classes\ArticleBack;
 use PKP\affiliation\Affiliation;
+use PKP\citation\Citation;
+use DOMXPath;
 
 #[CoversClass(ArticleBack::class)]
 class ArticleBackTest extends PKPTestCase
@@ -207,7 +209,109 @@ class ArticleBackTest extends PKPTestCase
         $publication = $submission->getCurrentPublication();
 
         $articleBackElement = new ArticleBack();
-        $xml = $articleBackElement->create($publication);
-        self::assertXmlStringEqualsXmlString('<back/>', $articleBackElement->saveXML($xml));
+        self::assertNull($articleBackElement->create($publication));
+    }
+
+    /**
+     * No back element is created when every data availability statement is blank once
+     * converted and there are no citations
+     */
+    public function testNoBackElementWhenAllStatementsAreBlank(): void
+    {
+        $publication = $this->createOAIRecordMockObject()->getData('article')->getCurrentPublication();
+        $publication->setData('dataAvailability', [
+            'en' => '<p>&nbsp;</p>',
+            'fr' => '<p><br></p>',
+        ]);
+
+        $articleBack = new ArticleBack();
+        self::assertNull($articleBack->create($publication));
+        self::assertNull($articleBack->documentElement);
+    }
+
+    /**
+     * A data availability statement alone produces one section per non-empty locale and
+     * no empty reference list
+     */
+    public function testDataAvailabilityWithoutCitations(): void
+    {
+        $publication = $this->createOAIRecordMockObject()->getData('article')->getCurrentPublication();
+        $publication->setData('dataAvailability', [
+            'en' => '<p>Data are available at <a href="https://example.com/data">https://example.com/data</a>.</p>',
+            'de' => '<p>Daten sind <b>verfügbar</b>.</p>',
+            'fr' => '<p></p>',
+        ]);
+
+        $articleBack = new ArticleBack();
+        $articleBack->create($publication);
+
+        $xpath = new DOMXPath($articleBack);
+        self::assertCount(0, $xpath->query('/back/ref-list'));
+
+        $sections = $xpath->query('/back/sec[@sec-type="data-availability"]');
+        self::assertCount(2, $sections);
+
+        $enSection = $sections->item(0);
+        self::assertEquals('en', $enSection->getAttribute('xml:lang'));
+        self::assertEquals('title', $enSection->firstChild->nodeName);
+        self::assertEquals('Data Availability Statement', $enSection->firstChild->textContent);
+        self::assertCount(1, $xpath->query('p', $enSection));
+        $link = $xpath->query('p/ext-link', $enSection)->item(0);
+        self::assertEquals('https://example.com/data', $link->getAttribute('xlink:href'));
+
+        $deSection = $sections->item(1);
+        self::assertEquals('de', $deSection->getAttribute('xml:lang'));
+        self::assertEquals('verfügbar', $xpath->query('p/bold', $deSection)->item(0)->textContent);
+    }
+
+    /**
+     * A statement that passes the empty-text check but holds no block content (e.g. only a
+     * non-breaking space) is skipped rather than failing the export
+     */
+    public function testDataAvailabilityWithOnlyBlankBlockContentIsSkipped(): void
+    {
+        $publication = $this->createOAIRecordMockObject()->getData('article')->getCurrentPublication();
+        $publication->setData('dataAvailability', [
+            'en' => '<p>Data are available on request.</p>',
+            'fr' => '<p>&nbsp;</p>',
+            'de' => '<p><br></p>',
+        ]);
+
+        $articleBack = new ArticleBack();
+        $articleBack->create($publication);
+
+        $xpath = new DOMXPath($articleBack);
+        $sections = $xpath->query('/back/sec[@sec-type="data-availability"]');
+        self::assertCount(1, $sections);
+        self::assertEquals('en', $sections->item(0)->getAttribute('xml:lang'));
+    }
+
+    /**
+     * The data availability section precedes the reference list, and plain-text and
+     * multi-paragraph statements are carried as paragraphs
+     */
+    public function testDataAvailabilityPrecedesReferenceList(): void
+    {
+        $publication = $this->createOAIRecordMockObject()->getData('article')->getCurrentPublication();
+        $publication->setData('dataAvailability', [
+            'en' => '<p>Data are available at <a href="https://example.com/data">the repository</a>.</p><p>Code is on request.</p>',
+            'de' => 'Daten sind verfügbar.',
+        ]);
+        $citation = new Citation();
+        $citation->setRawCitation('Author, A. (2020). A cited work.');
+        $publication->setData('citations', collect([$citation]));
+
+        $articleBack = new ArticleBack();
+        $articleBack->create($publication);
+
+        $children = [];
+        foreach ($articleBack->documentElement->childNodes as $child) {
+            $children[] = $child->nodeName;
+        }
+        self::assertEquals(['sec', 'sec', 'ref-list'], $children);
+
+        $xpath = new DOMXPath($articleBack);
+        self::assertCount(2, $xpath->query('/back/sec[@xml:lang="en"]/p'));
+        self::assertCount(1, $xpath->query('/back/sec[@xml:lang="de"]/p'));
     }
 }

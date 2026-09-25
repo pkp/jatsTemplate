@@ -62,6 +62,9 @@ class Article extends \DOMDocument
         $articleElement->appendChild($this->importNode($articleBody->create($submission), true));
 
         $articleBack = new ArticleBack();
-        $articleElement->appendChild($this->importNode($articleBack->create($publication), true));
+        $articleBackNode = $articleBack->create($publication);
+        if ($articleBackNode) {
+            $articleElement->appendChild($this->importNode($articleBackNode, true));
+        }
     }
 }
