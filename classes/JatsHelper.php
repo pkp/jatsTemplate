@@ -14,6 +14,7 @@ namespace APP\plugins\generic\jatsTemplate\classes;
 
 use DOMDocument;
 use DOMNode;
+use PKP\core\PKPString;
 
 class JatsHelper
 {
@@ -22,6 +23,9 @@ class JatsHelper
      * underline, sup/sub, links, and optionally paragraphs). Falls back to a plain
      * escaped-text element (with the same attributes) if the converted markup fails to
      * parse as XML.
+     *
+     * Unsafe markup is removed first, which also escapes a stray "<" that doesn't open a tag
+     * (e.g. "p<0.05"), so that it is kept as text rather than read as the start of a tag.
      *
      * @param array<string, string> $attributes Attributes to set on the created element
      * @param bool $allowParagraphs Preserve source <p> tags, for elements whose content model
@@ -36,6 +40,7 @@ class JatsHelper
         array $attributes = [],
         bool $allowParagraphs = false
     ): DOMNode {
+        $html = PKPString::stripUnsafeHtml($html);
         $allowedTags = '<i><em><b><strong><u><a><sup><sub>' . ($allowParagraphs ? '<p>' : '');
         $cleaned = strip_tags($html, $allowedTags);
         // Stored rich-text HTML already has literal special characters entity-encoded (e.g. "&" as
