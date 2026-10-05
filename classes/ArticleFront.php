@@ -788,8 +788,59 @@ class ArticleFront extends DOMDocument
             ->filterByFileStages([SubmissionFile::SUBMISSION_FILE_PRODUCTION_READY])
             ->getMany();
 
-        if (!empty($coverUrl) || $layoutFiles->isNotEmpty()) {
+        $prevJournalTitles = [];
+        $currentNames = $journal->getName() ?? [];
+        foreach (($publication->getData('contextName') ?? []) as $locale => $stampedTitle) {
+            if (!empty($stampedTitle) && $stampedTitle !== ($currentNames[$locale] ?? null)) {
+                $prevJournalTitles[$locale] = $stampedTitle;
+            }
+        }
+
+        // Compare with abbreviation-or-acronym, as that is what gets stamped
+        $prevAbbrevJournalTitles = [];
+        $currentAbbreviations = $journal->getAbbreviationOrAcronym() ?? [];
+        foreach (($publication->getData('contextAbbreviation') ?? []) as $locale => $stampedAbbreviation) {
+            if (!empty($stampedAbbreviation) && $stampedAbbreviation !== ($currentAbbreviations[$locale] ?? null)) {
+                $prevAbbrevJournalTitles[$locale] = $stampedAbbreviation;
+            }
+        }
+
+        $prevScalars = [];
+        $stampedOnlineIssn = $publication->getData('onlineIssn');
+        if (!empty($stampedOnlineIssn) && $stampedOnlineIssn !== $journal->getData('onlineIssn')) {
+            $prevScalars['prev-online-issn'] = $stampedOnlineIssn;
+        }
+        $stampedPrintIssn = $publication->getData('printIssn');
+        if (!empty($stampedPrintIssn) && $stampedPrintIssn !== $journal->getData('printIssn')) {
+            $prevScalars['prev-print-issn'] = $stampedPrintIssn;
+        }
+        $stampedPublisher = $publication->getData('publisher');
+        if (!empty($stampedPublisher) && $stampedPublisher !== $journal->getData('publisherInstitution')) {
+            $prevScalars['prev-publisher'] = $stampedPublisher;
+        }
+
+        if (!empty($coverUrl) || $layoutFiles->isNotEmpty() || !empty($prevJournalTitles) || !empty($prevAbbrevJournalTitles) || !empty($prevScalars)) {
             $customMetaGroupElement = $articleMetaElement->appendChild($this->createElement('custom-meta-group'));
+
+            foreach ($prevJournalTitles as $locale => $title) {
+                $customMetaElement = $customMetaGroupElement->appendChild($this->createElement('custom-meta'));
+                $customMetaElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
+                $customMetaElement->appendChild($this->createElement('meta-name'))->appendChild($this->createTextNode('prev-journal-title'));
+                $customMetaElement->appendChild($this->createElement('meta-value'))->appendChild($this->createTextNode($title));
+            }
+
+            foreach ($prevAbbrevJournalTitles as $locale => $abbreviation) {
+                $customMetaElement = $customMetaGroupElement->appendChild($this->createElement('custom-meta'));
+                $customMetaElement->setAttribute('xml:lang', LocaleConversion::toBcp47($locale));
+                $customMetaElement->appendChild($this->createElement('meta-name'))->appendChild($this->createTextNode('prev-abbrev-journal-title'));
+                $customMetaElement->appendChild($this->createElement('meta-value'))->appendChild($this->createTextNode($abbreviation));
+            }
+
+            foreach ($prevScalars as $metaName => $metaValue) {
+                $customMetaElement = $customMetaGroupElement->appendChild($this->createElement('custom-meta'));
+                $customMetaElement->appendChild($this->createElement('meta-name'))->appendChild($this->createTextNode($metaName));
+                $customMetaElement->appendChild($this->createElement('meta-value'))->appendChild($this->createTextNode($metaValue));
+            }
 
             // Issue cover page
             if ($coverUrl) {
