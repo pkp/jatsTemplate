@@ -21,6 +21,7 @@ use APP\publication\Publication;
 use APP\publication\Repository;
 use APP\section\Section;
 use APP\submission\Submission;
+use DOMNode;
 use Illuminate\Support\LazyCollection;
 use Mockery;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -672,7 +673,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
     }
 
     /**
-     * Test that the publication version is expressed as a JAV article-version element.
+     * Test that the publication version is expressed as JAV article-version elements.
      */
     public function testCreateArticleMetaArticleVersion()
     {
@@ -698,22 +699,13 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             $publication
         );
 
-        $versions = $xml->getElementsByTagName('article-version');
-        self::assertCount(1, $versions);
-
-        $version = $versions->item(0);
-        // Version of Record is part of the JAV standard, so the JAV vocabulary is included.
-        self::assertSame('VoR', $version->getAttribute('article-version-type'));
-        self::assertSame('1.0', $version->textContent);
-        self::assertSame('JAV', $version->getAttribute('vocab'));
-        self::assertSame('http://www.niso.org/publications/rp/RP-8-2008.pdf', $version->getAttribute('vocab-identifier'));
-        self::assertSame('Version of Record', $version->getAttribute('vocab-term'));
+        $this->assertJavArticleVersions($xml, 'Formally Published, Stable Article', 'vor', 'Version of Record');
     }
 
     /**
-     * Test that a PMUR version omits the JAV vocabulary, as PMUR is not part of the JAV standard.
+     * Test that a PMUR version is expressed with the JAV vocabulary.
      */
-    public function testCreateArticleMetaArticleVersionPmurOmitsJavVocab()
+    public function testCreateArticleMetaArticleVersionPmur()
     {
         $OAIRecord = $this->createOAIRecordMockObject();
         $record = & $OAIRecord;
@@ -738,15 +730,64 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             $publication
         );
 
-        $versions = $xml->getElementsByTagName('article-version');
-        self::assertCount(1, $versions);
+        $this->assertJavArticleVersions($xml, 'Article Under Review', 'pmur', 'Published Manuscript Under Review');
+    }
 
-        $version = $versions->item(0);
-        self::assertSame('PMUR', $version->getAttribute('article-version-type'));
-        self::assertSame('1.0', $version->textContent);
-        self::assertFalse($version->hasAttribute('vocab'));
-        self::assertFalse($version->hasAttribute('vocab-identifier'));
-        self::assertFalse($version->hasAttribute('vocab-term'));
+    /**
+     * Test that an AO version is expressed with the JAV vocabulary.
+     */
+    public function testCreateArticleMetaArticleVersionAo()
+    {
+        $OAIRecord = $this->createOAIRecordMockObject();
+        $record = & $OAIRecord;
+        $submission = & $record->getData('article'); /** @var Submission $submission */
+        $journal = & $record->getData('journal'); /** @var Journal $journal */
+        $section = & $record->getData('section'); /** @var Section $section */
+        $issue = & $record->getData('issue'); /** @var Issue $issue */
+        $publication = $submission->getCurrentPublication(); /** @var Publication $publication */
+        $publication->setData('versionStage', 'AO');
+
+        $publicationRepoMock = Mockery::mock(Repository::class);
+        $publicationRepoMock->shouldReceive('getVersionRelation')->andReturnNull();
+        app()->instance(Repository::class, $publicationRepoMock);
+
+        $articleFrontElement = new ArticleFront();
+        $xml = $articleFrontElement->createArticleMeta(
+            $submission,
+            $journal,
+            $section,
+            $issue,
+            $this->createRequestMockInstance(),
+            $publication
+        );
+
+        $this->assertJavArticleVersions($xml, 'Unreviewed Article', 'ao', "Author's Original");
+    }
+
+    /**
+     * Assert the JAV overall status, life cycle stage and semantic version number article-versions.
+     */
+    protected function assertJavArticleVersions(DOMNode $xml, string $overallStatus, string $versionType, string $vocabTerm): void
+    {
+        $alternatives = $xml->getElementsByTagName('article-version-alternatives');
+        self::assertCount(1, $alternatives);
+
+        $versions = $alternatives->item(0)->getElementsByTagName('article-version');
+        self::assertCount(3, $versions);
+        foreach ($versions as $version) {
+            self::assertSame('jav', $version->getAttribute('vocab'));
+            self::assertSame('http://www.niso.org/schemas/jav/1.0/', $version->getAttribute('vocab-identifier'));
+            self::assertSame('', $version->textContent);
+        }
+
+        [$status, $stage, $versionNumber] = iterator_to_array($versions);
+        self::assertSame('article-overall-status', $status->getAttribute('content-type'));
+        self::assertSame($overallStatus, $status->getAttribute('vocab-term'));
+        self::assertSame('article-lifecycle-stage', $stage->getAttribute('content-type'));
+        self::assertSame($versionType, $stage->getAttribute('article-version-type'));
+        self::assertSame($vocabTerm, $stage->getAttribute('vocab-term'));
+        self::assertSame('semantic-version-number', $versionNumber->getAttribute('content-type'));
+        self::assertSame('1.0', $versionNumber->getAttribute('designator'));
     }
 
     /**
@@ -884,5 +925,44 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
             $this->xmlFilePath . 'articleMetaArticle_ContribGroupElement.xml',
             $articleFrontElement->saveXML($xml['contribGroupElement'])
         );
+    }
+
+    /**
+     * Test that CRediT roles use the canonical English term and degree in the vocabulary
+     * attributes, with the role name in the submission language as the display text.
+     */
+    public function testCreateArticleContribGroupCreditRoles()
+    {
+        $OAIRecord = $this->createOAIRecordMockObject();
+        $record = & $OAIRecord;
+        $submission = & $record->getData('article'); /** @var Submission $submission */
+        $submission->setData('locale', 'es');
+        $publication = $submission->getCurrentPublication();
+        $author = $publication->getData('authors')->first(); /** @var Author $author */
+        $author->setGivenName('author-firstname', 'es');
+        $author->setFamilyName('author-lastname', 'es');
+        $author->setData('creditRoles', [
+            ['role' => 'https://credit.niso.org/contributor-roles/conceptualization/', 'degree' => 'LEAD'],
+            ['role' => 'https://credit.niso.org/contributor-roles/data-curation/', 'degree' => 'NULL'],
+        ]);
+
+        $this->createRequestMockInstance();
+
+        $articleFrontElement = new ArticleFront();
+        $xml = $articleFrontElement->createArticleContribGroup($submission, $publication);
+
+        $roles = $xml['contribGroupElement']->getElementsByTagName('role');
+        self::assertCount(2, $roles);
+        [$conceptualization, $dataCuration] = iterator_to_array($roles);
+
+        self::assertSame('credit', $conceptualization->getAttribute('vocab'));
+        self::assertSame('Conceptualization', $conceptualization->getAttribute('vocab-term'));
+        self::assertSame('https://credit.niso.org/contributor-roles/conceptualization/', $conceptualization->getAttribute('vocab-term-identifier'));
+        self::assertSame('lead', $conceptualization->getAttribute('degree-contribution'));
+        self::assertSame('Conceptualización', $conceptualization->textContent);
+
+        self::assertSame('Data Curation', $dataCuration->getAttribute('vocab-term'));
+        self::assertFalse($dataCuration->hasAttribute('degree-contribution'));
+        self::assertSame('Curación de datos', $dataCuration->textContent);
     }
 }
