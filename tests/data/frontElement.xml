@@ -58,7 +58,11 @@
     <article-id pub-id-type="publisher-id">9</article-id>
     <article-id pub-id-type="doi">article-doi</article-id>
     <article-id pub-id-type="publisher-id" specific-use="publication">1</article-id>
-    <article-version vocab="JAV" vocab-identifier="http://www.niso.org/publications/rp/RP-8-2008.pdf" vocab-term="Version of Record" article-version-type="VoR">1.0</article-version>
+    <article-version-alternatives>
+      <article-version vocab="jav" vocab-identifier="http://www.niso.org/schemas/jav/1.0/" content-type="article-overall-status" vocab-term="Formally Published, Stable Article"/>
+      <article-version vocab="jav" vocab-identifier="http://www.niso.org/schemas/jav/1.0/" content-type="article-lifecycle-stage" vocab-term="Version of Record" article-version-type="vor"/>
+      <article-version vocab="jav" vocab-identifier="http://www.niso.org/schemas/jav/1.0/" content-type="semantic-version-number" designator="1.0"/>
+    </article-version-alternatives>
     <article-categories>
       <subj-group xml:lang="en" subj-group-type="heading">
         <subject>section-identify-type</subject>

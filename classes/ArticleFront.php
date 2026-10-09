@@ -268,7 +268,6 @@ class ArticleFront extends DOMDocument
         $versionStage = $publication->getData('versionStage');
         if ($versionStage) {
             $stage = VersionStage::tryFrom($versionStage);
-            $versionLabel = $stage?->label('en');
 
             $versionMajor = $publication->getData('versionMajor');
             $versionMinor = $publication->getData('versionMinor');
@@ -277,17 +276,27 @@ class ArticleFront extends DOMDocument
                 $version = $versionMajor . '.' . ($versionMinor ?? 0);
             }
 
-            if ($versionLabel && $version) {
-                $articleVersionElement = $this->createElement('article-version');
-                // Do not include for PMUR as it is not yet part of the JAV standard
-                if ($versionStage !== VersionStage::PUBLISHED_MANUSCRIPT_UNDER_REVIEW->value) {
-                    $articleVersionElement->setAttribute('vocab', 'JAV');
-                    $articleVersionElement->setAttribute('vocab-identifier', 'http://www.niso.org/publications/rp/RP-8-2008.pdf');
-                    $articleVersionElement->setAttribute('vocab-term', $versionLabel);
-                }
-                $articleVersionElement->setAttribute('article-version-type', $versionStage);
-                $articleVersionElement->appendChild($this->createTextNode($version));
-                $articleMetaElement->appendChild($articleVersionElement);
+            if ($stage && $version) {
+                [$overallStatus, $stageTerm] = match ($stage) {
+                    VersionStage::AUTHOR_ORIGINAL => ['Unreviewed Article', "Author's Original"],
+                    VersionStage::PUBLISHED_MANUSCRIPT_UNDER_REVIEW => ['Article Under Review', 'Published Manuscript Under Review'],
+                    VersionStage::VERSION_OF_RECORD => ['Formally Published, Stable Article', 'Version of Record'],
+                };
+
+                $articleVersionAlternativesElement = $articleMetaElement->appendChild($this->createElement('article-version-alternatives'));
+
+                $overallStatusElement = $this->createJavArticleVersion('article-overall-status');
+                $overallStatusElement->setAttribute('vocab-term', $overallStatus);
+                $articleVersionAlternativesElement->appendChild($overallStatusElement);
+
+                $stageElement = $this->createJavArticleVersion('article-lifecycle-stage');
+                $stageElement->setAttribute('vocab-term', $stageTerm);
+                $stageElement->setAttribute('article-version-type', strtolower($versionStage));
+                $articleVersionAlternativesElement->appendChild($stageElement);
+
+                $versionNumberElement = $this->createJavArticleVersion('semantic-version-number');
+                $versionNumberElement->setAttribute('designator', $version);
+                $articleVersionAlternativesElement->appendChild($versionNumberElement);
             }
         }
 
@@ -899,6 +908,19 @@ class ArticleFront extends DOMDocument
     }
 
     /**
+     * An article-version in the JAV vocabulary, as recommended by NISO RP-8-2026.
+     */
+    protected function createJavArticleVersion(string $contentType): DOMElement
+    {
+        $articleVersionElement = $this->createElement('article-version');
+        $articleVersionElement->setAttribute('vocab', 'jav');
+        $articleVersionElement->setAttribute('vocab-identifier', 'http://www.niso.org/schemas/jav/1.0/');
+        $articleVersionElement->setAttribute('content-type', $contentType);
+
+        return $articleVersionElement;
+    }
+
+    /**
      * Whether the article is available without access barriers: published in an open access
      * journal, or as an open access issue or article in a subscription journal.
      */
@@ -954,6 +976,8 @@ class ArticleFront extends DOMDocument
 
         // Include authors
         $creditRoleTerms = Repo::creditRole()->getTerms($submissionLocale);
+        // CRediT translations are unofficial, so vocab-term holds the canonical English term
+        $canonicalCreditRoleTerms = Repo::creditRole()->getTerms('en');
         $affiliations = $institutions = $competingInterests = [];
         $correspondingAuthor = null;
         foreach ($publication->getData('authors') as $author) { /** @var Author $author */
@@ -978,11 +1002,11 @@ class ArticleFront extends DOMDocument
                 $roleNode
                     ->setAttribute('vocab', 'credit')->parentNode
                     ->setAttribute('vocab-identifier', 'https://credit.niso.org/')->parentNode
-                    ->setAttribute('vocab-term', $roleTerm)->parentNode
+                    ->setAttribute('vocab-term', $canonicalCreditRoleTerms['roles'][$role])->parentNode
                     ->setAttribute('vocab-term-identifier', $role);
                 $degreeValue = CreditRoleDegree::toValue($degree);
-                if ($degreeValue && !empty($creditRoleTerms['degrees'][$degreeValue])) {
-                    $roleNode->setAttribute('degree-contribution', $creditRoleTerms['degrees'][$degreeValue]);
+                if ($degreeValue) {
+                    $roleNode->setAttribute('degree-contribution', strtolower($degreeValue));
                 }
                 $roleNode->appendChild($this->createTextNode($roleTerm));
                 $roleNodes[] = $roleNode;
