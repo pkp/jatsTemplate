@@ -419,6 +419,25 @@ class JatsHelperTest extends PKPTestCase
     }
 
     /**
+     * Tags the author typed as text are stored entity-encoded and stay text, beside real markup.
+     */
+    public function testKeepsTagsTypedAsTextEscaped()
+    {
+        self::assertSame(
+            '<root><abstract><p>Write &lt;i&gt;species names&lt;/i&gt; in <italic>italics</italic> and H&lt;sub&gt;2&lt;/sub&gt;O; a &lt;br&gt; tag breaks the line and &lt;p&gt;text&lt;/p&gt; is a paragraph.</p></abstract></root>',
+            $this->render('abstract', '<p>Write &lt;i&gt;species names&lt;/i&gt; in <i>italics</i> and H&lt;sub&gt;2&lt;/sub&gt;O; a &lt;br&gt; tag breaks the line and &lt;p&gt;text&lt;/p&gt; is a paragraph.</p>', [], allowParagraphs: true)
+        );
+        self::assertSame(
+            '<root><article-title>The &lt;i&gt;species&lt;/i&gt; element in <bold>HTML</bold></article-title></root>',
+            $this->render('article-title', 'The &lt;i&gt;species&lt;/i&gt; element in <b>HTML</b>')
+        );
+        self::assertSame(
+            '<root><p>A &lt;a href="x"&gt;link&lt;/a&gt;</p></root>',
+            $this->render('p', 'A &lt;a href=&quot;x&quot;&gt;link&lt;/a&gt;')
+        );
+    }
+
+    /**
      * Abstract HTML as the rich text editor stores it, and the JATS it converts to, covering
      * the edges of list handling: nesting, text around nested lists, and the empty items and
      * blank lines the editor leaves behind.
