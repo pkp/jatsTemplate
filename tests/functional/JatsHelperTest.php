@@ -101,4 +101,19 @@ class JatsHelperTest extends PKPTestCase
             $this->render('article-title', 'Title <script>alert(1)</script><i>kept</i>')
         );
     }
+
+    /**
+     * Tags the author typed as text are stored entity-encoded and stay text, beside real markup.
+     */
+    public function testKeepsTagsTypedAsTextEscaped(): void
+    {
+        self::assertEquals(
+            '<article-title>The &lt;i&gt;species&lt;/i&gt; element in <bold>HTML</bold></article-title>',
+            $this->render('article-title', 'The &lt;i&gt;species&lt;/i&gt; element in <b>HTML</b>')
+        );
+        self::assertEquals(
+            '<notes><p>A &lt;p&gt;typed&lt;/p&gt; paragraph and a &lt;a href="x"&gt;link&lt;/a&gt;</p></notes>',
+            $this->render('notes', 'A &lt;p&gt;typed&lt;/p&gt; paragraph and a &lt;a href=&quot;x&quot;&gt;link&lt;/a&gt;', allowParagraphs: true)
+        );
+    }
 }
