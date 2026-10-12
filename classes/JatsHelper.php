@@ -94,8 +94,13 @@ class JatsHelper
         $cleaned = strip_tags($html, $allowedTags);
         // Stored rich-text HTML already has literal special characters entity-encoded (e.g. "&" as
         // "&amp;") - decode before re-escaping, or they'd be double-escaped (e.g. "&amp;amp;").
-        $decoded = html_entity_decode($cleaned, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $escaped = htmlspecialchars($decoded, ENT_COMPAT, 'UTF-8');
+        // A "<" in the text is escaped as "&#60;", so a tag the author typed as text (e.g. "&lt;i&gt;")
+        // is not mistaken for a real one when the escaped tags are converted.
+        $escaped = '';
+        foreach (preg_split('/(<[^>]*>)/', $cleaned, -1, PREG_SPLIT_DELIM_CAPTURE) as $i => $segment) {
+            $segment = htmlspecialchars(html_entity_decode($segment, ENT_QUOTES | ENT_HTML5, 'UTF-8'), ENT_COMPAT, 'UTF-8');
+            $escaped .= $i % 2 ? $segment : str_replace('&lt;', '&#60;', $segment);
+        }
         // JATS has no in-paragraph line break: in block content a break ends the paragraph, which
         // normalizeParagraphs() carries out on the <break/> marker; inline content gets a space.
         // Attribute values are escaped too at this point, so a tag's attributes are skipped up to
