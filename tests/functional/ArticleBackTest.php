@@ -29,6 +29,7 @@ use PKP\author\contributorRole\ContributorRole;
 use PKP\author\contributorRole\ContributorRoleIdentifier;
 use PKP\author\contributorRole\ContributorType;
 use PKP\citation\Citation;
+use PKP\dataCitation\DataCitation;
 use PKP\doi\Doi;
 use PKP\galley\Galley;
 use PKP\oai\OAIRecord;
@@ -292,6 +293,130 @@ class ArticleBackTest extends PKPTestCase
     }
 
     /**
+     * An unstructured citation's persistent identifiers are tagged where they appear in its
+     * mixed-citation, leaving the citation text unchanged, and added after the text otherwise
+     */
+    public function testMixedCitationPubIds(): void
+    {
+        $publication = $this->createOAIRecordMockObject()->getData('article')->getCurrentPublication();
+        $plain = new Citation();
+        $plain->setData('isStructured', false);
+        $plain->setRawCitation('Author, A. (2020). A <i>cited</i> work. https://doi.org/10.1234/Cited. arXiv:2001.12345. urn:nbn:de:101:1-123');
+        $plain->setData('doi', '10.1234/cited');
+        $plain->setData('arxiv', '2001.12345');
+        $plain->setData('urn', 'urn:nbn:de:101:1-123');
+        $linked = new Citation();
+        $linked->setData('isStructured', false);
+        $linked->setRawCitation('Author, B. (2021). Another work. <a href="https://doi.org/10.1234/linked">https://doi.org/10.1234/linked</a>');
+        $linked->setData('doi', '10.1234/linked');
+        $notInText = new Citation();
+        $notInText->setData('isStructured', false);
+        $notInText->setRawCitation('Author, C. (2022). A third work. https://example.com/third.');
+        $notInText->setData('doi', '10.1234/found');
+        $publisherAddress = new Citation();
+        $publisherAddress->setData('isStructured', false);
+        $publisherAddress->setRawCitation('Author, D. (2009). A publisher page. https://onlinelibrary.wiley.com/doi/full/10.1002/abc.124. doi:10.1002/abc.124');
+        $publisherAddress->setData('doi', '10.1002/abc.124');
+        $addressOnly = new Citation();
+        $addressOnly->setData('isStructured', false);
+        $addressOnly->setRawCitation('Author, E. (2010). A journal page. https://example.com/article/view/10.1234/hotel/pdf');
+        $addressOnly->setData('doi', '10.1234/hotel');
+        $bare = new Citation();
+        $bare->setData('isStructured', false);
+        $bare->setRawCitation('Author, F. (2015). A bare DOI. 10.1234/golf');
+        $bare->setData('doi', '10.1234/golf');
+        $publication->setData('citations', collect([$plain, $linked, $notInText, $publisherAddress, $addressOnly, $bare]));
+
+        $articleBack = new ArticleBack();
+        $articleBack->create($publication);
+
+        $xpath = new DOMXPath($articleBack);
+        $mixedCitations = $xpath->query('/back/ref-list/ref/mixed-citation');
+
+        $plainCitation = $mixedCitations->item(0);
+        self::assertEquals(
+            'Author, A. (2020). A cited work. https://doi.org/10.1234/Cited. arXiv:2001.12345. urn:nbn:de:101:1-123',
+            $plainCitation->textContent
+        );
+        self::assertEquals('cited', $xpath->query('italic', $plainCitation)->item(0)->textContent);
+        $pubIds = $xpath->query('pub-id', $plainCitation);
+        self::assertCount(3, $pubIds);
+        self::assertEquals('doi', $pubIds->item(0)->getAttribute('pub-id-type'));
+        self::assertEquals('10.1234/Cited', $pubIds->item(0)->textContent);
+        self::assertEquals('https://doi.org/10.1234/Cited', $pubIds->item(0)->getAttribute('xlink:href'));
+        self::assertEquals('arxiv', $pubIds->item(1)->getAttribute('pub-id-type'));
+        self::assertEquals('2001.12345', $pubIds->item(1)->textContent);
+        self::assertEquals('other', $pubIds->item(2)->getAttribute('pub-id-type'));
+        self::assertEquals('urn:nbn:de:101:1-123', $pubIds->item(2)->textContent);
+
+        $linkedCitation = $mixedCitations->item(1);
+        self::assertEquals('Author, B. (2021). Another work. https://doi.org/10.1234/linked', $linkedCitation->textContent);
+        self::assertCount(0, $xpath->query('ext-link', $linkedCitation));
+        $pubId = $xpath->query('pub-id', $linkedCitation)->item(0);
+        self::assertEquals('10.1234/linked', $pubId->textContent);
+        self::assertEquals('https://doi.org/10.1234/linked', $pubId->getAttribute('xlink:href'));
+
+        // An identifier not in the text is added after it
+        $notInTextCitation = $mixedCitations->item(2);
+        self::assertEquals('Author, C. (2022). A third work. https://example.com/third. 10.1234/found', $notInTextCitation->textContent);
+        self::assertEquals('https://example.com/third', $xpath->query('ext-link', $notInTextCitation)->item(0)->getAttribute('xlink:href'));
+        self::assertEquals('pub-id', $notInTextCitation->lastChild->nodeName);
+        self::assertEquals('10.1234/found', $notInTextCitation->lastChild->textContent);
+
+        // A DOI inside a publisher's address is not tagged there
+        $publisherAddressCitation = $mixedCitations->item(3);
+        $extLink = $xpath->query('ext-link', $publisherAddressCitation)->item(0);
+        self::assertEquals('https://onlinelibrary.wiley.com/doi/full/10.1002/abc.124', $extLink->getAttribute('xlink:href'));
+        self::assertEquals('https://onlinelibrary.wiley.com/doi/full/10.1002/abc.124', $extLink->textContent);
+        $pubIds = $xpath->query('pub-id', $publisherAddressCitation);
+        self::assertCount(1, $pubIds);
+        self::assertFalse($pubIds->item(0)->hasAttribute('xlink:href'));
+        self::assertEquals('doi:', substr($pubIds->item(0)->previousSibling->textContent, -4));
+
+        $addressOnlyCitation = $mixedCitations->item(4);
+        self::assertEquals(
+            'https://example.com/article/view/10.1234/hotel/pdf',
+            $xpath->query('ext-link', $addressOnlyCitation)->item(0)->getAttribute('xlink:href')
+        );
+        self::assertEquals('Author, E. (2010). A journal page. https://example.com/article/view/10.1234/hotel/pdf 10.1234/hotel', $addressOnlyCitation->textContent);
+        self::assertEquals('pub-id', $addressOnlyCitation->lastChild->nodeName);
+
+        $bareCitation = $mixedCitations->item(5);
+        self::assertEquals('Author, F. (2015). A bare DOI. 10.1234/golf', $bareCitation->textContent);
+        self::assertEquals('10.1234/golf', $xpath->query('pub-id', $bareCitation)->item(0)->textContent);
+    }
+
+    /**
+     * A data citation's identifier type is used as its pub-id-type when JATS 1.2 has one, and
+     * "other" otherwise; authors without a name are left out
+     */
+    public function testDataCitationPubIdTypes(): void
+    {
+        $publication = $this->createOAIRecordMockObject()->getData('article')->getCurrentPublication();
+        $pmid = new DataCitation();
+        $pmid->setAttribute('title', 'A dataset');
+        $pmid->setAttribute('identifierType', 'PMID');
+        $pmid->setAttribute('identifier', '12345678');
+        $pmid->setAttribute('authors', [['familyName' => 'Brown', 'givenName' => 'Alice']]);
+        $uri = new DataCitation();
+        $uri->setAttribute('title', 'Another dataset');
+        $uri->setAttribute('identifierType', 'URI');
+        $uri->setAttribute('identifier', 'https://example.com/dataset');
+        $uri->setAttribute('authors', [['familyName' => '', 'givenName' => '']]);
+        $publication->setData('dataCitations', collect([$pmid, $uri]));
+
+        $articleBack = new ArticleBack();
+        $articleBack->create($publication);
+
+        $xpath = new DOMXPath($articleBack);
+        $citations = $xpath->query('/back/ref-list/ref/element-citation');
+        self::assertEquals('pmid', $xpath->query('pub-id', $citations->item(0))->item(0)->getAttribute('pub-id-type'));
+        self::assertEquals('Brown', $xpath->query('person-group/name/surname', $citations->item(0))->item(0)->textContent);
+        self::assertEquals('other', $xpath->query('pub-id', $citations->item(1))->item(0)->getAttribute('pub-id-type'));
+        self::assertCount(0, $xpath->query('person-group', $citations->item(1)));
+    }
+
+    /**
      * Test that the back element is valid against the JATS 1.2 DTD
      */
     public function testValidatesAgainstJats12(): void
@@ -302,7 +427,9 @@ class ArticleBackTest extends PKPTestCase
             'de' => 'Daten sind verfügbar.',
         ]);
         $citation = new Citation();
-        $citation->setData('rawCitation', 'Author, A. (2020). A cited work.');
+        $citation->setData('rawCitation', 'Author, A. (2020). A cited work. <a href="https://doi.org/10.1234/cited">https://doi.org/10.1234/cited</a>. urn:nbn:de:101:1-123');
+        $citation->setData('doi', '10.1234/cited');
+        $citation->setData('urn', 'urn:nbn:de:101:1-123');
         $publication->setData('citations', collect([$citation]));
 
         $articleBack = new ArticleBack();
@@ -322,6 +449,8 @@ class ArticleBackTest extends PKPTestCase
         self::assertCount(2, $xpath->query('/article/back/sec[@sec-type="data-availability"]'));
         self::assertCount(2, $xpath->query('/article/back/sec[@xml:lang="en"]/p'));
         self::assertCount(1, $xpath->query('/article/back/sec[@xml:lang="de"]/p'));
+        self::assertCount(1, $xpath->query('/article/back/ref-list/ref/mixed-citation/pub-id[@pub-id-type="doi"]'));
+        self::assertCount(1, $xpath->query('/article/back/ref-list/ref/mixed-citation/pub-id[@pub-id-type="other"]'));
         $this->assertXmlValidatesAgainstJats12($doc);
     }
 }
