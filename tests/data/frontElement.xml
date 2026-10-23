@@ -9,44 +9,6 @@
       </trans-title-group>
       <abbrev-journal-title xml:lang="en">J Pub Know</abbrev-journal-title>
     </journal-title-group>
-    <contrib-group>
-      <contrib contrib-type="jmanager">
-        <name>
-          <surname>admin</surname>
-          <given-names>admin</given-names>
-        </name>
-      </contrib>
-      <contrib contrib-type="jmanager">
-        <name>
-          <surname>Vaca</surname>
-          <given-names>Ramiro</given-names>
-        </name>
-      </contrib>
-      <contrib contrib-type="editor">
-        <name>
-          <surname>Barnes</surname>
-          <given-names>Daniel</given-names>
-        </name>
-      </contrib>
-      <contrib contrib-type="secteditor">
-        <name>
-          <surname>Buskins</surname>
-          <given-names>David</given-names>
-        </name>
-      </contrib>
-      <contrib contrib-type="secteditor">
-        <name>
-          <surname>Berardo</surname>
-          <given-names>Stephanie</given-names>
-        </name>
-      </contrib>
-      <contrib contrib-type="secteditor">
-        <name>
-          <surname>Inoue</surname>
-          <given-names>Minoti</given-names>
-        </name>
-      </contrib>
-    </contrib-group>
     <issn publication-format="electronic">onlineIssn</issn>
     <issn publication-format="print">printIssn</issn>
     <publisher>
