@@ -39,7 +39,6 @@ use PKP\plugins\PluginRegistry;
 use PKP\publication\enums\UpdateType;
 use PKP\submission\GenreDAO;
 use PKP\submissionFile\SubmissionFile;
-use PKP\userGroup\UserGroup;
 
 class ArticleFront extends DOMDocument
 {
@@ -103,9 +102,6 @@ class ArticleFront extends DOMDocument
         }
 
         $journalMetaElement->appendChild($this->createJournalMetaJournalTitleGroup($journal));
-
-        // Editorial team (contrib-group)
-        $journalMetaElement->appendChild($this->createJournalMetaJournalContribGroup($journal, $request));
 
         if (!empty($journal->getData('onlineIssn'))) {
             $journalMetaElement->appendChild($this->createElement('issn'))
@@ -181,55 +177,6 @@ class ArticleFront extends DOMDocument
             }
         }
         return $journalTitleGroupElement;
-    }
-
-    /**
-     * Create journal-meta contrib-group element
-     */
-    public function createJournalMetaJournalContribGroup(Journal $journal, PKPRequest $request): DOMNode
-    {
-        $contribGroupElement = $this->createElement('contrib-group');
-
-        // Map user group roles to contrib-type
-        $keyContribTypeMapping = [
-            'default.groups.name.manager' => 'jmanager',
-            'default.groups.name.editor' => 'editor',
-            'default.groups.name.sectionEditor' => 'secteditor',
-        ];
-
-        $sitePrimaryLocale = $request->getSite()->getPrimaryLocale();
-        $userGroups = UserGroup::query()->withContextIds([$journal->getId()])->get();
-
-        foreach ($userGroups as $userGroup) {
-            // Skip if the user group role is not mapped
-            if (!isset($keyContribTypeMapping[$userGroup->nameLocaleKey])) {
-                continue;
-            }
-
-            // Get users in the user group
-            $users = Repo::user()->getCollector()
-                ->filterByUserGroupIds([$userGroup->id])
-                ->getMany();
-
-            foreach ($users as $user) {
-                $contribElement = $contribGroupElement->appendChild($this->createElement('contrib'));
-                $contribElement->setAttribute('contrib-type', $keyContribTypeMapping[$userGroup->nameLocaleKey]);
-
-                $nameElement = $contribElement->appendChild($this->createElement('name'));
-
-                // Add surname if available
-                if ($user->getFamilyName($sitePrimaryLocale)) {
-                    $nameElement->appendChild($this->createElement('surname'))
-                        ->appendChild($this->createTextNode($user->getFamilyName($sitePrimaryLocale)));
-                }
-
-                // Add given names
-                $nameElement->appendChild($this->createElement('given-names'))
-                    ->appendChild($this->createTextNode($user->getGivenName($sitePrimaryLocale)));
-            }
-        }
-
-        return $contribGroupElement;
     }
 
     /**
@@ -521,6 +468,7 @@ class ArticleFront extends DOMDocument
             $historyElement->appendChild($this->createHistoryDate('received', $dateSubmitted));
 
             // The latest acceptance, should the submission have been accepted more than once
+            /** @var Decision|null $acceptDecision */
             $acceptDecision = Repo::decision()->getCollector()
                 ->filterBySubmissionIds([$submission->getId()])
                 ->getMany()
