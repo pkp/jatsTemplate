@@ -1035,8 +1035,10 @@ class ArticleFront extends DOMDocument
                         ->appendChild($this->createTextNode($countryName ?? $country));
                 }
 
-                $contribElement->appendChild($this->createElement('email'))
-                    ->appendChild($this->createTextNode($author->getEmail()));
+                if ($email = $author->getEmail()) {
+                    $contribElement->appendChild($this->createElement('email'))
+                        ->appendChild($this->createTextNode($email));
+                }
 
                 foreach ($roleNodes as $roleNode) {
                     $contribElement->appendChild($roleNode);
