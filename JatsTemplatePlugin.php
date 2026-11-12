@@ -64,22 +64,27 @@ class JatsTemplatePlugin extends GenericPlugin
      * @param $hookName string
      * @param $args array
      */
-    public function callbackFindJats($hookName, $args)
-    {
-        $plugin =& $args[0];
-        $record =& $args[1];
-        $candidateFiles =& $args[2];
-        $doc =& $args[3];
+	public function callbackFindJats($hookName, $args) {
+		$plugin =& $args[0];
+		$record =& $args[1];
+		$candidateFiles =& $args[2];
+		$doc =& $args[3];
 
-        if (!$doc && empty($candidateFiles)) {
-            $request = Application::get()->getRequest();
+		if (!$doc && empty($candidateFiles)) {
+			
+			$xml = $this->toXml($record);
 
-            $doc = new Article();
-            $doc->convertOAIToXml($record, $request);
-        }
+			$xml = preg_replace(
+				'/[^\x09\x0A\x0D\x20-\x{D7FF}\x{E000}-\x{FFFD}\x{10000}-\x{10FFFF}]/u',
+				'',
+				$xml
+			);
+			$doc = new DOMDocument();
+			$doc->loadXml($xml);
+		}
 
-        return false;
-    }
+		return false;
+	}
 
     /**
      * Declare the handler function to process the actual page PATH
