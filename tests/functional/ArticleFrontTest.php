@@ -107,6 +107,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
 
         // Author
         $author = new Author();
+        $author->setId(1);
         $author->setGivenName('author-firstname', 'en');
         $author->setFamilyName('author-lastname', 'en');
         $author->setPreferredPublicName('author-preferred-name', 'en');
@@ -129,6 +130,14 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $author->setBiography('<p>Test biography</p>', 'en');
         $author->setCompetingInterests('<p>Competing interests</p>', 'en');
         $author->setCountry('GB');
+
+        // Second author, an organization without an email
+        $authorWithoutEmail = new Author();
+        $authorWithoutEmail->setId(2);
+        $authorWithoutEmail->setOrganizationName('second-author-organization', 'en');
+        $authorWithoutEmail->setData('contributorType', ContributorType::ORGANIZATION->getName());
+        $authorWithoutEmail->setContributorRoles([$contributorRoleAuthor]);
+        $authorWithoutEmail->setEmail(null);
 
         // Publication
         /** @var Doi|MockObject $publicationDoiObject */
@@ -165,7 +174,8 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $publication->setData('copyrightHolder', 'article-copyright');
         $publication->setData('copyrightYear', 'year');
         $publication->setData('licenseUrl', 'https://creativecommons.org/licenses/by/4.0');
-        $publication->setData('authors', collect([$author]));
+        $publication->setData('authors', collect([$author, $authorWithoutEmail]));
+        $publication->setData('primaryContactId', $author->getId());
         $publication->setData('status', Submission::STATUS_PUBLISHED);
         $publication->setData('updateType', 'new_version');
         $publication->setData('summaryOfChanges', '<p>This version corrects an error in Table 2.</p>', 'en');
@@ -198,6 +208,7 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $article->setData('locale', 'en');
         $article->setData('funders', collect());
         $author->setSubmissionId($article->getId());
+        $authorWithoutEmail->setSubmissionId($article->getId());
         $article->expects($this->any())
             ->method('getCurrentPublication')
             ->willReturn($publication);
@@ -941,6 +952,8 @@ class ArticleFrontTest extends \PKP\tests\PKPTestCase
         $author = $publication->getData('authors')->first(); /** @var Author $author */
         $author->setGivenName('author-firstname', 'es');
         $author->setFamilyName('author-lastname', 'es');
+        $authorWithoutEmail = $publication->getData('authors')->last(); /** @var Author $authorWithoutEmail */
+        $authorWithoutEmail->setOrganizationName('second-author-organization', 'es');
         $author->setData('creditRoles', [
             ['role' => 'https://credit.niso.org/contributor-roles/conceptualization/', 'degree' => 'LEAD'],
             ['role' => 'https://credit.niso.org/contributor-roles/data-curation/', 'degree' => 'NULL'],
