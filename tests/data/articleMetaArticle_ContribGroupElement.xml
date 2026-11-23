@@ -1,8 +1,8 @@
 <!--
   * articleMetaArticle_ContribGroupElement.xml
   *
-  * Copyright (c) 2013-2020 Simon Fraser University
-  * Copyright (c) 2003-2020 John Willinsky
+  * Copyright (c) 2013-2026 Simon Fraser University
+  * Copyright (c) 2003-2026 John Willinsky
   * Distributed under the GNU GPL v3. For full terms see the file docs/COPYING.
   *
   * Article Contrib Group Element Test XML file.
@@ -28,5 +28,8 @@
         <xref ref-type="aff" rid="aff-1"/>
         <xref ref-type="corresp" rid="corresp-1"/>
         <xref ref-type="author-notes" rid="con-1"/>
+    </contrib>
+    <contrib contrib-type="author">
+        <collab>second-author-organization</collab>
     </contrib>
 </contrib-group>
