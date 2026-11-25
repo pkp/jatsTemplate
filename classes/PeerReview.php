@@ -18,7 +18,8 @@ use APP\submission\Submission;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
-use PKP\API\v1\peerReviews\resources\SubmissionPeerReviewResource;
+use PKP\context\Context;
+use PKP\peerReview\PeerReviewResourceBuilder;
 use PKP\submission\reviewAssignment\ReviewAssignment;
 use PKP\submission\reviewer\recommendation\enums\ReviewerRecommendationType;
 
@@ -69,9 +70,11 @@ class PeerReview extends DOMDocument
      *
      * @return array<DOMNode>
      */
-    public function create(Submission $submission, Publication $publication): array
+    public function create(Submission $submission, Publication $publication, Context $context): array
     {
-        $peerReviewData = (new SubmissionPeerReviewResource($submission))->resolve();
+        $peerReviewData = PeerReviewResourceBuilder::fromSubmission($submission, $context)
+            ->make()
+            ->resolve();
         $reviewRounds = $peerReviewData['reviewRounds'] ?? [];
         if (empty($reviewRounds)) {
             return [];
