@@ -96,7 +96,7 @@ class Article extends DOMDocument
 
             // Add publicly visible open peer reviews as sub-articles
             $peerReview = new PeerReview();
-            foreach ($peerReview->create($submission, $publication) as $subArticleNode) {
+            foreach ($peerReview->create($submission, $publication, $context) as $subArticleNode) {
                 $articleElement->appendChild($this->importNode($subArticleNode, true));
             }
         }
